@@ -1,0 +1,105 @@
+Magic 271485
+Revision Verdi_O-2018.09-SP2
+
+; Window Layout <x> <y> <width> <height> <signalwidth> <valuewidth>
+viewPort 0 38 1920 372 100 65
+
+; File list:
+; openDirFile [-d delimiter] [-s time_offset] [-rf auto_bus_rule_file] path_name file_name
+openDirFile -d / "" "/home/dy/IC/Basic/Vip/Official_examples/tb_ahb_svt_uvm_basic_sys/test_top.fsdb"
+
+; file time scale:
+; fileTimeScale ### s|ms|us|ns|ps
+
+; signal spacing:
+signalSpacing 5
+
+; windowTimeUnit is used for zoom, cursor & marker
+; waveform viewport range
+zoom 4981286.119144 6879494.664546
+cursor 6776000.000000
+marker 0.000000
+
+; user define markers
+; userMarker time_pos marker_name color linestyle
+; visible top row signal index
+top 24
+; marker line index
+markerPos 33
+
+; event list
+; addEvent event_name event_expression
+; curEvent event_name
+
+
+
+COMPLEX_EVENT_BEGIN
+
+
+COMPLEX_EVENT_END
+
+
+
+; toolbar current search type
+; curSTATUS search_type
+curSTATUS ByChange
+
+
+addGroup "G1"
+activeDirFile "" "/home/dy/IC/Basic/Vip/Official_examples/tb_ahb_svt_uvm_basic_sys/test_top.fsdb"
+addSignal -h 15 /test_top/dut_wrapper/ahb_svt_dut/control_huser[31:0]
+addSignal -h 15 -holdScope control_huser_m1[31:0]
+addSignal -h 15 -holdScope haddr[31:0]
+addSignal -h 15 -holdScope haddr_m1[31:0]
+addSignal -h 15 -holdScope hburst[2:0]
+addSignal -h 15 -holdScope hburst_m1[2:0]
+addSignal -h 15 -holdScope hbusreq_m1
+addSignal -h 15 -holdScope hclk
+addSignal -h 15 -holdScope hgrant_m0
+addSignal -h 15 -holdScope hgrant_m1
+addSignal -h 15 -holdScope hlock_m1
+addSignal -h 15 -holdScope hmaster[3:0]
+addSignal -h 15 -holdScope hmastlock
+addSignal -h 15 -holdScope hprot[3:0]
+addSignal -h 15 -holdScope hprot_m1[3:0]
+addSignal -h 15 -holdScope hrdata[31:0]
+addSignal -h 15 -holdScope hrdata_s1[31:0]
+addSignal -h 15 -holdScope hready_m1
+addSignal -h 15 -holdScope hready_s1
+addSignal -h 15 -holdScope hresetn
+addSignal -h 15 -holdScope hresp[1:0]
+addSignal -h 15 -holdScope hresp_s1[1:0]
+addSignal -h 15 -holdScope hsel_s0
+addSignal -h 15 -holdScope hsel_s1
+addSignal -h 15 -holdScope hsize[2:0]
+addSignal -h 15 -holdScope hsize_m1[2:0]
+addSignal -h 15 -holdScope hsplit_s1[15:0]
+addSignal -h 15 -holdScope htrans[1:0]
+addSignal -h 15 -holdScope htrans_m1[1:0]
+addSignal -h 15 -holdScope hwdata[31:0]
+addSignal -h 15 -holdScope hwdata_m1[31:0]
+addSignal -h 15 -holdScope hwrite
+addSignal -h 15 -holdScope hwrite_m1
+addGroup "G2"
+
+; getSignalForm Scope Hierarchy Status
+; active file of getSignalForm
+activeDirFile "" "/home/dy/IC/Basic/Vip/Official_examples/tb_ahb_svt_uvm_basic_sys/test_top.fsdb"
+
+GETSIGNALFORM_SCOPE_HIERARCHY_BEGIN
+getSignalForm close
+
+"/_$novas_unit__1"
+"/test_top"
+"/test_top/dut_wrapper"
+
+SCOPE_LIST_BEGIN
+"/_$novas_unit__1"
+"/test_top"
+"/test_top/dut_wrapper"
+"/test_top/dut_wrapper/ahb_svt_dut"
+SCOPE_LIST_END
+
+GETSIGNALFORM_SCOPE_HIERARCHY_END
+
+

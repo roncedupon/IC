@@ -1,0 +1,302 @@
+
+**************************************************************************
+Basic UVM Testbench Example for AHB SVT VIP
+*************************************************************************
+
+CONTENTS:
+A. Introduction
+B. Running the Example Testbench
+C. Files in the Example
+D. SystemVerilog Testbench Description
+E. DVE Configuration File
+F. UVM Verification Environment 
+G. How to Contact Support
+
+-------------------------------------------------------------------------
+A. Introduction
+-------------------------------------------------------------------------
+
+This example shows how to implement a basic functioning UVM testbench using AHB
+Verification IP. A quickstart navigation guide can be found at:
+
+<HTML Quickstart is not yet available for this example>    
+The example consists of the following:
+
+- A top-level testbench in SystemVerilog
+- A dummy DUT in the testbench, which has 2 AHB interfaces
+- UVM verification environment
+- AHB System agent instantiated in the UVM verification environment
+- Four test files illustrating 
+  i.   A base test that performs common functions for all tests
+  ii.  Directed transaction generation
+  iii. Random transaction generation
+  iv. AMBA-PV-extended UVM TLM Generic Payload transactions
+
+The UVM AHB VIP transactors are connected in the following manner:
+
+                              (AHB System ENV)
+   =====================================================================
+  ||   (AHB Master Agent)                         (AHB Slave Agent)    ||
+  ||   -------------------     =============     -------------------   ||
+  ||  | ------   -------  |   |             |   |  -----   -------  |  ||
+  ||  ||Master| |Monitor| |   |    -----    |   | |Slave| |Monitor| |  ||
+  ||  | ------   -------  |~=====>| DUT |<=====~|  -----   -------  |  ||
+  ||  |  *Active Mode*    |   |    -----    |   |   *Active Mode*   |  ||
+  ||   \_________________/    |             |    \_________________/   ||
+  ||                          |             |                          ||
+   ============================             =============================
+
+In the remainder of this description, <design_dir> refers to the directory where
+the example was installed using script dw_vip_setup. The example source files
+would then exist at two locations:
+
+- "$DESIGNWARE_HOME/vip/svt/amba_svt/latest/examples/sverilog/tb_ahb_svt_uvm_basic_sys"
+- "<design_dir>/examples/sverilog/amba_svt/tb_ahb_svt_uvm_basic_sys"
+
+Complete class reference HTML documentation of AHB SVT UVM Verification 
+IP is available at:
+  
+$DESIGNWARE_HOME/vip/svt/amba_svt/latest/doc/ahb_svt_uvm_class_reference/html/index.html
+
+------------------------------------------------------------------------
+B. Running the Example Testbench
+------------------------------------------------------------------------
+
+1. Install the example using the following command line:
+
+   % cd <location where example is to be installed>
+   % mkdir design_dir <provide any name of your choice>
+   % $DESIGNWARE_HOME/bin/dw_vip_setup -path ./design_dir  -e amba_svt/tb_ahb_svt_uvm_basic_sys -svtb
+
+2. Use either one of the following to run the testbench:
+
+   a) Use the Makefile:
+
+      Three tests are provided in the "tests" directory.
+      The tests are: 
+      1. ts.base_test.sv 
+      2. ts.directed_test.sv 
+      3. ts.random_wr_rd_test.sv 
+      4. ts.amba_pv_test.sv
+      5. ts.override_test.sv
+
+      For example, to run test ts.directed_test.sv, do following:
+      
+      gmake USE_SIMULATOR=vcsvlog directed_test WAVES=1
+
+      Invoke "gmake help" to show more options.
+   
+   b) Use the sim script:
+
+     For example, to run test ts.random_wr_rd_test.sv, do following:
+
+     ./run_ahb_svt_uvm_basic_sys -w random_wr_rd_test vcsvlog
+
+      Invoke "./run_ahb_svt_uvm_basic_sys -help" to show more options.
+
+
+-------------------------------------------------------------------------
+C. Files in the Example
+-------------------------------------------------------------------------
+
+The following lists all the code files in this example.
+
+<top_directory>
+      |
+      |
+      |-> hdl_interconnect
+      |     -> ahb_dut.v
+      |     -> ahb_dut_sv_wrapper.sv
+      |-> top.sv
+      |-> env
+      |     -> ahb_basic_env.sv
+      |     -> ahb_reset_if.svi
+      |     -> ahb_virtual_sequencer.sv
+      |     -> cust_svt_ahb_system_configuration.sv
+      |     -> cust_svt_ahb_master_transaction.sv
+      |     -> cust_svt_ahb_slave_transaction.sv
+      |     -> ahb_master_random_discrete_sequence.sv
+      |     -> ahb_master_directed_sequence.sv
+      |     -> ahb_master_wr_rd_sequence.sv
+      |     -> ahb_slave_mem_response_sequence.sv
+      |     -> ahb_slave_random_response_sequence.sv
+      |     -> ahb_master_random_discrete_virtual_sequence.sv
+      |     -> ahb_null_virtual_sequence.sv
+      |     -> ahb_simple_reset_sequence.sv
+      |     -> amba_pv_master.sv
+      |     -> amba_pv_slave.sv
+      |     -> ahb_base_test.sv
+      |-> tests
+      |     -> ts.base_test.sv
+      |     -> ts.directed_test.sv
+      |     -> ts.random_wr_rd_test.sv
+      |     -> ts.amba_pv_test.sv
+      |     -> ts.override_test.sv
+      |-> top.sv
+      |-> top_test.sv
+      |-> sim_build_options
+      |-> sim_run_options
+      |-> waves.tcl
+      |-> waves.rc
+      |-> README 
+ 
+The AHB VIP interface definition file is located at:
+ 
+ Top level interface   : $DESIGNWARE_HOME/vip/svt/amba_svt/latest/sverilog/include/svt_ahb_if.svi
+ Master Port interface : $DESIGNWARE_HOME/vip/svt/amba_svt/latest/sverilog/include/svt_ahb_master_if.svi
+ Slave Port interface  : $DESIGNWARE_HOME/vip/svt/amba_svt/latest/sverilog/include/svt_ahb_slave_if.svi
+ 
+When you run dw_vip_setup (above), the interfaces file will be installed at:
+
+  ./design_dir/include/sverilog/svt_ahb_if.svi
+  ./design_dir/include/sverilog/svt_ahb_master_if.svi
+  ./design_dir/include/sverilog/svt_ahb_slave_if.svi
+
+-------------------------------------------------------------------------
+D. SystemVerilog Testbench Description
+-------------------------------------------------------------------------
+
+The  top-level testbench is written in SystemVerilog. The AHB interfaces are
+represented as instances of 'interface' objects. The DUT is represented as a
+module with 'interface' connections as its ports. The UVM verification
+environment is designed as a class that extends uvm_env named
+ahb_basic_env. All tests extend uvm_test.
+
+The file containing the top-level testbench in the example is "top.sv".
+SystemVerilog interfaces are instantiated in this module and are passed
+into the UVM environment using calls to uvm_config_db::set().  In addition
+to the VIP interfaces, an additional interface named ahb_reset_if is
+instantiated in this module and passed into the UVM environment.  This
+reset interface provides the access needed to create reset sequences to
+drive the reset pin.
+
+All test files are included in the top_test.sv file.
+
+The DUT used in the example is defined as a Verilog module within a SystemVerilog
+wrapper. The intent is to demonstrate how a legacy core may be integrated into a
+SystemVerilog testbench. The example DUT has one AHB System level interface
+instantiated.  System interface has two AHB protocol interface connections: AHB
+Slave interface and AHB Master interface. The behavior of the example DUT is to
+simply connect the inputs of one interface, to the outputs of the other. As a
+result, it requires two AHB (Master & Slave) interfaces to be configured
+identically. Two types of connections are showed in this example:
+1) Implicit connection: All the signals that are common to all masters/slaves
+                        are connected to '_bus' suffixed signals of system level
+                        interface instance ahb_if.
+2) Explicit connection: All the signal are connected explicitly.
+                        SVT_AHB_DISABLE_IMPLICIT_BUS_CONNECTION compile time macro 
+                        need to be defined to use Explicit connection.
+By default explicit connections are enabled as SVT_AHB_DISABLE_IMPLICIT_BUS_CONNECTION
+compile time macro is defined in *_build_options. User needs to remove the 
+SVT_AHB_DISABLE_IMPLICIT_BUS_CONNECTION macro from the *_build_options file if user
+want to use implicit connections.
+
+The SystemVerilog wrapper for the DUT defines a module that takes 'interface'
+references as its port connections. The DUT SystemVerilog wrapper instantiates
+the Verilog DUT module, and connects the wires from the interfaces to the
+wire-level ports of the Verilog DUT module.
+
+The example DUT is found in the file ahb_dut.v. The SystemVerilog DUT wrapper is
+found in the file ahb_dut_sv_wrapper.sv.
+
+The structural elements of the UVM test environment are encapsulated in
+ahb_basic_env.sv, which is instantiated in the the base test.  The tests
+get included by top.sv by including top_test.sv.
+
+-------------------------------------------------------------------------
+E. DVE Configuration File
+-------------------------------------------------------------------------
+
+The VCS simulator includes a GUI for debugging, and waveform viewing.  This GUI
+is named DVE (Discovery Visual Environment). To support the ability to quickly
+see the results of running the example, the example supplies a configuration
+file for DVE. The file is:
+
+"<design_dir>/examples/sverilog/amba_svt/tb_ahb_svt_uvm_basic_sys/waves.tcl"
+
+Using "WAVES=1" with  Makefile invocation, or the -w switch for the sim run
+script run_ahb_svt_uvm_basic_sys causes the SystemVerilog example testbench to
+produce a variable 'dump' file named "verilog.dump". The DVE configuration file
+loads this dump file, and sets up the waveform display.  The waveform display
+groups the signals by AHB channels.
+
+-------------------------------------------------------------------------
+F. UVM Verification Environment Description
+-------------------------------------------------------------------------
+
+A complete description of the UVM environment (ENV) is beyond the scope of
+this README. Please refer to the UVM manual for details of a UVM environment.
+
+Following is a summary of the files used by the ENV:
+
+  - ahb_basic_env.sv
+    This file serves as environment class.  The top-level environment is
+    implemented by extending uvm_env base class.  This class instantiates the
+    AHB System ENV component and a virtual sequencer.
+
+  - cust_svt_ahb_system_configuration.sv
+    This file extends System configuration (svt_ahb_system_configuration).
+    All the necessary configuration parameters are set up for the environment
+    in this class.
+
+  - cust_svt_ahb_master_transaction.sv
+    This file extends the master transaction (svt_ahb_master_transaction).
+    Customized constraints are defined by this class.
+
+  - ahb_simple_reset_sequence.sv
+    This file shows a virtual sequence that generates a simple sequence
+    to drive the reset pins.  This sequence is registered with the TB
+    virtual sequencer as the default sequence for the reset phase.
+
+  - ahb_master_random_discrete_virtual_sequence.sv
+    This file implements a virtual sequence executes an
+    ahb_master_random_discrete_sequence on every master.  This sequence is
+    registered with the AHB System ENV virtual sequencer as the default
+    sequence for the main phase.
+
+  - ahb_null_virtual_sequence.sv
+    This file implements a virtual sequence with an empty body method.  This
+    sequence can be used by extended tests to disable the default sequence.
+
+  - ahb_master_random_discrete_sequence.sv
+    This file shows a sequence (extending from svt_ahb_master_base_sequence)
+    that generates unconstrained random master transactions.  This is the
+    default sequence that set up by the base test.
+
+  - ahb_master_directed_sequence.sv
+    This file shows a sequence (extending from svt_ahb_master_base_sequence)
+    that generates a series of directed transactions.
+
+  - ahb_master_random_wr_rd_sequence.sv
+    This file shows a sequence (extending from svt_ahb_master_base_sequence)
+    that generates a random WRITE followed by a READ sequence.
+
+  - ahb_slave_mem_response_sequence.sv
+    This response sequence is used by the directed_test. This sequence enables
+    a memory type response from a slave.
+    
+  - ahb_slave_random_response_sequence.sv
+    This response sequence is used by the random_wr_rd_test. This sequence
+    generates a constrained random slave response.
+  
+  - cust_svt_ahb_slave_transaction.sv
+    This class extends the AHB VIP's svt_ahb_slave_transaction class.
+    It adds pre-defined distribution constraints for transaction weighting, and adds constraints on burst type
+    The transaction instance replaces the default slave sequencer's transaction object
+
+  - amba_pv_master.sv
+    Fake AMBA-PV master component that can be used to drive AMBA-PV-extended
+    Generic Payload TLM transactions to the AHB master agent.
+
+  - amba_pv_slave.sv
+    Fake AMBA-PV slave component that can be used to drive AMBA-PV-extended
+    Generic Payload TLM transactions to the AHB slave agent.
+
+  - ahb_base_test.sv
+     This file serves as the base class for the rest of the tests in this environment.
+     This test sets up the default behavior for the rest of the tests in this environment.
+
+--------------------------------------------------------------------------
+G. Contacting Customer Support
+--------------------------------------------------------------------------
+Please contact Synopsys Support Center or local CAE for support.

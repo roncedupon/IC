@@ -1,0 +1,1 @@
+pyinstaller --add-data "./gen_cases/template/*:template" --name=prog_tool --onefile ./main.py --distpath output && rm -r ./build && rm *.spec

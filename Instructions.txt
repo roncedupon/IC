@@ -1,0 +1,5 @@
+vcs -full64 router.v  -debug_accesss+all -top router
+./simv -gui &
+
+vcs -full64 router.v  Tb.sv -sverilog -timescale=1ns/1ps -debug_accesss+all -top  Tb
+

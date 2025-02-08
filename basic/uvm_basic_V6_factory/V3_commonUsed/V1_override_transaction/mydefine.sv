@@ -1,0 +1,6 @@
+`ifndef MYDEF
+`define MYDEF
+`define SVT_AHB_MAX_DATA_WIDTH 32
+`define SVT_AHB_MAX_NUM_MASTERS_0
+`define SVT_AHB_MAX_NUM_SLAVES_0
+`endif

@@ -1,0 +1,5 @@
+-I /home/dy/Softwares/Envs/uvm-1.2/src/comps/  -I /home/dy/Softwares/Envs/uvm-1.2/src/ -I  /home/dy/Softwares/Envs/uvm-1.2/src/macros/ -I  /home/dy/Softwares/Envs/uvm-1.2/src/base/ -I  /home/dy/Softwares/Envs/uvm-1.2/src/dap/ -I  /home/dy/Softwares/Envs/uvm-1.2/src/deprecated/ -I  /home/dy/Softwares/Envs/uvm-1.2/src/dpi/ -I  /home/dy/Softwares/Envs/uvm-1.2/src/reg/ -I /home/dy/Softwares/Envs/uvm-1.2/src/seq/ -I  /home/dy/Softwares/Envs/uvm-1.2/src/tlm1/ -I  /home/dy/Softwares/Envs/uvm-1.2/src/tlm2/
+
+
+
+--sv --lint-only --language 1800-2012 --Wall -y /home/dy/IC_Learning/IC/Test/floder2

@@ -1,0 +1,65 @@
+!.gitignore
+tmp
+Xilinx_Sim
+Export_Xilinx_Sim
+
+
+#VCS 编译忽略
+csrc/
+simv.daidir/
+simv
+ucli.key
+DVEfiles/
+inter.vpd
+Vertification_Learning/
+verdiLog
+*.fsdb
+*.vc_hdrs.h
+
+#
+*.log
+*.uvm
+*.old
+*.vpd
+novas.conf
+*.vcd
+waves/
+
+UVM_SZ/
+UVM_EXP/
+vc_hdrs.h
+
+# Book/
+*.fsdb.*
+stack.info.*
+vips/vip_installed
+*.run
+ahb_basic/
+Book/
+
+#vip
+*.vdb
+
+*.xml
+
+# coverage
+*.daidir
+glibc/
+*.hex
+*.bin
+*.txt
+# urgReport
+# !vip_amba_svt_O-2018.09.run
+simulation
+uvm-1.2
+
+novas.rc
+
+*.xlsx
+*.csv
+*.pyc
+/**/build/
+/**/simulation/
+
+/**/__pycache__/
+/**/output/

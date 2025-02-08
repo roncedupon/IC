@@ -1,0 +1,3 @@
+打算自己手动连接ahb_master_agent和ahb_slave_agent,
+使用官方例程中的sequence,
+初步研究这些vip的使用流程以及特性

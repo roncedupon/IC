@@ -1,0 +1,42 @@
+; Created by DVE @Synopsys
+; DVE version: J-2014.12_Full64
+; DVE build date: Nov 21 2014 20:56:01
+
+Revision Verdi3
+
+; Window Layout <x> <y> <width> <height> <signalwidth> <valuewidth>
+; 
+
+; File list:
+
+; file time scale:
+;fileTimeScale ###s|ms|us|ns
+
+; signal spacing:
+signalSpacing 5
+
+; windowTimeUnit is used for zoom, cursor & marker
+windowTimeUnit 1ps
+zoom 0 8300000
+
+; cursor, marker, user define markers
+cursor 249523
+
+
+; toolbar current search type
+curSTATUS ByChange
+
+addGroup "Clock and Reset"
+addSignal -h 15 /test_top/axi_if/master_if[0]/internal_aclk
+addSignal -h 15 /test_top/axi_if/master_if[0]/aresetn
+addGroup "Stream related signals"
+addSignal -h 15 /test_top/axi_if/master_if[0]/tvalid
+addSignal -h 15 /test_top/axi_if/master_if[0]/tlast
+addSignal -h 15 -UNSIGNED -HEX /test_top/axi_if/master_if[0]/tdata[47:0]
+addSignal -h 15 -UNSIGNED -HEX /test_top/axi_if/master_if[0]/tstrb[5:0]
+addSignal -h 15 -UNSIGNED -HEX /test_top/axi_if/master_if[0]/tkeep[5:0]
+addSignal -h 15 -UNSIGNED -HEX /test_top/axi_if/master_if[0]/tid[7:0]
+addSignal -h 15 -UNSIGNED -HEX /test_top/axi_if/master_if[0]/tdest[2:0]
+addSignal -h 15 -UNSIGNED -HEX /test_top/axi_if/master_if[0]/tuser[7:0]
+addSignal -h 15 /test_top/axi_if/master_if[0]/tready
+

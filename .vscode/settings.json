@@ -1,0 +1,37 @@
+{
+    "verilog.linting.linter": "verilator",
+    "verilog.linting.verilator.arguments": "--lint-only -Wall -I/home/dy/Softwares/Envs/uvm-1.1a/src -Iinclude /home/dy/Softwares/Envs/uvm-1.1a/src/uvm_pkg.sv -I$DESIGNWARE_HOME/vip/svt/amba_svt/latest/sverilog/include",
+    "verilog.linting.verilator.runAtFileLocation": true,
+    "files.associations": {
+        "*.tcc": "cpp",
+        "deque": "cpp",
+        "string": "cpp",
+        "vector": "cpp",
+        "system_error": "cpp",
+        "array": "cpp",
+        "iostream": "cpp"
+    },
+    "files.watcherExclude": {
+        "**/target": true
+    },
+    // "files.watcherExclude": {
+    //     "**/target": true
+    // }
+} // {
+//     "files.watcherExclude": {
+//         "**/target": true
+//     },
+//     // "verilog.linting.iverilog.arguments": "-I /home/dy/Softwares/Envs/uvm-1.2/src",
+//     // "verilog.linting.verilator.arguments": "--lint-only -Wall -I/home/dy/Softwares/Envs/uvm-1.1a/src",
+//     "verilog.linting.verilator.runAtFileLocation": true,
+//     // "systemverilog.launchConfigurationVerilator": "verilator",
+//     "systemverilog.includeIndexing": [
+//         "/home/dy/Softwares/Envs/uvm-1.1a/src/**/*.{sv,v,svh,vh}",
+//         "/home/dy/IC/Softmax/**/*.{sv,v,svh,vh}",
+//         "**/*.{sv,v,svh,vh}"
+//     ],
+//     "digital-ide.welcome.show": false,
+//     "verilog.linting.linter": "verilator",
+//     "verilog.linting.xvlog.arguments": "--lint-only -Wall -I/home/dy/Softwares/Envs/uvm-1.1a/src/",
+//     // "python.testing.cwd": "${fileDirname}",//debug时可以读取其他目录文件
+// }

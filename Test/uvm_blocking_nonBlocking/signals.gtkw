@@ -1,0 +1,33 @@
+[*]
+[*] GTKWave Analyzer v3.3.100 (w)1999-2019 BSI
+[*] Sun Apr 21 14:00:12 2024
+[*]
+[dumpfile] "D:\Test\uvm阻塞和非阻塞的区别\waves.vcd"
+[dumpfile_mtime] "Sun Apr 21 13:59:39 2024"
+[dumpfile_size] 36491
+[savefile] "D:\Test\uvm阻塞和非阻塞的区别\signals.gtkw"
+[timestart] 968430
+[size] 1646 1026
+[pos] -1 -1
+*-14.000000 1015000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[sst_width] 197
+[signals_width] 225
+[sst_expanded] 1
+[sst_vpaned_height] 303
+@28
+Tb.clk
+Tb.input_if.clk
+@22
+Tb.input_if.mData[63:0]
+Tb.mData_dly[63:0]
+@28
+Tb.input_if.mReady
+Tb.mReady_dly
+Tb.input_if.mValid
+@29
+Tb.mValid_dly
+@28
+Tb.input_if.rstn
+Tb.rstn
+[pattern_trace] 1
+[pattern_trace] 0

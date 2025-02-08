@@ -1,0 +1,8 @@
+"+incdir+$(CUR_PROJ_HOME) +incdir+$(VIP_HOME)/include/sverilog \
++incdir+$(VIP_HOME)/src/sverilog/vcs \
++incdir+$(CUR_PROJ_HOME)/hdl_interconnect/ \
++incdir+$(CUR_PROJ_HOME)/env/ +incdir+$(CUR_PROJ_HOME)/tests/ \
++define+SVT_AHB_MAX_DATA_WIDTH=32 +define+UVM_PACKER_MAX_BYTES=1500000 +define+UVM_DISABLE_AUTO_ITEM_RECORDING +define+SVT_AHB_DISABLE_IMPLICIT_BUS_CONNECTION -timescale=1ns/1ps "
+
+
+
