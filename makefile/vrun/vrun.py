@@ -5,7 +5,7 @@ import json
 import glob
 import re
 import argparse
-from VCSLogAnalyzer import VCSLogAnalyzer
+# from VCSLogAnalyzer import VCSLogAnalyzer
 class toolbox:
     def cfg_args(self):
         parser=argparse.ArgumentParser(description="toolbox")
@@ -19,7 +19,7 @@ class toolbox:
         parser.add_argument("-f",metavar="",help="filelist",default=None)
         
         parser.add_argument("-gen",action="store_true",help="generate uvm file flag",default=False)
-        parser.add_argument("-extra",metavar="",nargs="+",help="generate uvm_component",default=[])
+        parser.add_argument("-extra",metavar="",nargs="+",help="generate uvm_component,[component,object]",default=[])
         
         # parser.add_argument("-sim_opts",metavar="",help="filelist",default=False)
         args=parser.parse_args()
@@ -102,11 +102,11 @@ class toolbox:
         
     def compile_check(self):
         log_file_path = "./build/compile.log"
-        analyzer = VCSLogAnalyzer(log_file_path)
-        analyzer.extract_vcs_command()
-        analyzer.parse_vcs_command()
-        analyzer.parse_compile_log()
-        analyzer.generate_excel_report()
+        # analyzer = VCSLogAnalyzer(log_file_path)
+        # analyzer.extract_vcs_command()
+        # analyzer.parse_vcs_command()
+        # analyzer.parse_compile_log()
+        # analyzer.generate_excel_report()#现在先不生成这玩意
 
 #-------------------------------------------------------------------------------
     def mkdir(self,path):
