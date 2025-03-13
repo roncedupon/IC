@@ -5,7 +5,7 @@ import uvm_pkg::*;
 module top;
     initial begin
 
-        run_test("logic_base_test");
+        run_test();
     end
 
 endmodule

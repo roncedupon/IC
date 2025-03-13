@@ -13,6 +13,7 @@ class toolbox:
         parser.add_argument("-t",metavar="",help="uvm test_name for single run")
         parser.add_argument("-only_run",action="store_true",help="dont compile ,only run using existed build files",default=False)
         parser.add_argument("-only_compile",action="store_true",help="dont run,only compile",default=False)
+        parser.add_argument("-comp_opts",metavar="",type=str,default="")
         parser.add_argument("-simdir",metavar="",help="simulation dir",default="tb_top")
         parser.add_argument("-top",metavar="",help="top name",default=None)
         parser.add_argument("-uvm",action="store_true",help="UVM_FLAG",default=False)
@@ -81,7 +82,8 @@ class toolbox:
         
         make_extra_opt=f"CUR_PROJ_HOME={self.CUR_PROJ_HOME} "
         make_extra_opt+=f"FILE_NAME={self.CUR_PROJ_HOME}/{self.args.top} " if self.args.top is not None else "FILE_NAME= "
-        make_extra_opt+=f"FILE_LIST={self.CUR_PROJ_HOME}/filelist.f " if self.args.f else "FILE_LIST= "
+        make_extra_opt+=f"FILE_LIST={self.CUR_PROJ_HOME}/{self.args.f} " if self.args.f else "FILE_LIST= "
+
         
         make_extra_opt+=f"CUR_PROJ_HOME={self.CUR_PROJ_HOME} "
         COMPILE_HOME    =self.simdir+"/"+"build"
@@ -89,6 +91,7 @@ class toolbox:
         UVM_FLAG        =1 if self.args.uvm else 0
         make_extra_opt+=f"UVM_FLAG={UVM_FLAG} "
         make_extra_opt+=f"VCS_COMPILE_OPTIONS=\"{self.VCS_COMPILE_OPTIONS}\""
+        make_extra_opt+=self.args.comp_opts
 
         make_cmd=f"make -f {self.MAKEFILE_PATH} compile "+make_extra_opt
 

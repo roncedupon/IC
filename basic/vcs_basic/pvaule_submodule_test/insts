@@ -1,0 +1,1 @@
+vrun -top tb_top.sv -comp_opts="-pvalue+AsyncOn=0" -f file.f
