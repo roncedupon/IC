@@ -68,6 +68,7 @@ endif
 
 #VCS编译命令
 VCS_CMD=vcs $(FILE_NAME) -sverilog -full64 $(UVM_CMD) \
+-kdb \
 -CFLAGS -DVCS \
 -timescale=1ns/1ns \
 -Xrawtokens=debug_macros \

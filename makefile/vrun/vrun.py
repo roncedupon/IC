@@ -17,10 +17,13 @@ class toolbox:
         parser.add_argument("-simdir",metavar="",help="simulation dir",default="tb_top")
         parser.add_argument("-top",metavar="",help="top name",default=None)
         parser.add_argument("-uvm",action="store_true",help="UVM_FLAG",default=False)
+        parser.add_argument("-verdi",action="store_true",help="UVM_FLAG",default=False)
         parser.add_argument("-f",metavar="",help="filelist",default=None)
+        
         
         parser.add_argument("-gen",action="store_true",help="generate uvm file flag",default=False)
         parser.add_argument("-extra",metavar="",nargs="+",help="generate uvm_component,[component,object]",default=[])
+        
         
         # parser.add_argument("-sim_opts",metavar="",help="filelist",default=False)
         args=parser.parse_args()
@@ -41,6 +44,15 @@ class toolbox:
         self.MAKEFILE_PATH="$PROJ_HOME/makefile/vrun/makefile"
         self.VCS_COMPILE_OPTIONS=""
         self.env_init()
+    def launch_verdi(self):
+        font_cfg='-font "Courier 18"'
+        VERDI_HOME=self.simdir+"/verdi"
+        self.mkdir(VERDI_HOME)
+        os.chdir(VERDI_HOME)
+        VERDI_CMD=f" verdi {font_cfg} -ssf ../tb_top/ibex_simple_system.fsdb -top ibex_simple_system -dbdir ../tb_top/build/simv.daidir/"
+        print(VERDI_CMD)
+        os.system(VERDI_CMD)
+        exit()
     def get_parent_dir(self,path="./"):
         return os.path.dirname(path)
     def exist_file(self,file_dir,file_name):
@@ -195,6 +207,8 @@ class toolbox:
         for index,tc_dict in enumerate(json_dict["testcase_list"]):
             self.single_run(simdir,tc_dict)
     def vrun_main(self):
+        if self.args.verdi:
+            self.launch_verdi()
         if self.args.gen:
             
             if "component" in self.args.extra:
