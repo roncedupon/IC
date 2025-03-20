@@ -41,11 +41,11 @@ cov_gui:
 #-fsdb
 FSDB_FLAG=-fsdb
 FSDB_FLAG=1
-ifeq ($(FSDB_FLAG),1)
-	FSDB_CMD=-fsdb
-else
-	FSDB_CMD := 
-endif
+# ifeq ($(FSDB_FLAG),1)
+# 	FSDB_CMD=-fsdb
+# else
+# 	FSDB_CMD := 
+# endif
 
 
 #是否dump多维数组
@@ -58,7 +58,7 @@ endif
 #是否使用uvm
 UVM_FLAG=0
 ifeq ($(UVM_FLAG),1)
-	UVM_CMD :=$(UVM_HOME)/src/dpi/uvm_dpi.cc
+	UVM_CMD :=$(UVM_HOME)/src/dpi/uvm_dpi.cc +incdir+$(UVM_HOME)/src
 else
 	UVM_CMD := 
 endif
@@ -72,7 +72,6 @@ VCS_CMD=vcs $(FILE_NAME) -sverilog -full64 $(UVM_CMD) \
 -CFLAGS -DVCS \
 -timescale=1ns/1ns \
 -Xrawtokens=debug_macros \
-+incdir+$(UVM_HOME)/src\
 $(FSDB_CMD) \
 -l compile.log \
 -LDFLAGS -Wl,--no-as-needed \

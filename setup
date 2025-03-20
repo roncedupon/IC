@@ -1,9 +1,0 @@
-alias vrun="python $IC_HOME/makefile/vrun/vrun.py"
-alias setenv="old_dir=$(pwd) && cd /home/dy/IC && source setup && cd $old_dir"
-export PROJ_HOME=$IC_HOME
-
-#我自己的IC开发环境
-export IC_HOME=/home/dy/IC
-
-
-
