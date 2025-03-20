@@ -3,7 +3,7 @@
 #我自己的IC开发环境
 export SOFTWARE_INSTALLED_HOME=/mnt/disk_0/softwares
 export IC_HOME=/home/dy/IC
-source $IC_HOME/setup/
+source $IC_HOME/setup/synopsys2022.setup
 export VIP_HOME=$SOFTWARE_INSTALLED_HOME/vips/vip2018/amba_svt
 export DISPLAY=:10.0
 #riscv
@@ -66,6 +66,5 @@ unset VERILATOR_ROOT
 PATH=$PATH:$install_root/bin
 PATH=$PATH:$install_root/man
 PATH=$PATH:$install_root/share/pkgconfig
-#my source
-source ~/IC/setup
+
 #-------------------------------------------------------------------------------------------------
