@@ -1,0 +1,71 @@
+
+#-------------------------------------------------------------------------------------------------
+#我自己的IC开发环境
+export SOFTWARE_INSTALLED_HOME=/mnt/disk_0/softwares
+export IC_HOME=/home/dy/IC
+source $IC_HOME/setup/
+export VIP_HOME=$SOFTWARE_INSTALLED_HOME/vips/vip2018/amba_svt
+export DISPLAY=:10.0
+#riscv
+export RISCV=$SOFTWARE_INSTALLED_HOME/riscv/
+export RISCV_ALL_TOOLCHAIN=$RISCV/riscv_gcc
+export SPIKE_HOME=$RISCV/riscv_isa_sim/
+export PK_HOME=$RISCV/riscv_pk/
+
+
+PATH=$PATH:$SPIKE_HOME/bin
+# PATH=$PATH:$PK_HOME/riscv64-unknown-elf/bin
+export pk=$PK_HOME/riscv64-unknown-elf/bin/pk
+
+
+# 自定义 cd 命令，支持 "cd last"
+cd_func() {
+    # 保存当前目录到临时变量
+    local current_dir=$(pwd)
+    
+    if [ "$1" = "last" ]; then
+        # 如果执行 cd last，切换到上次记录的目录
+        if [ -n "$LAST_DIR" ]; then
+            builtin cd "$LAST_DIR" && ls
+            export LAST_DIR="$current_dir"
+        else
+            echo "No last directory to return to."
+        fi
+    else
+        # 如果是普通的 cd，先保存当前目录到 LAST_DIR
+        builtin cd "$@" && ll -h
+        export LAST_DIR="$current_dir"
+    fi
+}
+
+# 将 cd_func 替换为 cd 命令
+alias cd=cd_func
+
+# # 启用自动补全功能（保证正常使用 tab 自动补全）
+# complete -F _cd cd
+
+
+
+#my alias
+alias goto='fun() { cd $(dirname $1);}; fun'
+alias code_here='code . --reuse-window'
+#conda env
+export PATH=/home/dy/softwares/miniconda/bin/:$PATH
+
+#sbt
+
+export PATH=$SOFTWARE_INSTALLED_HOME/sbt/bin/:$PATH
+
+#java
+export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/bin/java
+export PATH=$JAVA_HOME/bin:$PATH
+
+#verilator
+export install_root=$SOFTWARE_INSTALLED_HOME/verilator/verilator_5.023/
+unset VERILATOR_ROOT
+PATH=$PATH:$install_root/bin
+PATH=$PATH:$install_root/man
+PATH=$PATH:$install_root/share/pkgconfig
+#my source
+source ~/IC/setup
+#-------------------------------------------------------------------------------------------------
