@@ -1,0 +1,8 @@
+线路图：先定义transcation，然后用sequence封装transaction，sequence里面带着一堆transaction
+接下来继续完成driver的驱动方式，driver从sequencer中获取transaction并对其进行解析并将数据通过vif打给dut
+
+实现driver后，接下来便可以实现monitor，使用monitor监视interface上的活动。
+
+monitor和driver完成后，接下来可以在agent中完成这些组件的例化以及连接
+
+进一步，实现scoreboard

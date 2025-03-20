@@ -1,0 +1,1 @@
++incdir+${CUR_PROJ_HOME}

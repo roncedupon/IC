@@ -1,0 +1,44 @@
+
+module dut1 (
+    input a,
+    output b
+);
+    assign b=a;
+endmodule
+
+module dut2 (
+    input a,
+    output reg b,
+    input clk
+);  
+    always @(posedge clk) begin
+        b<=a;
+    end
+    assign a=b;
+endmodule
+
+module pvalue_submodule_test#(parameter bit AsyncOn = 1);
+    reg clk;
+    // -pvalue+AsyncOn=0
+    if (AsyncOn) begin
+        dut1 dut1_inst(
+            .a(1'b1),
+            .b()
+        );
+    end else begin
+        dut2 dut2_inst(
+            .a(1'b1),
+            .b(),
+            .clk(clk)
+        );
+    end
+    initial begin
+        clk=0;
+        #1000;
+        $display("finish with %d",AsyncOn);
+        $finish();
+        
+
+    end
+    always #5 clk=~clk;
+endmodule

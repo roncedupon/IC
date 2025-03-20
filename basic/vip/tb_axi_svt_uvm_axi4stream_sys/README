@@ -1,0 +1,282 @@
+//=======================================================================
+// COPYRIGHT (C) 2010, 2011, 2012, 2013 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+**************************************************************************
+Basic UVM Testbench Example for AXI4 STREAM VIP
+*************************************************************************
+
+CONTENTS:
+A. Introduction
+B. Running the Example Testbench
+C. Files in the Example
+D. SystemVerilog Testbench Description
+E. DVE Configuration File
+F. UVM Verification Environment 
+G. How to Contact Support
+
+-------------------------------------------------------------------------
+A. Introduction
+-------------------------------------------------------------------------
+
+This example shows how to implement a basic functioning UVM testbench using AXI4 STREAM
+Verification IP. 
+    
+The example consists of the following:
+
+- A top-level testbench in SystemVerilog
+- A dummy DUT in the testbench, which has 2 AXI interfaces
+- UVM verification environment
+- AXI System agent instantiated in the UVM verification environment
+- Four test files illustrating 
+  i.   A base test that performs common functions for all tests
+  ii. Random transaction generation
+  iii.  Load From Config Creator to configure the VIP test
+
+The UVM AXI VIP transactors are connected in the following manner:
+
+                              (AXI System ENV)
+   =====================================================================
+  ||   (AXI Master Agent)                         (AXI Slave Agent)    ||
+  ||   -------------------     =============     -------------------   ||
+  ||  | ------   -------  |   |             |   |  -----   -------  |  ||
+  ||  ||Master| |Monitor| |   |    -----    |   | |Slave| |Monitor| |  ||
+  ||  | ------   -------  |~=====>| DUT |<=====~|  -----   -------  |  ||
+  ||  |  *Active Mode*    |   |    -----    |   |   *Active Mode*   |  ||
+  ||   \_________________/    |             |    \_________________/   ||
+  ||                          |             |                          ||
+   ============================             =============================
+
+In the remainder of this description, <design_dir> refers to the directory where
+the example was installed using script dw_vip_setup. The example source files
+would then exist at two locations:
+
+- "$DESIGNWARE_HOME/vip/svt/amba_svt/latest/examples/sverilog/tb_axi_svt_uvm_axi4stream_sys"
+- "<design_dir>/examples/sverilog/amba_svt/tb_axi_svt_uvm_axi4stream_sys"
+
+Unless otherwise noted, the
+files described below are also found in <design_dir>.
+
+Complete class reference HTML documentation of AXI SVT UVM Verification 
+IP is available at:
+  
+$DESIGNWARE_HOME/vip/svt/amba_svt/latest/doc/axi_svt_uvm_class_reference/html/index.html
+
+------------------------------------------------------------------------
+B. Running the Example Testbench
+------------------------------------------------------------------------
+
+1. Install the example using the following command line:
+
+   % cd <location where example is to be installed>
+   % mkdir design_dir <provide any name of your choice>
+   % $DESIGNWARE_HOME/bin/dw_vip_setup -path ./design_dir  -e amba_svt/tb_axi_svt_uvm_axi4stream_sys -svtb
+
+2. Use either one of the following to run the testbench:
+
+   a) Use the Makefile:
+
+      Four tests are provided in the "tests" directory.
+      The tests are: 
+      1. ts.base_test.sv 
+      3. ts.random_test.sv 
+      4. ts.config_creator_test.sv 
+      4. ts.zero_delay_random_test.sv
+
+      For example, to run test ts.random_test.sv, do following:
+      
+      gmake USE_SIMULATOR=vcsvlog random_test WAVES=1
+
+      Invoke "gmake help" to show more options.
+   
+   b) Use the sim script:
+
+     For example, to run test ts.random_test.sv, do following:
+
+     ./run_axi_svt_uvm_axi4stream_sys -w random_test vcsvlog
+
+      Invoke "./run_axi_svt_uvm_axi4stream_sys -help" to show more options.
+
+
+-------------------------------------------------------------------------
+C. Files in the Example
+-------------------------------------------------------------------------
+
+The following lists all the code files in this example.
+
+<top_directory>
+      |
+      |
+      |-> hdl_interconnect
+      |     -> axi_dut.v
+      |     -> axi_dut_sv_wrapper.sv
+      |-> top.sv
+      |-> env
+      |     -> axi_basic_env.sv
+      |     -> axi_reset_if.svi
+      |     -> axi_virtual_sequencer.sv
+      |     -> cust_svt_axi_system_configuration.sv
+      |     -> cust_svt_axi_master_transaction.sv
+      |     -> axi_master_random_discrete_sequence.sv
+      |     -> axi_master_random_sequence.sv
+      |     -> axi_slave_mem_response_sequence.sv
+      |     -> axi_slave_random_response_sequence.sv
+      |     -> axi_master_random_discrete_virtual_sequence.sv
+      |     -> axi_null_virtual_sequence.sv
+      |     -> axi_simple_reset_sequence.sv
+      |-> tests
+      |     -> ts.base_test.sv
+      |     -> ts.random_test.sv
+      |     -> ts.config_creator_test.sv
+      |     -> ts.zero_delay_random_test.sv
+      |-> top_test.sv
+      |-> sim_build_options
+      |-> sim_run_options
+      |-> waves.tcl
+      |-> waves.rc
+      |-> README 
+ 
+The AXI VIP interface definition file is located at:
+ 
+ Top level interface   : $DESIGNWARE_HOME/vip/svt/amba_svt/latest/sverilog/include/svt_axi_if.svi
+ Master Port interface : $DESIGNWARE_HOME/vip/svt/amba_svt/latest/sverilog/include/svt_axi_master_if.svi
+ Slave Port interface  : $DESIGNWARE_HOME/vip/svt/amba_svt/latest/sverilog/include/svt_axi_slave_if.svi
+ 
+When you run dw_vip_setup (above), the interfaces file will be installed at:
+
+  ./design_dir/include/sverilog/svt_axi_if.svi
+  ./design_dir/include/sverilog/svt_axi_master_if.svi
+  ./design_dir/include/sverilog/svt_axi_slave_if.svi
+
+-------------------------------------------------------------------------
+E. SystemVerilog Testbench Description
+-------------------------------------------------------------------------
+
+The  top-level testbench is written in SystemVerilog. The AXI interfaces are
+represented as instances of 'interface' objects. The DUT is represented as a
+module with 'interface' connections as its ports. The UVM verification
+environment is designed as a class that extends uvm_env named
+axi_basic_env. All tests extend uvm_test.
+
+The file containing the top-level testbench in the example is "top.sv".
+SystemVerilog interfaces are instantiated in this module and are passed
+into the UVM environment using calls to uvm_config_db::set().  In addition
+to the VIP interfaces, an additional interface named axi_reset_if is
+instantiated in this module and passed into the UVM environment.  This
+reset interface provides the access needed to create reset sequences to
+drive the reset pin.
+
+All test files are included in the top_test.sv file.
+
+The DUT used in the example is defined as a Verilog module within a SystemVerilog
+wrapper. The intent is to demonstrate how a legacy core may be integrated into a
+SystemVerilog testbench. The example DUT has one AXI System level interface
+instantiated.  System interface has two AXI protocol interface connections: AXI
+Slave interface and AXI Master interface. The behavior of the example DUT is to
+simply connect the inputs of one interface, to the outputs of the other. As a
+result, it requires two AXI (Master & Slave) interfaces to be configured
+identically. 
+
+The SystemVerilog wrapper for the DUT defines a module that takes 'interface'
+references as its port connections. The DUT SystemVerilog wrapper instantiates
+the Verilog DUT module, and connects the wires from the interfaces to the
+wire-level ports of the Verilog DUT module.
+
+The example DUT is found in the file axi_dut.v. The SystemVerilog DUT wrapper is
+found in the file axi_dut_sv_wrapper.sv.
+
+The structural elements of the UVM test environment are encapsulated in
+axi_basic_env.sv, which is instantiated in the the base test.  The tests
+get included by top.sv by including top_test.sv.
+
+-------------------------------------------------------------------------
+F. DVE Configuration File
+-------------------------------------------------------------------------
+
+The VCS simulator includes a GUI for debugging, and waveform viewing.  This GUI
+is named DVE (Discovery Visual Environment). To support the ability to quickly
+see the results of running the example, the example supplies a configuration
+file for DVE. The file is:
+
+"<design_dir>/examples/sverilog/amba_svt/tb_axi_svt_uvm_axi4stream_sys/waves.tcl"
+
+Using "WAVES=1" with  Makefile invocation, or the -w switch for the sim run
+script run_axi_svt_uvm_axi4stream_sys causes the SystemVerilog example testbench to
+produce a variable 'dump' file named "verilog.dump". The DVE configuration file
+loads this dump file, and sets up the waveform display.  The waveform display
+groups the signals by AXI channels.
+
+-------------------------------------------------------------------------
+G. UVM Verification Environment Description
+-------------------------------------------------------------------------
+
+A complete description of the UVM environment (ENV) is beyond the scope of
+this README. Please refer to the UVM manual for details of a UVM environment.
+
+Following is a summary of the files used by the ENV:
+
+  - axi_basic_env.sv
+    This file serves as environment class.  The top-level environment is
+    implemented by extending uvm_env base class.  This class instantiates the
+    AXI System ENV component and a virtual sequencer.
+
+  - cust_svt_axi_system_configuration.sv
+    This file extends System configuration (svt_axi_system_configuration).
+    All the necessary configuration parameters are set up for the environment
+    in this class.
+
+  - cust_svt_axi_master_transaction.sv
+    This file extends the master transaction (svt_axi_master_transaction).
+    Customized constraints are defined by this class.
+
+  - axi_simple_reset_sequence.sv
+    This file shows a virtual sequence that generates a simple sequence
+    to drive the reset pins.  This sequence is registered with the TB
+    virtual sequencer as the default sequence for the reset phase.
+
+  - axi_master_random_discrete_virtual_sequence.sv
+    This file implements a virtual sequence executes an
+    axi_master_random_discrete_sequence on every master.  This sequence is
+    registered with the AXI System ENV virtual sequencer as the default
+    sequence for the main phase.
+
+  - axi_null_virtual_sequence.sv
+    This file implements a virtual sequence with an empty body method.  This
+    sequence can be used by extended tests to disable the default sequence.
+
+  - axi_master_random_discrete_sequence.sv
+    This file shows a sequence (extending from svt_axi_master_base_sequence)
+    that generates unconstrained random master transactions.  This is the
+    default sequence that set up by the base test.
+
+  - axi_master_random_sequence.sv
+    This file shows a sequence (extending from svt_axi_master_base_sequence)
+    that generates a random AXI4 stream transactions.
+
+  - axi_master_zero_delay_sequence.sv
+    This file shows a sequence (extending from svt_axi_master_base_sequence)
+    that generates a random AXI4 stream transactions with continuous tvalid 
+    through out the stream burst.
+
+  - axi_slave_mem_response_sequence.sv
+    This response sequence is used by the base_test and random_test. This sequence 
+    enables a memory type response from a slave.
+    
+  - axi_slave_mem_zero_delay_sequence.sv
+    This response sequence is used by the zero_delay_random_test. This sequence enables
+    a memory type response from a slave. Also it sends tready with zero delay. 
+
+--------------------------------------------------------------------------
+H. Contacting Customer Support
+--------------------------------------------------------------------------
+Please contact Synopsys Support Center or local CAE for support.
