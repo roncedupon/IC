@@ -41,7 +41,7 @@ class toolbox:
         self.mkdir(self.simdir)
         self.JSON_TESTNAME_KEY="testname"
 
-        self.MAKEFILE_PATH="$PROJ_HOME/makefile/vrun/makefile"
+        self.MAKEFILE_PATH=os.path.dirname(__file__)+"/makefile"
         self.VCS_COMPILE_OPTIONS=""
         self.env_init()
     def launch_verdi(self):
