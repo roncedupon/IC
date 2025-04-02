@@ -10,7 +10,7 @@ class toolbox:
     def cfg_args(self):
         parser=argparse.ArgumentParser(description="toolbox")
         parser.add_argument("-j",metavar="",help="input json path")
-        parser.add_argument("-t",metavar="",help="uvm test_name for single run")
+        parser.add_argument("-t",metavar="",help="uvm test_name for single run",default=None)
         parser.add_argument("-only_run",action="store_true",help="dont compile ,only run using existed build files",default=False)
         parser.add_argument("-only_compile",action="store_true",help="dont run,only compile",default=False)
         parser.add_argument("-comp_opts",metavar="",type=str,default="")
@@ -49,7 +49,9 @@ class toolbox:
         VERDI_HOME=self.simdir+"/verdi"
         self.mkdir(VERDI_HOME)
         os.chdir(VERDI_HOME)
-        VERDI_CMD=f" verdi {font_cfg} -ssf ../tb_top/ibex_simple_system.fsdb -top ibex_simple_system -dbdir ../tb_top/build/simv.daidir/"
+        case_dir=self.args.top.split(".")[0] if self.args.top is not None else self.args.t
+        print("VERDI WORK HOME is ",VERDI_HOME)
+        VERDI_CMD=f" verdi {font_cfg} -ssf ../{case_dir}/waves.fsdb -top ibex_simple_system -dbdir ../{case_dir}/build/simv.daidir/"
         print(VERDI_CMD)
         os.system(VERDI_CMD)
         exit()
