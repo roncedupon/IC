@@ -40,3 +40,7 @@ def copy_and_rename_files(directory):
 # 示例使用
 directory_path ="./"
 copy_and_rename_files(directory_path)
+
+# %%
+import os
+print(os.path.basename("/mnt/disk_0/IC"))

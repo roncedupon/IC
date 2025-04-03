@@ -4,7 +4,7 @@
 export SOFTWARE_INSTALLED_HOME=/mnt/disk_0/softwares
 export IC_HOME=/home/dy/IC
 export VIP_HOME=$SOFTWARE_INSTALLED_HOME/vips/vip2018/amba_svt
-export DISPLAY=:10.0
+
 
 #====================================================
 Install_Home=$SOFTWARE_INSTALLED_HOME/synopsys2022

@@ -11,7 +11,7 @@ alias vrun="python $IC_HOME/makefile/vrun/vrun.py"
 
 source $IC_HOME/setup/synopsys2022.setup
 export VIP_HOME=$SOFTWARE_INSTALLED_HOME/vips/vip2018/amba_svt
-export DISPLAY=:10.0
+# export DISPLAY=:10.0
 #riscv
 export RISCV=$SOFTWARE_INSTALLED_HOME/riscv/
 export RISCV_ALL_TOOLCHAIN=$RISCV/riscv_gcc

@@ -36,3 +36,28 @@ data_flag=128>=2**(data_width-1)
 data_complet=data-data_flag*(2**data_width)
 print(data_flag)
 print(data_complet)
+#%%
+import numpy as np
+data=np.arange(0,10)
+print(data[[1,2,3,4]])
+print(data[1:8:2])
+print(list(range(0,9)))
+#%%
+import numpy as np
+
+data = np.arange(0, 20).reshape(10,2)
+
+result = data[1][:]
+result=data[1,:]
+print(result)
+#%%
+import numpy as np
+
+data = np.arange(20).reshape(10, 2)
+
+row_indices_to_select = [1, 3, 5, 7, 9]
+result = data[row_indices_to_select][[0,1]]  # Select these rows and all columns
+
+print("\nResult:\n", result)
+
+#%%
