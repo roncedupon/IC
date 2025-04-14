@@ -120,10 +120,13 @@ class toolbox:
         number_str = number_str.strip().lower()
         
         if re.fullmatch(r'0b[01]+', number_str):
+            print("Detect input format is bin")
             return "bin"
         elif re.fullmatch(r'0x[0-9a-f]+', number_str) or re.fullmatch(r'[0-9a-f]+', number_str):
+            print("Detect input format is hex")
             return "hex"
         elif re.fullmatch(r'\d+', number_str):
+            print("Detect input format is dec")
             return "dec"
         else:
             return "Unknown format (未知格式)"
@@ -143,9 +146,10 @@ class toolbox:
             bin_str = self.hex2bin(input_data)
         elif input_format.lower() == "bin":
             # Validate binary input
-            if not all(c in '01' for c in input_data):
+            bin_str = input_data.replace(' ', '').replace('0b', '')
+            if not all(c in '01' for c in bin_str):
                  raise ValueError(f"Invalid binary string provided for input_format='bin': {input_data}")
-            bin_str = input_data
+            # bin_str = input_data
         else:
             raise ValueError(f"Unsupported input_format: {input_format}. Use 'hex' or 'bin'.")        
         # Ensure input was not empty resulting in empty bin_str if lsb/msb require bits
@@ -181,13 +185,43 @@ class toolbox:
             if len(self.args.i)==2:
                 self.args.i.append(0)
             if len(self.args.i)==3:
-                self.args.i.append("hex")
-            if len(self.args.i)==4:
+                self.args.i.append("hex")#输出格式控制
+            if len(self.args.i)==4:#输入格式控制(自动推断)
                 self.args.i.append(self.detect_number_base(self.args.i[0]))
             print(self.args.i)
             print(self.binary_process(self.args.i[0],int(self.args.i[1]),int(self.args.i[2]),self.args.i[3],self.args.i[4]))
+            #toolbox -i [输入数据] [msb] [lsb] [bin/hex/dec] [bin/hex/dec]
+        elif "m1" in self.args.mode:
+            self.binary_file_process(self.args.i[0])
+    def binary_file_process(self,file_path):
+        #%%
+        with open(file_path,"rb")as f:
+            byte_data=f.read(8)
+            print(byte_data)
+            byte_stream=" ".join(format(byte,"08b")for byte in byte_data)
+            print(byte_stream)
 # 使用示例
 if __name__ == "__main__":
     toolbox_inst=toolbox()
     toolbox_inst.main()
     pass
+
+# #%%
+# [A,B,C]=[1,2,3]
+# print(format(0x12,"08b"))
+# data=[1234,5678,12324]
+# data_bytes=b''.join([item.to_bytes(4,byteorder="little") for item in data])
+# print(data_bytes)
+# with open("test.bin","wb")as f:
+#     f.write(data_bytes)
+# #%%
+# a=[1,2,3]
+# a.append([3,4,5])
+# print(a)
+
+# for index,item in enumerate(a):
+#     print(index,item)
+
+#%%
+A="00011"
+print(int(A,base=2))

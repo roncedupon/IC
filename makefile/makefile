@@ -39,13 +39,13 @@ cov_gui:
 
 
 #-fsdb
-FSDB_FLAG=-fsdb
-FSDB_FLAG=1
-ifeq ($(FSDB_FLAG),1)
-	FSDB_CMD=-fsdb
-else
-	FSDB_CMD := 
-endif
+FSDB_FLAG=-debug_access
+# FSDB_FLAG=1
+# ifeq ($(FSDB_FLAG),1)
+# 	FSDB_CMD=-fsdb
+# else
+# 	FSDB_CMD := 
+# endif
 
 
 #是否dump多维数组

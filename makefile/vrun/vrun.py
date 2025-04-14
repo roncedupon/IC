@@ -104,9 +104,10 @@ class toolbox:
         make_extra_opt+=f"COMPILE_HOME={COMPILE_HOME} "
         UVM_FLAG        =1 if self.args.uvm else 0
         make_extra_opt+=f"UVM_FLAG={UVM_FLAG} "
-        make_extra_opt+=f"VCS_COMPILE_OPTIONS=\"{self.VCS_COMPILE_OPTIONS}\""
-        make_extra_opt+=self.args.comp_opts
-
+        make_extra_opt+=f"VCS_COMPILE_OPTIONS=\"{self.VCS_COMPILE_OPTIONS} {self.args.comp_opts}\""
+        
+        print(make_extra_opt)
+        
         make_cmd=f"make -f {self.MAKEFILE_PATH} compile "+make_extra_opt
 
 

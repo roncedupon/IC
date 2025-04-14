@@ -44,4 +44,4 @@ class <CLASS_NAME> extends uvm_driver #(configuration_object); // Replace config
 
 endclass
 
-`endif GURD_<CLASS_NAME>_SV
+`endif 

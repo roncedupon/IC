@@ -1,4 +1,4 @@
-#MAKE_FILE_MAIN_PATH=/home/dy/IC/makefile#全局makefile的主路径
+MAKE_FILE_MAIN_PATH=/home/dy/IC/makefile#全局makefile的主路径
 PROJECT_HOME=$(shell pwd)#获取当前项目路径，相当于./
 CREATE_FILELIST_FLAG=1#是否要创建filelist.f,有时候需要手动修改filelist.f的文件，就不让他自动创建filelist了
 FILE_NAME=V2_run_order_of_multiply_nodes.sv

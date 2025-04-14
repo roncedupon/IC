@@ -9,4 +9,4 @@ class <CLASS_NAME> extends uvm_component;
     `uvm_object_utils(<CLASS_NAME>)
 endclass
 
-`endif GURD_<CLASS_NAME>_SV
+`endif 

@@ -58,7 +58,7 @@ endif
 #是否使用uvm
 UVM_FLAG=0
 ifeq ($(UVM_FLAG),1)
-	UVM_CMD :=$(UVM_HOME)/src/dpi/uvm_dpi.cc +incdir+$(UVM_HOME)/src
+	UVM_CMD :=$(UVM_HOME)/src/uvm_pkg.sv $(UVM_HOME)/src/dpi/uvm_dpi.cc +incdir+$(UVM_HOME)/src
 else
 	UVM_CMD := 
 endif
