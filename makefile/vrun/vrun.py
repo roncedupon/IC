@@ -10,8 +10,10 @@ class toolbox:
     def cfg_args(self):
         parser=argparse.ArgumentParser(description="toolbox")
         parser.add_argument("-j",metavar="",help="input json path")
+        
         parser.add_argument("-t",metavar="",help="uvm test_name for single run",default=None)
         parser.add_argument("-only_run",action="store_true",help="dont compile ,only run using existed build files",default=False)
+        parser.add_argument("-c",action="store_true",help="this is a c file,need to use gcc compiler",default=False)
         parser.add_argument("-only_compile",action="store_true",help="dont run,only compile",default=False)
         parser.add_argument("-comp_opts",metavar="",type=str,default="")
         parser.add_argument("-simdir",metavar="",help="simulation dir",default="tb_top")
@@ -38,7 +40,7 @@ class toolbox:
         self.json_dict  =None
         self.CUR_PROJ_HOME  =os.getcwd()#current proj home
         self.simdir=self.CUR_PROJ_HOME+"/"+"simulation"+"/"+self.args.simdir if self.args.simdir else "simulation"+"/"+self.gettime()
-        self.mkdir(self.simdir)
+        
         self.JSON_TESTNAME_KEY="testname"
 
         self.MAKEFILE_PATH=os.path.dirname(__file__)+"/makefile"
@@ -210,6 +212,18 @@ class toolbox:
         for index,tc_dict in enumerate(json_dict["testcase_list"]):
             self.single_run(simdir,tc_dict)
     def vrun_main(self):
+        if self.args.c:
+            file_path   =os.path.abspath(self.args.t)
+            PROGRAM_NAME=self.args.t.split(".")[0]
+            output_dir  =os.path.dirname(file_path)+"/c_output"
+
+            self.mkdir(output_dir)
+            os.chdir(output_dir)
+            print(f"gcc {file_path} -o {PROGRAM_NAME} && ./{PROGRAM_NAME}")
+            os.system(f"gcc {file_path} -o {PROGRAM_NAME} && ./{PROGRAM_NAME}")
+            print(os.getcwd())
+            exit()
+        
         if self.args.verdi:
             self.launch_verdi()
         if self.args.gen:
@@ -227,7 +241,9 @@ class toolbox:
                     print("WARNING:NO OBJECT NAME PROVIDED!!!")
                     print(self.args.extra)
             exit()
+        self.mkdir(self.simdir)
         if not self.args.only_run:
+            self.simdir=self.CUR_PROJ_HOME+"/"+"simulation"+"/"+self.args.simdir if self.args.simdir else "simulation"+"/"+self.gettime()
             self.compile()
         if not self.args.only_compile:
             self.single_run()

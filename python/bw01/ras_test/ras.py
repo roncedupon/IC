@@ -10,15 +10,21 @@ class ras:
         for col_index,item in enumerate(parts):
             print((item/self.g).sum(axis=1))
             self.ras[:,col_index]=item.sum(axis=1)
-    def int8_quantize(self):
+    def int8_quantize(self,ras=None):
+        if ras==None:
+            ras=self.ras
+        scale=np.clip(np.abs(ras).max(axis=0)/127,1e-6,None)
+        scale=2**np.round(np.log2(scale))
         pass
 if __name__=="__main__":
     ras_inst=ras()
     ras_inst.calculate_ras(np.random.randint(0,256,(4096,4096)))
+    ras_inst.int8_quantize()
     exit()
     weight_matrix=np.arange(32*16).reshape(32,16)
     print(weight_matrix)
     print("="*10)
+    
     print(weight_matrix.reshape(-1,32,4,order="C"))
 
 #%%
