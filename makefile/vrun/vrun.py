@@ -17,9 +17,11 @@ class toolbox:
         parser.add_argument("-only_compile",action="store_true",help="dont run,only compile",default=False)
         parser.add_argument("-comp_opts",metavar="",type=str,default="")
         parser.add_argument("-simdir",metavar="",help="simulation dir",default="tb_top")
+        parser.add_argument("-seed",metavar="",help="simulation dir",default=123)
         parser.add_argument("-top",metavar="",help="top name",default=None)
         parser.add_argument("-uvm",action="store_true",help="UVM_FLAG",default=False)
         parser.add_argument("-verdi",action="store_true",help="UVM_FLAG",default=False)
+
         parser.add_argument("-f",metavar="",help="filelist",default=None)
         
         
@@ -167,7 +169,7 @@ class toolbox:
                 #case2
                 #...
         os.chdir(self.simdir)
-        extra_sim_opt=""
+        extra_sim_opt=f"+ntb_random_seed={self.args.seed}"#加入一个默认的seed参数
         case_dict=self.check_args(args,"case_dict",None)
         if case_dict is not None:
             case_name=case_dict[self.TESTNAME_KEY]
