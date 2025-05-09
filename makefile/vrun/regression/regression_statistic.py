@@ -61,9 +61,9 @@ class regression_statistic:
             if line.startswith('|'):
                 parts = line.strip().split('|')
                 if len(parts)>2:
-                    case_number = parts[0].strip()
-                    case_number = int(parts[0].strip())
-                    case_name = parts[1].split(']')[0].split('[')[-1].split('.')[0]
+                    # case_number = parts[0].strip()
+                    # case_number = int(parts[0].strip())
+                    case_name = "_".join((parts.split(".")[1].split("/")[-1]).split("_")[0:-2])#parts[1].split(']')[0].split('[')[-1].split('.')[0]
                     case_status = parts[2].strip().split('(')[0]
 
                     newcase_flag=True
@@ -80,7 +80,11 @@ class regression_statistic:
                     if 'blsel_instr_switch_test' in case_name and 'blsel_instr_switch_test' not in existing_fixed_cases:
                         data.append([88,'blsel_instr_switch_test',case_status])
                         existing_fixed_cases.add('blsel_instr_switch_test')
-        print("============new case detected===========",self.newcase)
+        if len(self.newcase)>0:
+            print("=================new case detected====================")
+            for index,case_name in enumerate(self.newcase):
+                print(case_name)
+            print("============above are all detected newcase ===========")
         for order,name in fixed_order.items():
             if name not in existing_fixed_cases:
                 data.append([order,name,None])
