@@ -14,11 +14,13 @@ def cfg_args():
 class regression_statistic:
     def __init__(self):
         self.args=cfg_args()
-        self.PASS_CHECKFAIL = "通路PASS,CHECK-FAIL"
+        self.STATUS_DICT    = {
+            "sim_failed":"通路PASS,CHECK-FAIL",
+            "sim_passed":"PASS",
+            "sim_timeout":"超时FAIL",
+            "running":"进行中"            
+        }
 
-        self.PASS = "PASS"
-        self.TIMEOUT = "超时FAIL"
-        self.RUNNING = "进行中"        
         self.fixed_order={}
         self.newcase=[]
         for i in range(len(instrlist)):
@@ -57,14 +59,14 @@ class regression_statistic:
         
         data = []
         existing_fixed_cases = set()
-        for index,line in enumerate(lines):
+        for index,line in enumerate(lines):#第一步检查已存在instrlist.py列表中的case
             if line.startswith('|'):
                 parts = line.strip().split('|')
                 if len(parts)>2:
                     # case_number = parts[0].strip()
                     # case_number = int(parts[0].strip())
-                    case_name = "_".join((parts.split(".")[1].split("/")[-1]).split("_")[0:-2])#parts[1].split(']')[0].split('[')[-1].split('.')[0]
-                    case_status = parts[2].strip().split('(')[0]
+                    case_name = "_".join((parts[1].split(".")[1].split("/")[-1]).split("_")[0:-2])#parts[1].split(']')[0].split('[')[-1].split('.')[0]
+                    case_status = self.STATUS_DICT[parts[2].strip().split('(')[0]]
 
                     newcase_flag=True
                     for order,name in fixed_order.items():
@@ -77,17 +79,23 @@ class regression_statistic:
                             break
                     if newcase_flag:
                         self.newcase.append(case_name)
-                    if 'blsel_instr_switch_test' in case_name and 'blsel_instr_switch_test' not in existing_fixed_cases:
-                        data.append([88,'blsel_instr_switch_test',case_status])
-                        existing_fixed_cases.add('blsel_instr_switch_test')
+                    # if 'blsel_instr_switch_test' in case_name and 'blsel_instr_switch_test' not in existing_fixed_cases:
+                    #     data.append([88,'blsel_instr_switch_test',case_status])
+                    #     existing_fixed_cases.add('blsel_instr_switch_test')
         if len(self.newcase)>0:
             print("=================new case detected====================")
-            for index,case_name in enumerate(self.newcase):
-                print(case_name)
+            for index, case_name in enumerate(self.newcase):
+                is_last = (index == len(self.newcase) - 1)
+                if is_last:
+                    # 最后一个，后面不加逗号
+                    print(f'"{case_name}"')
+                else:
+                    # 非最后一个，后面加逗号
+                    print(f'"{case_name}",')
             print("============above are all detected newcase ===========")
         for order,name in fixed_order.items():
             if name not in existing_fixed_cases:
-                data.append([order,name,None])
+                data.append([order,name,self.STATUS_DICT["running"]])
         data.sort(key=lambda x: x[0])
         for row in data:
             sheet.append(row)
