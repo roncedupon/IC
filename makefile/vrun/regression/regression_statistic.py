@@ -1,7 +1,11 @@
 import openpyxl
 import os
+import sys
 from instrlist import *
+sys.path.append("../")
+from toolbox import toolbox
 import argparse
+import re
 def cfg_args():
     parser = argparse.ArgumentParser(description="regression script!!!")
     parser.add_argument('-i',metavar='',help="input regression dat file")
@@ -11,9 +15,10 @@ def cfg_args():
 
     return args
 
-class regression_statistic:
+class regression_statistic(toolbox):
     def __init__(self):
         self.args=cfg_args()
+        
         self.STATUS_DICT    = {
             "sim_failed":"通路PASS,CHECK-FAIL",
             "sim_passed":"PASS",
@@ -99,10 +104,70 @@ class regression_statistic:
         data.sort(key=lambda x: x[0])
         for row in data:
             sheet.append(row)
-
+        self.regression_result=data
         wb.save('instr_output.xlsx')        
+
+
+    def estimate_display_width(self,s):
+        """估算中英文混合字符串在终端中的显示宽度"""
+        chinese_chars = re.findall(r'[\u4e00-\u9fff，。！【】、：《》“”]', s)
+        return len(s) + len(chinese_chars)  # 中文字符额外占1宽度（即总共2）
+
+    def pad_display(self,s, total_width):
+        """补足字符串显示宽度（近似）"""
+        current_width = self.estimate_display_width(s)
+        pad_spaces = total_width - current_width
+        return s + ' ' * max(0, pad_spaces)
+
+    def calculate_status_percentage(self,regression_result=None):
+        # 获取当前数据
+        if regression_result is None:
+            regression_result=self.regression_result
+        data = regression_result
+
+        # 计算状态统计
+        total_cases = len(data)
+        if total_cases == 0:
+            print("没有找到测试用例数据")
+            return
+        
+        status_counts = {
+            "PASS": 0,
+            "通路PASS,CHECK-FAIL": 0,
+            "超时FAIL": 0,
+            "进行中": 0
+        }
+        
+        for result in data:
+            for key in status_counts:
+                if result[-1] == key:
+                    status_counts[key] += 1
+        # 计算并打印百分比
+        max_status_len = max(self.estimate_display_width(k) for k in status_counts.keys())
+        print("\n" + self.colored("📊 测试状态统计:", style="bold"))
+        print(self.colored("="*(max_status_len + 18), color="blue"))
+        for status, count in status_counts.items():
+            percentage = (count / total_cases) * 100
+            status_str = self.pad_display(status, max_status_len)
+            count_str = f"{count:3d}"
+            percent_str = f"({percentage:4.2f}%)"            
+            if status=="PASS":
+                color="on_green"
+            elif status=="通路PASS,CHECK-FAIL":
+                color="on_yellow"
+            elif status=="超时FAIL":
+                color="on_red"
+            elif status=="进行中":
+                color="on_cyan"
+            print(f"{status_str} : "+self.colored(f"{count_str}个",on_color=color,style="bold")+f"{percent_str} ")
+        print(self.colored("="*(max_status_len + 20), color="blue"))
+        print(self.colored(f"总用例数: {total_cases}", style="bold"))
+
+        
+
 if __name__ == "__main__":
     regression_statistic_inst=regression_statistic()
     regression_statistic_inst.merge_regression_result()
     regression_statistic_inst.genxlsx()
+    regression_statistic_inst.calculate_status_percentage()
     ###read data
