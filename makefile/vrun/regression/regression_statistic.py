@@ -2,7 +2,9 @@ import openpyxl
 import os
 import sys
 from instrlist import *
-sys.path.append("../")
+THIS_FILE_PATH  =os.path.abspath(__file__)
+THIS_FILE_DIR   =os.path.dirname(THIS_FILE_PATH)
+sys.path.append(f"{THIS_FILE_DIR}/..")
 from toolbox import toolbox
 import argparse
 import re
@@ -106,18 +108,6 @@ class regression_statistic(toolbox):
             sheet.append(row)
         self.regression_result=data
         wb.save('instr_output.xlsx')        
-
-
-    def estimate_display_width(self,s):
-        """估算中英文混合字符串在终端中的显示宽度"""
-        chinese_chars = re.findall(r'[\u4e00-\u9fff，。！【】、：《》“”]', s)
-        return len(s) + len(chinese_chars)  # 中文字符额外占1宽度（即总共2）
-
-    def pad_display(self,s, total_width):
-        """补足字符串显示宽度（近似）"""
-        current_width = self.estimate_display_width(s)
-        pad_spaces = total_width - current_width
-        return s + ' ' * max(0, pad_spaces)
 
     def calculate_status_percentage(self,regression_result=None):
         # 获取当前数据

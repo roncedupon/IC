@@ -5,8 +5,10 @@ import json
 import glob
 import re
 import argparse
+
+from toolbox import toolbox
 # from VCSLogAnalyzer import VCSLogAnalyzer
-class toolbox:
+class vrun(toolbox):
     def cfg_args(self):
         parser=argparse.ArgumentParser(description="toolbox")
         parser.add_argument("-j",metavar="",help="input json path")
@@ -47,7 +49,7 @@ class toolbox:
 
         self.MAKEFILE_PATH=os.path.dirname(__file__)+"/makefile"
         self.VCS_COMPILE_OPTIONS=""
-        self.env_init()
+        
     def launch_verdi(self):
         font_cfg='-font "Courier 18"'
         VERDI_HOME=self.simdir+"/verdi"
@@ -183,7 +185,7 @@ class toolbox:
             if self.args.t  !=None:
                 self.mkdir(self.args.t)
                 os.chdir(self.args.t)
-                extra_sim_opt+=f"+UVM_TESTNAME={self.args.t}"
+                extra_sim_opt+=f" +UVM_TESTNAME={self.args.t}"
             else:
                 if self.args.top !=None:
                     self.mkdir(os.path.basename(self.args.top).split(".")[0])
@@ -214,7 +216,12 @@ class toolbox:
         for index,tc_dict in enumerate(json_dict["testcase_list"]):
             self.single_run(simdir,tc_dict)
     def vrun_main(self):
+        self.env_init()
         if self.args.c:
+            if self.args.top !="":
+                print(self.colored("USE -t TO RUN C","black","on_red"))
+                print(self.args.top)
+            
             file_path   =os.path.abspath(self.args.t)
             PROGRAM_NAME=self.args.t.split(".")[0]
             output_dir  =os.path.dirname(file_path)+"/c_output"
@@ -268,7 +275,7 @@ class toolbox:
         print(f"Modified code saved to {new_name}")
 if __name__ =="__main__":
     
-    toolbox_inst=toolbox()
+    toolbox_inst=vrun()
     # toolbox_inst.extract_json("tc_list.json")
     
     toolbox_inst.vrun_main()

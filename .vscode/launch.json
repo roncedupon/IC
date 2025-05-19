@@ -13,6 +13,15 @@
             "cwd": "${fileDirname}"
         },
         {
+            "name": "debug regression script",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${fileDirname}",
+            "args": ["-i","./regression_20250512"]
+        },
+        {
             "name": "Python 调试程序: 当前文件",
             "type": "debugpy",
             "request": "launch",

@@ -426,5 +426,8 @@ instrlist = [
     "nop_inference",
     "instr_currentread",
     "instr_inferread",
-    "multi_selfloop_autostop"    
+    "multi_selfloop_autostop",    
+    "abnormal_pll_lock",
+    "abnormal_register_access",
+    "abnormal_buf_access"    
 ]

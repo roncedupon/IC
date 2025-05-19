@@ -2,7 +2,7 @@ import numpy as np
 class ras:
     def __init__(self,weight_matrix):
         self.ras_col=16
-        self.array_row=4096
+        self.array_row=4132
         self.g=np.random.randint(1,3,(1,256))
         self.scale=None
         self.weight_matrix=weight_matrix
@@ -10,7 +10,7 @@ class ras:
         self.ST =np.zeros((1,16)).squeeze()
         
     def calculate_ras(self,weight_matrix=None):
-        if weight_matrix==None:
+        if weight_matrix is None:
             weight_matrix=self.weight_matrix
         parts = np.hsplit(weight_matrix, self.ras_col)#return a list with length=ras_col 
         for col_index,item in enumerate(parts):
@@ -20,7 +20,7 @@ class ras:
         print("\n===================================================")
         print("RAS ERROR IS \n",self.calculate_error(weight_matrix))
         print("===================================================\n")
-        return ras
+        return self.ras
             
     def int8_quantize(self,ras=None):
         if ras==None:
@@ -42,7 +42,7 @@ class ras:
 
 if __name__=="__main__":
     
-    weight_matrix=np.random.randint(0,256,(4096,4096))
+    weight_matrix=np.random.randint(0,256,(4132,4096))
     ras_inst=ras(weight_matrix)
 
     ras_inst.calculate_ras()

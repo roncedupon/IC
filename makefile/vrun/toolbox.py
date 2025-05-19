@@ -134,20 +134,36 @@ class toolbox:
         examples = ["0b1010", "0X1A3F", "12345", "0b102", "0XGHI", "abcdef", "1234A4"]
         for ex in examples:
             print(f"{ex}: {detect_number_base(ex)}")
-    def colored(self,text, color=None, on_color=None, style=None):
+
+    def estimate_display_width(self,s):
+        """估算中英文混合字符串在终端中的显示宽度"""
+        chinese_chars = re.findall(r'[\u4e00-\u9fff，。！【】、：《》“”]', s)
+        return len(s) + len(chinese_chars)  # 中文字符额外占1宽度（即总共2）
+
+    def pad_display(self,s, total_width):
+        """补足字符串显示宽度（近似）"""
+        current_width = self.estimate_display_width(s)
+        pad_spaces = total_width - current_width
+        return s + ' ' * max(0, pad_spaces)            
+    def colored(self,text, color="white", on_color="black", style=None):
         """
         为字符串 text 添加 ANSI 颜色／样式。
         
         参数：
             color      : 前景色，支持 (black, red, green, yellow, blue, magenta, cyan, white)
-            on_color   : 背景色，格式同 color，但前面加 “on_”，如 on_red, on_blue…
+            on_color   : 背景色，格式同 color
             style      : 文本样式，支持 (bold, dim, underline, reverse)
         返回：
             带 ANSI 转义码的字符串，打印时即带颜色／样式。
         """
         COLORS = {
-            'black':   30, 'red':     31, 'green':   32, 'yellow':  33,
-            'blue':    34, 'magenta': 35, 'cyan':    36, 'white':   37,
+            'black':   90, 'red':     91, 'green':   92, 'yellow':  93,
+            'blue':    94, 'magenta': 95, 'cyan':    96, 'white':   97,
+        }
+        
+        ON_COLORS = {
+            'black':   100, 'red':    101, 'green':  102, 'yellow': 103,
+            'blue':    104, 'magenta':105, 'cyan':   106, 'white':  107,
         }
         STYLES = {
             'bold':      1,
@@ -160,7 +176,7 @@ class toolbox:
             codes.append(str(STYLES[style]))
         if color in COLORS:
             codes.append(str(COLORS[color]))
-        if on_color and on_color.startswith('on_'):
+        if on_color:# and on_color.startswith('on_'):
             bg = on_color[3:]
             if bg in COLORS:
                 codes.append(str(COLORS[bg] + 10))
