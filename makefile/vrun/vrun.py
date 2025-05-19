@@ -33,7 +33,9 @@ class vrun(toolbox):
         
         # parser.add_argument("-sim_opts",metavar="",help="filelist",default=False)
         args=parser.parse_args()
-        
+        # if len(args.t)==1:
+        #     args.t=args.t[0]
+           
         return args
 #-------------------------------------------------------------------------------
     def __init__(self):
@@ -215,6 +217,7 @@ class vrun(toolbox):
             simdir=self.simdir
         for index,tc_dict in enumerate(json_dict["testcase_list"]):
             self.single_run(simdir,tc_dict)
+    
     def vrun_main(self):
         self.env_init()
         if self.args.c:
