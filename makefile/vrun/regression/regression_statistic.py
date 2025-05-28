@@ -67,6 +67,9 @@ class regression_statistic(toolbox):
         data = []
         existing_fixed_cases = set()
         for index,line in enumerate(lines):#第一步检查已存在instrlist.py列表中的case
+            if line=='|16        ./instr_configburst_test_59907/instr_configburst_test_59907.log                           |sim_passed        |post_passed        \n':
+                pass
+                print("hh")
             if line.startswith('|'):
                 parts = line.strip().split('|')
                 if len(parts)>2:
@@ -79,8 +82,10 @@ class regression_statistic(toolbox):
                     for order,name in fixed_order.items():
                         # case_name   =fixed_order[index]
                         # case_status =regression_statistic_inst.RUNNING
-                        if name in case_name and name not in existing_fixed_cases:
+                        if name == case_name and name not in existing_fixed_cases:
                             data.append([order,name,case_status])
+                            if name=="instr_configburst":
+                                print("hh")
                             existing_fixed_cases.add(name)
                             newcase_flag=False#这个case已在instrlist中存在,无需处理
                             break

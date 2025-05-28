@@ -1,0 +1,1235 @@
+{
+    "name"  : "logicss_subss",
+    "owner" : "zhenghu.tian",
+    "coverage" : "yes",
+    "description"   : "logicss_subss instr-regr",
+    "common_comp_opt" : "  +define+SINGLE_LAYER_VERIF +define+WITH_APB_AGENT+LOGIC_INSTR_TEST+LOGIC_REG_TEST+COMPLETE_RTL+INFER_TEST++WITH_LOGIC_DIE+WITH_FLASH_DIE+array_model_sim+WITH_ERROR_PRE_DELAY_TIME+DW_DISABLE_CLK_MONITOR+DW_SUPPRESS_WARN+GF28+GF12 ",
+    "common_simv_opt" : " ",
+
+    "testcase list" : [
+        {
+            "testname" : "instr_inference_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "instr_calibration_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "instr_program_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "instr_voltageread_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "instr_currentread_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "instr_inferread_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "instr_erase_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "instr_configimm_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "instr_configsingle_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "instr_configsingle_table_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "instr_configburst_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "instr_configburst_table_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "instr_readburst_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "instr_readburst_table_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "instr_writetiabuffer_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "instr_writecompbuffer_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "instr_bypass_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "instr_debugdac_test",
+            "timeout"  : "5ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "instr_dactest_test",
+            "timeout"  : "5ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "instr_adctest_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "instr_delay_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "nop_adctest_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "nop_bypass_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "nop_calibration_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "nop_configburst_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "nop_configimm_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "nop_configsingle_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "nop_currentread_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "nop_dactest_test",
+            "timeout"  : "5ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "nop_debugdac_test",
+            "timeout"  : "5ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "nop_delay_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "nop_erase_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "nop_inference_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "nop_inferread_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "nop_program_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "nop_readburst_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "nop_voltageread_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "nop_writecompbuffer_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "nop_writetiabuffer_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inference_barrier_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inference_bigdata_dyn_logicid_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inference_bigdata_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inference_boundary_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inference_cellsum_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inference_dscarrayctrl_freeze_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inference_dyn_logicid_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inference_dyn_recfg_tia_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inference_infermode1_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inference_infermode2_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inference_infermode_norm_switch_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inference_infermode_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inference_performance_bigdata_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inference_performance_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inference_recfg_tia_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inference_reuse_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inference_single_tia_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inference_trace_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inference_calibration_trace_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "erase_barrier_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "erase_boundary_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "erase_dscarrayctrl_freeze_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "program_barrier_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "program_blsel_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "program_boundary_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "program_dscarrayctrl_freeze_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "program_merge_timing_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "program_repeat_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "voltageread_barrier_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "voltageread_blsel_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "voltageread_boundary_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "voltageread_cellsum_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "voltageread_dscarrayctrl_freeze_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "voltageread_readtimes_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "voltageread_dyn_readtimes_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "currentread_barrier_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "currentread_blsel_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "currentread_boundary_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "currentread_cellsum_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "currentread_dscarrayctrl_freeze_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "currentread_readtimes_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "currentread_dyn_readtimes_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inferread_barrier_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inferread_blsel_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inferread_boundary_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inferread_cellsum_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inferread_dscarrayctrl_freeze_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inferread_readtimes_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inferread_dyn_readtimes_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "arraytimingctrl_dscarrayctrl_freeze_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "config_barrier_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "config_boundary_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "bypass_boundary_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "dactest_barrier_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "dactest_customize_length_bypasstia_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "dactest_customize_length_pad_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "dactest_customize_length_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "dactest_dscarrayctrl_freeze_test",
+            "timeout"  : "5ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "debugdac_apb_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "debugdac_barrier_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "adctest_barrier_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "adctest_dscarrayctrl_freeze_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "delay_boundary_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "multi_selfloop_autostop_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "selfloop_addtime_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "selfloop_infer_start_mode1_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "selfloop_infer_start_mode2_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "selfloop_infer_start_mode3_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "selfloop_infer_start_mode4_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "selfloop_infer_start_mode5_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "selfloop_infer_start_mode6_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "selfloop_infer_start_mode7_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "selfloop_infer_start_mode8_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "selfloop_infer_start_mode9_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "redundant_bias_infer_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "redundant_boundary_row_infer_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "redundant_col_infer_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "redundant_currentread_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "redundant_debugdac_apb_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "redundant_erase_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "redundant_inferread_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "redundant_program_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "redundant_row_infer_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "redundant_voltageread_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_blsel_in_read_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_erase_program_adctest_1table_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_erase_program_adctest_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_erase_program_currentread_1table_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_erase_program_currentread_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_erase_program_dactest_1table_test",
+            "timeout"  : "5ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_erase_program_dactest_test",
+            "timeout"  : "5ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_erase_program_debugdac_1table_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_erase_program_debugdac_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_erase_program_inference_1table_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_erase_program_inference_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_erase_program_inferread_1table_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_erase_program_inferread_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_erase_program_voltageread_1table_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_erase_program_voltageread_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_inference_bypass_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_inference_calibration_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_instr_switch_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_instr_switch_1table_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "abnormal_flash_die_error_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "abnormal_opcode_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "abnormal_pll_lock_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "buf_outstanding_comp_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "buf_outstanding_tia_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "buf_read_blsel_currentread_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "buf_read_blsel_inferread_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "buf_read_blsel_voltageread_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "buf_read_outstanding_comp_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "buf_read_outstanding_tia_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "buf_read_progdone_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        }
+    ]
+}

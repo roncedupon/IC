@@ -1,4 +1,4 @@
-
+export DISPLAY=:10
 #-------------------------------------------------------------------------------------------------
 #我自己的IC开发环境
 export SOFTWARE_INSTALLED_HOME=/mnt/disk_0/softwares
@@ -9,7 +9,7 @@ alias vrun="python $IC_HOME/makefile/vrun/vrun.py"
 #-------------------------------------------------------------------------------------------------
 
 
-# source $IC_HOME/setup/synopsys2022.setup
+source $IC_HOME/setup/synopsys2022.setup
 export VIP_HOME=$SOFTWARE_INSTALLED_HOME/vips/vip2018/amba_svt
 # export DISPLAY=:10.0
 #riscv

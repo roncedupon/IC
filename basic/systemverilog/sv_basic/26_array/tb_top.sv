@@ -1,51 +1,87 @@
-module inner_trunk();
+module tb_top();
     reg clk;
     initial begin
         clk=0;
         #10000;
+        $finish();
     end
     initial begin
         #1000;
         
     end
     initial begin
-        PATH_OF_ARRAY path_list=array_select(11,128);
-        $display("logic addr is %0d",rowAddr_mapper(9999));
+        tb_top.u_se.u_inner_trunk_ram_south.mem[0]='h12344;
+        $display("%p==========",tb_top.u_se.u_inner_trunk_ram_south.mem[0]);
+        $display("%p==========",`SE_ARRAY_INNER_TRUNK_S_PATH(0)[0]);
+        $fsdbDumpfile("waves.fsdb");
+        $fsdbDumpvars(0,$sformatf("%m"),"+mda");
+        #1000
+        $finish;
+    end        
+    initial begin
         $display("11//3 %d 11mod3 %d",11/3,11%3);
-        erase_array(123,0,0);
+        erase_array(1,0,0);
     end    
     always #5 clk=~clk;
-    spram_model u_ne(
-        .clka(clk), 
-        .ena(0),
-        .wea(0), 
-        .addra(0), 
-        .dina(0), 
-        .douta()
+    inner_trunk u_ne(
+        .clk(clk),
+        // south port
+        .en_south('h0),
+        .we_south('h0),
+        .addr_south('h0),
+        .din_south('h0),
+        .dout_south(),
+        // north port
+        .en_north('h0),
+        .we_north('h0),
+        .addr_north('h0),
+        .din_north('h0),
+        .dout_north()
     );
-    spram_model u_nw(
-        .clka(clk), 
-        .ena(0),
-        .wea(0), 
-        .addra(0), 
-        .dina(0), 
-        .douta()        
+    inner_trunk u_nw(
+        .clk(clk),
+        // south port
+        .en_south('h0),
+        .we_south('h0),
+        .addr_south('h0),
+        .din_south('h0),
+        .dout_south(),
+        // north port
+        .en_north('h0),
+        .we_north('h0),
+        .addr_north('h0),
+        .din_north('h0),
+        .dout_north()
     );
-    spram_model u_se(
-        .clka(clk), 
-        .ena(0),
-        .wea(0), 
-        .addra(0), 
-        .dina(0), 
-        .douta()        
+    inner_trunk u_se(
+        .clk(clk),
+        // south port
+        .en_south('h0),
+        .we_south('h0),
+        .addr_south('h0),
+        .din_south('h0),
+        .dout_south(),
+        // north port
+        .en_north('h0),
+        .we_north('h0),
+        .addr_north('h0),
+        .din_north('h0),
+        .dout_north()
     );
-    spram_model u_sw(
-        .clka(clk), 
-        .ena(0),
-        .wea(0), 
-        .addra(0), 
-        .dina(0), 
-        .douta()        
+    inner_trunk u_sw(
+        .clk(clk),
+        // south port
+        .en_south('h0),
+        .we_south('h0),
+        .addr_south('h0),
+        .din_south('h0),
+        .dout_south(),
+        // north port
+        .en_north('h0),
+        .we_north('h0),
+        .addr_north('h0),
+        .din_north('h0),
+        .dout_north()
     );
 
 endmodule

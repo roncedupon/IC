@@ -41,3 +41,9 @@ clean:
 	@echo "Cleaning up..."
 	@rm -f *.sv simv
 	@echo "Clean complete."
+
+# 当前 Makefile 所在路径
+MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+
+testmake:
+	@echo $(MAKEFILE_DIR)

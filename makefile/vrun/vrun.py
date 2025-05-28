@@ -61,7 +61,7 @@ class vrun(toolbox):
         print("VERDI WORK HOME is ",VERDI_HOME)
         VERDI_CMD=f" verdi {font_cfg} -ssf ../{case_dir}/waves.fsdb -top ibex_simple_system -dbdir ../{case_dir}/build/simv.daidir/"
         print(VERDI_CMD)
-        os.system(VERDI_CMD)
+        os.system(VERDI_CMD+" &")
         exit()
     def get_parent_dir(self,path="./"):
         return os.path.dirname(path)
@@ -260,8 +260,18 @@ class vrun(toolbox):
         if not self.args.only_compile:
             self.single_run()
 
-
-
+    def creat_test_from_seq(self):
+        #用指定的sequence批量创建test
+        pass
+    def fsdb_adder(self):
+        #used to insert fsdb dump operation
+        # fsdb_txt="initial begin"\
+        # +"$fsdbDumpfile("waves.fsdb");"\
+        # +"$fsdbDumpvars(0,$sformatf("%m"));"\
+        # +"#1000"\
+        # +"$finish;"\
+        # +"end"
+        pass
     def modify_uvm_code_in_file(self,input_file, new_name):
         # Read the original code from the input file
         with open(input_file, 'r') as file:
