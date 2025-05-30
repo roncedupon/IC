@@ -20,7 +20,8 @@ class regression_statistic(toolbox):
     def __init__(self):
         self.args = cfg_args()
 
-        self.json_dict=""
+        self.json_dict={}
+        self.testlist_all=[]
         self.STATUS_DICT = {
             "sim_failed": "Path PASS, CHECK-FAIL",
             "sim_passed": "PASS",
@@ -33,11 +34,24 @@ class regression_statistic(toolbox):
         for i in range(len(instrlist)):
             self.fixed_order[i] = instrlist[i]
         print(self.fixed_order)
-    def get_regression_list(self,json_list_path):
+    def get_regression_list(self,json_list_path):#1、create testlist_all #2、create json_dict by testname
         if os.path.isfile(json_list_path):
             with open(json_list_path,"r")as f:
                 json_str=f.read()
-            print(json.load(json_str))
+                self.testlist_all+=[list["testname"] for list in json.loads(json_str)["testcase list"]]
+        else:
+            for path in os.listdir(json_list_path):
+                ABS_PATH=os.path.join(os.path.abspath(json_list_path),path)
+                with open(ABS_PATH,"r")as f:
+                    json_str=f.read()
+                    self.testlist_all+=[list["testname"] for list in json.loads(json_str)["testcase list"]]
+        if len(self.testlist_all)!=len(set(self.testlist_all)):
+            seen=set()
+            for i in self.testlist_all:
+                if i in seen:
+                    print(self.colored(f"repeated case detected : {i}",style="bold",on_color="on_black",color="yellow"))
+                seen.add(i)
+
 
     def mkdir(self, path):
         if not os.path.exists(path):
@@ -71,9 +85,6 @@ class regression_statistic(toolbox):
         data = []
         existing_fixed_cases = set()
         for index, line in enumerate(lines):  # First, check existing cases in instrlist.py
-            if line == '|16        ./instr_configburst_test_59907/instr_configburst_test_59907.log                           |sim_passed        |post_passed        \n':
-                pass
-                print("hh")
             if line.startswith('|'):
                 parts = line.strip().split('|')
                 if len(parts) > 2:
@@ -84,8 +95,6 @@ class regression_statistic(toolbox):
                     for order, name in fixed_order.items():
                         if name == case_name and name not in existing_fixed_cases:
                             data.append([order, name, case_status])
-                            if name == "instr_configburst":
-                                print("hh")
                             existing_fixed_cases.add(name)
                             newcase_flag = False  # Case already exists, no need to process again
                             break
@@ -161,4 +170,5 @@ if __name__ == "__main__":
     regression_statistic_inst.merge_regression_result()
     regression_statistic_inst.genxlsx()
     regression_statistic_inst.calculate_status_percentage()
-    regression_statistic_inst.get_regression_list("/mnt/disk_0/IC/makefile/vrun/regression/regression_json/abnormal.json")
+    regression_statistic_inst.get_regression_list("/mnt/disk_0/IC/makefile/vrun/regression/regression_json")
+    print(regression_statistic_inst.testlist_all,len(regression_statistic_inst.testlist_all),len(set(regression_statistic_inst.testlist_all)))
