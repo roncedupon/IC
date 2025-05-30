@@ -1,0 +1,1 @@
+去看26_array，遇到了第一个语法上的过程性问题，很重要的automatic，一般用在function中，因为function每次被调用，其中内部的局部变量理论上是需要被修改的，这时automatic就起作用了。

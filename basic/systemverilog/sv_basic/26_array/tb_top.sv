@@ -21,6 +21,12 @@ module tb_top();
     initial begin
         $display("11//3 %d 11mod3 %d",11/3,11%3);
         erase_array(1,0,0);
+        #100;
+        erase_array(1,0,1);
+        #100;
+        erase_array(2,0,0);
+        #100;
+        erase_array(2,0,1);
     end    
     always #5 clk=~clk;
     inner_trunk u_ne(

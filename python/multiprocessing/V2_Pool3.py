@@ -13,7 +13,7 @@ def run_tasks_with_timeout():
     max_processes = 3
     tasks = [
         ("Task1", 2),  # 任务名称和睡眠时间
-        ("Task2", 6),
+        ("Task2", 6),#一定要注意这里的是元组，如果只有一个参数，那么应该写成("Task2",)，一定要注意后面的逗号
         ("Task3", 1),
         ("Task4", 8),
         ("Task5", 4),

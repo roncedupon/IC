@@ -30,15 +30,21 @@ endfunction
 // endfunction
 
 
-function void erase_array(int phy_row_addr,int ph,int ns,int l0_id=0);
+function automatic void erase_array(int phy_row_addr,int ph,int ns,int l0_id=0);// automatic is important
     PATH_OF_ARRAY path_list;
     string NS="N";
+    int NS_int=1;
     int row_addr;
     row_addr=rowAddr_mapper(phy_row_addr);
     $display("logic row_addr %0d |ph %0d |ns %0d |l0_id %0d",row_addr,ph,ns,l0_id);
+    $display("[DEBUG] NS = \"%s\"", NS);
+    $display("[DEBUG] NS = \"%d\"", NS_int);
     if (!ns) begin
         NS = "S";
+        NS_int=0;
     end    
+    $display("[DEBUG] NS = \"%s\"", NS);
+    $display("[DEBUG] NS = \"%d\"", NS_int);
     // assert(ns==ns_select(row_addr)) else $fatal($sformatf("[NS SELECT ERROR]phy row_addr=%0d dosen't match N/S select!!!",phy_row_addr));
     if (ph) begin
         $error("[Function Not Implemented] Erase operation for PH area is not implemented!!!!");

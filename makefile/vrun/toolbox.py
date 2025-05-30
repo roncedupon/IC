@@ -251,6 +251,7 @@ class toolbox:
             print(byte_data)
             byte_stream=" ".join(format(byte,"08b")for byte in byte_data)
             print(byte_stream)
+    
 # 使用示例
 if __name__ == "__main__":
     toolbox_inst=toolbox()

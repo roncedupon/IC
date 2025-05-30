@@ -14,8 +14,11 @@ GIT_REF := $(shell git describe --tags --exact-match 2>/dev/null || git rev-pars
 
 # 获取当前 commit ID 的前 8 位
 GIT_COMMIT := $(shell git rev-parse --short=8 HEAD)
-
+GIT_COMMIT_DATE := $(shell git show -s --format=%cd --date=format:'%Y%m%d_%H%M' HEAD)
 # 示例目标
-print_git_info:
+run:
 	@echo "Current Branch: $(GIT_BRANCH)"
 	@echo "Commit ID     : $(GIT_COMMIT)"
+	@echo "$(GIT_COMMIT_DATE)"
+
+
