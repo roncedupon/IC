@@ -4,7 +4,7 @@ import sys
 import json
 from instrlist import *
 THIS_FILE_PATH  = os.path.abspath(__file__)
-THIS_FILE_DIR   = os.path.dirname(THIS_FILE_PATH)
+THIS_FILE_DIR   = os.path.dirname(THIS_FILE_PATH)#dirname will return abs path
 sys.path.append(f"{THIS_FILE_DIR}/..")
 from toolbox import toolbox
 import argparse
@@ -22,18 +22,26 @@ class regression_statistic(toolbox):
 
         self.json_dict={}
         self.testlist_all=[]
+        self.USE_JSON_ORDER=True#用自定义的testlist顺序还是用json中的顺序
+        self.JSON_LIST_PATH="./regression_json"
+        self.REGRESSION_RESULT_DIR_PATTERN=r"regression_2025[0-9]+"
         self.STATUS_DICT = {
-            "sim_failed": "Path PASS, CHECK-FAIL",
+            "sim_failed": "通路PASS, CHECK-FAIL",
             "sim_passed": "PASS",
-            "sim_timeout": "Timeout FAIL",
-            "running": "Running"            
+            "sim_timeout": "超时FAIL",
+            "running": "进行中"            
         }
 
         self.fixed_order = {}
         self.newcase = []
-        for i in range(len(instrlist)):
-            self.fixed_order[i] = instrlist[i]
-        print(self.fixed_order)
+
+        # print(self.fixed_order)
+        if self.USE_JSON_ORDER:
+            for i in range(len(self.get_regression_list(self.JSON_LIST_PATH))):
+                self.fixed_order[i] = instrlist[i]
+        else:
+            for i in range(len(instrlist)):
+                self.fixed_order[i] = instrlist[i]            
     def get_regression_list(self,json_list_path):#1、create testlist_all #2、create json_dict by testname
         if os.path.isfile(json_list_path):
             with open(json_list_path,"r")as f:
@@ -51,12 +59,20 @@ class regression_statistic(toolbox):
                 if i in seen:
                     print(self.colored(f"repeated case detected : {i}",style="bold",on_color="on_black",color="yellow"))
                 seen.add(i)
-
+        return set(self.testlist_all)
 
     def mkdir(self, path):
         if not os.path.exists(path):
             os.makedirs(path)
-
+    def update_history_status(self,regression_status_path):
+        if regression_status_path is None:
+            regression_status_path=THIS_FILE_DIR
+        for dir in os.listdir(regression_status_path):
+            regex = re.compile(self.REGRESSION_RESULT_DIR_PATTERN)
+            if regex.search(dir):
+                print(dir)
+        #如果这个case昨天还在里面但是今天不在里面了，应该被认为是删除了或者改名了的case，这部分还需要额外处理一下
+        #如果使用的testlist.json比较旧，新增加的case需要自动补充到已知case列表中
     def merge_regression_result(self):
         regression_dat_filelist = []
         regression_dat = []
@@ -170,5 +186,6 @@ if __name__ == "__main__":
     regression_statistic_inst.merge_regression_result()
     regression_statistic_inst.genxlsx()
     regression_statistic_inst.calculate_status_percentage()
-    regression_statistic_inst.get_regression_list("/mnt/disk_0/IC/makefile/vrun/regression/regression_json")
+    # regression_statistic_inst.get_regression_list("/mnt/disk_0/IC/makefile/vrun/regression/regression_json")
     print(regression_statistic_inst.testlist_all,len(regression_statistic_inst.testlist_all),len(set(regression_statistic_inst.testlist_all)))
+    regression_statistic_inst.update_history_status(None)
