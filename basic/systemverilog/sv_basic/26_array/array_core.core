@@ -1,0 +1,45 @@
+CAPI=2:
+# Copyright lowRISC contributors.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+name: "lowrisc:ibex:ibex_core:0.1"
+description: "Ibex CPU Core Components"
+
+filesets:
+  files_rtl:
+    depend:
+
+    files:
+      - common_define.sv
+      - backdoor_erase.sv
+      - dut.sv
+      - tb_top.sv
+    file_type: systemVerilogSource
+
+
+
+
+parameters:
+  RVFI:
+    datatype: bool
+    paramtype: vlogdefine
+
+
+targets:
+
+  default: &default_target
+    default_tool: vcs
+    tools:
+        vcs:
+            vcs_options:
+                - -debug_access+all
+            sim_options:
+                - +TESTCASE=default_case
+    filesets:
+      - files_rtl
+
+    toplevel: tb_top
+    parameters:
+
+
+

@@ -5,6 +5,8 @@ import json
 import glob
 import re
 import argparse
+from datetime import datetime, date, time, timedelta
+
 
 from toolbox import toolbox
 # from VCSLogAnalyzer import VCSLogAnalyzer
@@ -18,11 +20,12 @@ class vrun(toolbox):
         parser.add_argument("-c",action="store_true",help="this is a c file,need to use gcc compiler",default=False)
         parser.add_argument("-only_compile",action="store_true",help="dont run,only compile",default=False)
         parser.add_argument("-comp_opts",metavar="",type=str,default="")
-        parser.add_argument("-simdir",metavar="",help="simulation dir",default="tb_top")
+        parser.add_argument("-simdir",metavar="",help="simulation dir",default=str(date.today()))
         parser.add_argument("-seed",metavar="",help="simulation dir",default=123)
         parser.add_argument("-top",metavar="",help="top name",default=None)
         parser.add_argument("-uvm",action="store_true",help="UVM_FLAG",default=False)
         parser.add_argument("-verdi",action="store_true",help="UVM_FLAG",default=False)
+        parser.add_argument("-dir",type=str,help="dir for verdi or something",default=None)
 
         parser.add_argument("-f",metavar="",help="filelist",default=None)
         
@@ -55,11 +58,16 @@ class vrun(toolbox):
     def launch_verdi(self):
         font_cfg='-font "Courier 18"'
         VERDI_HOME=self.simdir+"/verdi"
+        
         self.mkdir(VERDI_HOME)
         os.chdir(VERDI_HOME)
         case_dir=self.args.top.split(".")[0] if self.args.top is not None else self.args.t
         print("VERDI WORK HOME is ",VERDI_HOME)
-        VERDI_CMD=f" verdi {font_cfg} -ssf ../{case_dir}/waves.fsdb -top ibex_simple_system -dbdir ../{case_dir}/build/simv.daidir/"
+        VERDI_CMD=f"verdi {font_cfg} -ssf ../{case_dir}/waves.fsdb  -dbdir ../{case_dir}/build/simv.daidir/"
+        if dir !=None:
+            os.chdir(self.args.dir)
+            fsdb_file_name="wave.fsdb" if os.path.exists("wave.fsdb") else os.path.basename(self.args.dir)+".fsdb"
+            VERDI_CMD=f"cd {self.args.dir}  && verdi -dbdir ./simv.daidir/ -ssf {fsdb_file_name}"
         print(VERDI_CMD)
         os.system(VERDI_CMD+" &")
         exit()
@@ -181,6 +189,7 @@ class vrun(toolbox):
             os.chdir(case_name)
             if not os.path.exists("build"):
                 os.system("ln -s ../build ./")
+            os.system("ln -s ../build/simv.daidir ./")
             os.system(f"./build/simv +UVM_TESTNAME={case_name} SEED={1234} -l simulation.log")        
             os.chdir("../")
         else:
@@ -197,6 +206,7 @@ class vrun(toolbox):
                     os.chdir("tb_top")
             if not os.path.exists("build"):
                 os.system("ln -s ../build ./")
+            os.system("ln -s ../build/simv.daidir ./")
             os.system(f"./build/simv -l simulation.log {extra_sim_opt}")     
             os.chdir("../")
 
@@ -265,13 +275,25 @@ class vrun(toolbox):
         pass
     def fsdb_adder(self):
         #used to insert fsdb dump operation
-        # fsdb_txt="initial begin"\
-        # +"$fsdbDumpfile("waves.fsdb");"\
-        # +"$fsdbDumpvars(0,$sformatf("%m"));"\
-        # +"#1000"\
-        # +"$finish;"\
-        # +"end"
-        pass
+        waves_sv_txt="""
+        `define WAVES_FSDB
+        `ifdef WAVES_FSDB
+            initial begin
+                $fsdbDumpfile($sformatf("waves.fsdb"));
+                $fsdbDumpvars("+all");
+                $fsdbDumpSVA();
+                $fsdbDumpMDA(0,$sformatf("%m"));
+            end
+        `elsif WAVES_VCD
+            initial begin
+                $dumpvars;
+            end
+        `elsif WAVES
+            initial begin
+                $vcdpluson;
+            end
+        `endif
+        """
     def modify_uvm_code_in_file(self,input_file, new_name):
         # Read the original code from the input file
         with open(input_file, 'r') as file:

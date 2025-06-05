@@ -89,5 +89,13 @@ module tb_top();
         .din_north('h0),
         .dout_north()
     );
+    initial begin
+        string testcase;
 
+        if ($value$plusargs("TESTCASE=%s", testcase)) begin
+            $display("Running test case: %s", testcase);
+        end else begin
+            $display("No TESTCASE provided, using default");
+        end
+    end
 endmodule
