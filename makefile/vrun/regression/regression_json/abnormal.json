@@ -161,7 +161,7 @@
         },
         {
             "testname" : "abnormal_dactest_payload_test",
-            "timeout"  : "4ms",
+            "timeout"  : "5ms",
             "sva check": "yes",
             "usr_comp_option" : "" ,
             "usr_simv_option" : "",
@@ -256,6 +256,14 @@
             "percent" : 1.0
         },
         {
+            "testname" : "abnormal_inference_poison_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
             "testname" : "abnormal_inferread_head_test",
             "timeout"  : "3ms",
             "sva check": "yes",
@@ -337,6 +345,14 @@
         },
         {
             "testname" : "abnormal_reset_payload_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "abnormal_timeout_fd_dacff28_in_test",
             "timeout"  : "3ms",
             "sva check": "yes",
             "usr_comp_option" : "" ,

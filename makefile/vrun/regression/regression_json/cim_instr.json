@@ -120,6 +120,14 @@
             "percent" : 1.0
         },
         {
+            "testname" : "instr_reset_all_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
             "testname" : "instr_writetiabuffer_test",
             "timeout"  : "3ms",
             "sva check": "yes",
@@ -656,6 +664,14 @@
             "percent" : 1.0
         },
         {
+            "testname" : "currentread_tia_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
             "testname" : "inferread_barrier_test",
             "timeout"  : "3ms",
             "sva check": "yes",
@@ -833,6 +849,30 @@
         },
         {
             "testname" : "selfloop_addtime_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "selfloop_fc_auto_start_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "selfloop_fd_auto_start_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "selfloop_fc_fd_auto_start_test",
             "timeout"  : "3ms",
             "sva check": "yes",
             "usr_comp_option" : "" ,

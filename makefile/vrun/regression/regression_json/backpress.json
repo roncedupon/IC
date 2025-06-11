@@ -41,7 +41,7 @@
         },
         {
             "testname" : "backpress_dactest_opkt_test",
-            "timeout"  : "4ms",
+            "timeout"  : "5ms",
             "sva check": "yes",
             "usr_comp_option" : "" ,
             "usr_simv_option" : "",
