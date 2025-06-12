@@ -170,22 +170,6 @@ class regression_statistic(toolbox):
             wb.save('instr_output.xlsx')        
         return STATUS_ALL
 
-
-        for order, name in fixed_order.items():
-            if name not in existing_fixed_cases:
-                data.append([order, name, self.STATUS_DICT["running"]])
-        print("hh")
-        data.sort(key=lambda x: x[0])
-        self.regression_result = data#改了一个名字用于后续review/debug代码看的
-        if gen_xlsx:
-            wb = openpyxl.Workbook()
-            sheet = wb.active        
-            for row in data:
-                sheet.append(row)
-            wb.save('instr_output.xlsx')
-        return self.STATUS_ALL            
-        return self.regression_result #[order, name, self.STATUS_DICT["running"]]
-
     def calculate_status_percentage(self,status_all):
         # 获取当前数据
 

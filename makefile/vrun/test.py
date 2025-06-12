@@ -17,3 +17,9 @@ def modify_uvm_code_in_file(input_file, new_name):
 input_file = 'virtual_sequencer.sv'  # Your original file
 new_name = 'my_virtual_sequencer'  # New class name
 modify_uvm_code_in_file(input_file, new_name)
+
+#%%
+A=[[1,2,3],[4,5,6]]
+B=[[7,7,7],[7,7,7]]
+for i in range(2):
+    print(A[i]+B[i])

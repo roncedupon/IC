@@ -1,8 +1,9 @@
-export DISPLAY=:10
+# export DISPLAY=:10
 #-------------------------------------------------------------------------------------------------
 #我自己的IC开发环境
 export SOFTWARE_INSTALLED_HOME=/mnt/disk_0/softwares
-export IC_HOME=/home/dy/IC
+export IC_HOME=/mnt/disk_0/IC
+export SOC_HOME=/mnt/disk_0/soc
 alias vrun="python $IC_HOME/makefile/vrun/vrun.py"
 
 
@@ -55,6 +56,8 @@ alias cd=cd_func
 #my alias
 alias goto='fun() { cd $(dirname $1);}; fun'
 alias code_here='code . --reuse-window'
+alias getdisplay="pgrep -a xfce4-session | awk '{print \$1}' | xargs -I{} cat /proc/{}/environ | tr '\0' '\n' | grep DISPLAY"
+export $(getdisplay)
 #conda env
 export PATH=/home/dy/softwares/miniconda/bin/:$PATH
 
@@ -75,3 +78,8 @@ PATH=$PATH:$install_root/share/pkgconfig
 
 #-------------------------------------------------------------------------------------------------
 #内网映射
+#-------------------------------------------------------------------------------------------------
+#soc 相关
+alias gotosoc='cd $SOC_HOME && source setup'
+alias rvgcc="riscv32-unknown-elf-gcc"
+PATH=$PATH:/mnt/disk_0/softwares/riscv/riscv_gcc/lowrisc_toolchain/lowrisc-toolchain-gcc-rv32imcb-20240923-1/bin

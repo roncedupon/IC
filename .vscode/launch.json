@@ -19,7 +19,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "cwd": "${fileDirname}",
-            "args": ["-i","./regression_20250523"]
+            "args": ["-i","./regression_20250604"]
         },
         {
             "name": "Python 调试程序: 当前文件",
