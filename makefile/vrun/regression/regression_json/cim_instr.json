@@ -392,6 +392,14 @@
             "percent" : 1.0
         },
         {
+            "testname" : "inference_infermode0_same_timing_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
             "testname" : "inference_infermode1_test",
             "timeout"  : "3ms",
             "sva check": "yes",
@@ -401,6 +409,14 @@
         },
         {
             "testname" : "inference_infermode2_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "inference_infermode2_same_timing_test",
             "timeout"  : "3ms",
             "sva check": "yes",
             "usr_comp_option" : "" ,
@@ -864,6 +880,14 @@
             "percent" : 1.0
         },
         {
+            "testname" : "selfloop_fc_duty_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
             "testname" : "selfloop_fd_auto_start_test",
             "timeout"  : "3ms",
             "sva check": "yes",
@@ -872,7 +896,23 @@
             "percent" : 1.0
         },
         {
+            "testname" : "selfloop_fd_duty_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
             "testname" : "selfloop_fc_fd_auto_start_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "selfloop_fc_fd_duty_test",
             "timeout"  : "3ms",
             "sva check": "yes",
             "usr_comp_option" : "" ,
@@ -1064,6 +1104,14 @@
             "percent" : 1.0
         },
         {
+            "testname" : "combine_erase_program_currentread_1table_2_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
             "testname" : "combine_erase_program_currentread_test",
             "timeout"  : "3ms",
             "sva check": "yes",
@@ -1112,6 +1160,14 @@
             "percent" : 1.0
         },
         {
+            "testname" : "combine_erase_program_inference_1table_2_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
             "testname" : "combine_erase_program_inference_test",
             "timeout"  : "3ms",
             "sva check": "yes",
@@ -1128,6 +1184,14 @@
             "percent" : 1.0
         },
         {
+            "testname" : "combine_erase_program_inferread_1table_2_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
             "testname" : "combine_erase_program_inferread_test",
             "timeout"  : "3ms",
             "sva check": "yes",
@@ -1137,6 +1201,14 @@
         },
         {
             "testname" : "combine_erase_program_voltageread_1table_test",
+            "timeout"  : "3ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_erase_program_voltageread_1table_2_test",
             "timeout"  : "3ms",
             "sva check": "yes",
             "usr_comp_option" : "" ,
@@ -1177,7 +1249,15 @@
         },
         {
             "testname" : "combine_instr_switch_1table_test",
-            "timeout"  : "3ms",
+            "timeout"  : "5ms",
+            "sva check": "yes",
+            "usr_comp_option" : "" ,
+            "usr_simv_option" : "",
+            "percent" : 1.0
+        },
+        {
+            "testname" : "combine_instr_switch_1table_2_test",
+            "timeout"  : "5ms",
             "sva check": "yes",
             "usr_comp_option" : "" ,
             "usr_simv_option" : "",
