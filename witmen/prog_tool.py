@@ -1,35 +1,42 @@
 import re
 import numpy as np
 
-#step1
-def extract_block_info(txt_path):
-    block_info = []
-    with open(txt_path, 'r') as f:
-        content = f.read()
-        #match: [number,number,number]
-        matches = re.findall(r'\[(\d+),\s*(\d+),\s*(\d+)\]', content)
-        block_info = [(int(addr), int(pingpong_id),int(size)) for addr,pingpong_id, size in matches]
-    return block_info
+class BinBlockExtractor:
+    def __init__(self, txt_path, bin_path):
+        self.txt_path = txt_path
+        self.bin_path = bin_path
+        self.block_info = []
 
-#step2
-def extract_from_bin(bin_path, block_info):
-    with open(bin_path, 'rb') as f:
-        binary = f.read()
-    
-    result_bytes    = bytearray()
-    block_list      =[]
-    for addr,_,size in block_info:
-        segment = binary[addr:addr+size]
-        result_bytes.extend(segment)
+    def extract_block_info(self):
+        """ [addr, pingpong_id, size] """
+        with open(self.txt_path, 'r') as f:
+            content = f.read()
+            matches = re.findall(r'\[(\d+),\s*(\d+),\s*(\d+)\]', content)
+            self.block_info = [(int(addr), int(pingpong_id), int(size)) for addr, pingpong_id, size in matches]
+        return self.block_info
 
-    return np.frombuffer(result_bytes, dtype=np.uint8)
+    def extract_from_bin(self):
+        
+        if not self.block_info:
+            self.extract_block_info()
 
-# 主流程
+        with open(self.bin_path, 'rb') as f:
+            binary = f.read()
+
+        result_bytes = bytearray()
+        block_list = []
+        for addr, pingpong_id, size in self.block_info:
+            block = binary[addr:addr+size]
+            block_list.append([pingpong_id, block])
+            result_bytes.extend(block)
+        
+        return block_list  #np.frombuffer(result_bytes, dtype=np.uint8)
+
+#
 if __name__ == '__main__':
-    txt_path = './cp_test/map_split.txt'         
-    bin_path = './cp_test/physics_map.bin'    
+    txt_path = './cp_test/map_split.txt'
+    bin_path = './cp_test/physics_map.bin'
 
-    block_info = extract_block_info(txt_path)
-    np_array = extract_from_bin(bin_path, block_info)
-    print(f'Extraction Finished,totally {len(np_array)} B.')
-
+    extractor = BinBlockExtractor(txt_path, bin_path)
+    blocks = extractor.extract_from_bin()
+    print(f'Extraction Finished, totally {len(blocks)} blocks.')
