@@ -23,7 +23,7 @@ class regression_statistic(toolbox):
 
         self.json_dict={}
         self.testlist_all=[]
-        self.USE_JSON_ORDER=False#用自定义的testlist顺序还是用json中的顺序
+        self.USE_JSON_ORDER=True#用自定义的testlist顺序还是用json中的顺序
         self.JSON_LIST_PATH="./regression_json"
         self.REGRESSION_RESULT_DIR_PATTERN=r"regression_2025[0-9]+"
         self.STATUS_DICT = {
