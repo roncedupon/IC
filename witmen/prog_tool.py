@@ -84,7 +84,7 @@ class BinBlockExtractor:
         print(f'Extraction Finished, totally {len(blocks)} blocks.')
 #
 if __name__ == '__main__':
-    txt_path    = './cp_test/map_split.txt'
-    bin_path    = './cp_test/physics_map.bin'    
+    txt_path    = './cp_test_0619/map_split_debug.txt'
+    bin_path    = './cp_test_0619/physics_map.bin'    
     extractor   = BinBlockExtractor(txt_path, bin_path)
     extractor.Extractor_main()

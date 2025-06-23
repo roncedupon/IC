@@ -17,7 +17,6 @@ uint32_t random_cross_4k(uint32_t access_len) {
 
 
 uint32_t get_nearest_4k_boundary(uint32_t addr){
-    printf("%x %x\n",addr,((addr>>12)+1)<<12);
     return (addr&0xfff)==0?addr:((addr>>12)+1)<<12;
 }
 
@@ -30,10 +29,9 @@ int main() {
     // printf("随机地址: 0x%08X\n", addr);
     // printf("该地址页内偏移: 0x%X\n", addr & 0xFFF);
     // printf("跨越4KB页: %s\n", ((addr & 0xFFF) + access_len > PAGE_SIZE) ? "是" : "否");
-    int*a=0x1000;
+    int*a=(0x942fe0+32);
     a=get_nearest_4k_boundary(a);
-    printf("(char*)a+1 is %x\n",(char*)a+1);
-    printf("a+1 is %x\n",a+1);
+
     printf("a is %x\n",a);
     return 0;
 }
