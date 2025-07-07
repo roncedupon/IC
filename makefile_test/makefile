@@ -63,3 +63,12 @@ TIME_PART := $(word 2,$(subst :, ,$(FULL_TIME)))  # 14 02 51
 show_parts:
 	@echo "日期部分: $(DATE_PART)"
 	@echo "时间部分: $(TIME_PART)"
+
+
+AAA_VALUE:=11
+AAA_VALUE=12
+test_value:
+	echo ${AAA_VALUE}
+AAA_VALUE=10
+test_value1:
+	echo ${AAA_VALUE}

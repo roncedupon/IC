@@ -47,3 +47,15 @@ MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 testmake:
 	@echo $(MAKEFILE_DIR)
+
+
+ifeq ($(SKIP_B), 1)
+A:
+	@echo "Building A without B"
+else
+A: B
+	@echo "Building A with B"
+endif
+
+B:
+	@echo "Building B"

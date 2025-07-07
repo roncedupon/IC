@@ -86,3 +86,22 @@ def write_excel():
 if __name__ == '__main__':
     write_txt()
     write_excel()
+
+#%%
+import re
+
+log_text = """
+UVM_ERROR：    1
+UVM_FATAL:         0,
+"""
+
+# 使用正则表达式匹配错误和致命错误的数量
+error_match = re.search(r'UVM_ERROR.*?(\d+)', log_text)
+fatal_match = re.search(r'UVM_FATAL.*?(\d+)', log_text)
+
+# 获取匹配结果并转换为整数
+error_count = int(error_match.group(1)) if error_match else 0
+fatal_count = int(fatal_match.group(1)) if fatal_match else 0
+
+print(f"错误数量: {error_count}")
+print(f"致命错误数量: {fatal_count}")
