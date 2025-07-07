@@ -23,3 +23,16 @@ A=[[1,2,3],[4,5,6]]
 B=[[7,7,7],[7,7,7]]
 for i in range(2):
     print(A[i]+B[i])
+
+# #%%
+# A=1
+# B=A
+# A=2
+# print(B)
+#%%
+import numpy as np
+A_array=np.zeros((10,10))
+B_array=np.zeros((10,10))
+B_array=A_array
+A_array+=1
+print(A_array,B_array)

@@ -23,7 +23,7 @@ class regression_statistic(toolbox):
 
         self.json_dict={}
         self.testlist_all=[]
-        self.USE_JSON_ORDER=True#用自定义的testlist顺序还是用json中的顺序
+        self.USE_JSON_ORDER=False#用自定义的testlist顺序还是用json中的顺序
         self.JSON_LIST_PATH="./regression_json"
         self.REGRESSION_RESULT_DIR_PATTERN=r"regression_2025[0-9]+"
         self.STATUS_DICT = {
@@ -187,11 +187,12 @@ class regression_statistic(toolbox):
             "进行中": 0
         }
         
-        for value in data.values():
+        for case_name, value in data.items():
             for key in status_counts:
                 if key in value:
                     status_counts[key] += 1
-
+            if "超时FAIL" in value:
+                print(case_name,"\t\t", value)
         max_status_len = max(self.estimate_display_width(k) for k in status_counts.keys())
         print("\n" + self.colored("📊 Test Status Summary:", style="bold"))
         print(self.colored("=" * (max_status_len + 18), color="blue"))
