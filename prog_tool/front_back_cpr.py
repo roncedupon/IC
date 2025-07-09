@@ -1,6 +1,6 @@
 class front_back_cpr:
-    def __init__(self, front_width=12, back_width=8):
-        self.front_width = front_width  # 单位 bit
+    def __init__(self, front_width=12, back_width=8):#bit
+        self.front_width = front_width  
         self.back_width = back_width
         self.file_name_list=[
         "ne_x0y0_inner_trunk_n.data",
@@ -66,7 +66,7 @@ class front_back_cpr:
                 else:
                     off_by_more += 1
 
-        # 输出统计信息
+        #output result
         def fmt(count):
             return f"{count} ({count/total*100:.2f}%)" if total else f"{count} (0.00%)"
         print(f"Total elements: {total}")
