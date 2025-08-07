@@ -9,18 +9,23 @@
 #include <stdio.h>
 //x,y为函数的形参，如果函数被调用时，没有设置y值，y值默认为5
 
-int sub(int x,int y=5)
+int sub(int x,int y)
 {
     return (x-y);
 }
+
+void layer_id_test(){
+    int layer_start=0;
+    int layer_end =3;//3;    
+    for(int layer_id=layer_start;layer_id<=layer_end;layer_id++){
+        printf("runing %x\n",layer_id);
+        if(layer_id<=layer_end-1)
+            printf("switching %x \n",layer_id+1);
+    }
+}
 int main(void)
 {
-    int a=20;
-    int b=10;
-    //变量a、b为sub函数的实参
-    printf("sub函数计算结果 = %d\n",sub(a, b));
-    //注意：我们并没有为sub函数第二个参数设置实参，此时默认y=5
-    printf("sub函数计算结果 = %d\n",sub(a));
+    layer_id_test();
     return 0;
 }
 /*

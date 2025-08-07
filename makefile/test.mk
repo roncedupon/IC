@@ -4,11 +4,6 @@
 .PHONY: all
 all: help
 
-# Help message
-.PHONY: help
-help:
-	@echo "Usage:"
-	@echo "  make run FILE=test.sv   - Run simulation with specified FILE"
 
 # Run target
 .PHONY: run
@@ -59,3 +54,10 @@ endif
 
 B:
 	@echo "Building B"
+C:
+	ls -ld
+
+help:
+    @grep -E '^[a-zA-Z0-9_-]+:.*?## .*$' $(MAKEFILE_LIST) \
+    | sed -n "s/^\(.*\): \(.*\)##\(.*\)/$(printf '\033[0;1;31m')\1$(printf '\033[0m') \2 \3/p" \
+    | column -t -s '##'
