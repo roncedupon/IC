@@ -21,3 +21,13 @@ for text in test_strings:
         print(f"变量名: {variable}, 时间值: {time_value}, 单位: {timescale if timescale else '无'}")
     else:
         print(f"匹配失败: {text}")
+
+
+#%%
+# 用正则表达式检查一段字符串是否在另外一段字符串中出现
+import re
+str="    reg_test(FC0_ADDR+0x9004 + 0x4*0, 0b0llu      , 0xb7db5llu  , 0x1     , 31, 11);\n"
+if re.search(r",.*0x1.*,",str):
+    print("yes")
+
+

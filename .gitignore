@@ -64,3 +64,4 @@ novas.rc
 /**/__pycache__/
 /**/output/
 c_output
+*.data

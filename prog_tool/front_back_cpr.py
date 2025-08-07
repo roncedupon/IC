@@ -50,11 +50,11 @@ class front_back_cpr:
         min_rows = min(len(front_mat), len(back_mat))
 
         for i in range(min_rows):
-            row_a = front_mat[i]//4
+            row_a = front_mat[i]
             row_b = back_mat[i]
             min_cols = min(len(row_a), len(row_b))
             for j in range(min_cols):
-                a = row_a[j]
+                a = row_a[j]//4
                 b = row_b[j]
                 total += 1
                 if a == b:
@@ -85,7 +85,7 @@ class front_back_cpr:
 if __name__ == "__main__":
 
     front_back_cpr_inst = front_back_cpr(front_width=12, back_width=8)
-    front_file_dir = "/mnt/disk_0/IC/prog_tool/output/final/Layers0/init_golden/emu_12bit/"
-    back_file_dir  = "/mnt/disk_0/IC/prog_tool/output/final/Layers0/init_golden/eda_8bit/"
+    front_file_dir = "/mnt/disk_0/IC/prog_tool/output_coe4/final/Layers0/init_golden/emu_12bit"
+    back_file_dir  = "/mnt/disk_0/IC/prog_tool/output_coe1/final/Layers0/init_golden/eda_8bit"
 
     front_back_cpr_inst.compare_all(front_file_dir, back_file_dir, expected_shape=(2082, 2112))
