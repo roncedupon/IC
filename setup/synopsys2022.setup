@@ -40,7 +40,7 @@ PATH=$PATH:$SCL_HOME/linux64/bin
 export VCS_ARCH_OVERRIDE=linux
 
 #LICENCE--这@后面的是hostname，
-export LM_LICENSE_FILE=27000@ubuntuserver2004
+export LM_LICENSE_FILE=27050@ubuntuserver2004
 alias lmg_synopsys="lmgrd -c $SCL_HOME/admin/license/Synopsys.dat -l $SCL_HOME/admin/logs/debug.log"
 
 # export UVM_HOME=/home/dy/Softwares/Envs/uvm-1.1a
