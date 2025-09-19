@@ -208,7 +208,6 @@ def expand_range_placeholders(s):
     matches = re.findall(r"\{(\d+:\d+)\}", s)
     if not matches:
         return [s]  # 没有占位符，返回原字符串
-
     match = matches[0]
     lower, higher = map(int, match.split(":"))
     results = []

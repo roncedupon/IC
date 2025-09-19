@@ -88,3 +88,9 @@ if __name__ == '__main__':
     bin_path    = './cp_test_0619/physics_map.bin'    
     extractor   = BinBlockExtractor(txt_path, bin_path)
     extractor.Extractor_main()
+
+
+#%%
+from collections import defaultdict
+stage=defaultdict(list)
+stage[1].append(123)

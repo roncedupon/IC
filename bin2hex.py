@@ -117,3 +117,49 @@ if __name__=="__main__":
     bin2hex_inst=bin2hex("/home/dy/IC/C++/GEMV0/map.bin",output_path="./outputtt")
     print(bin2hex_inst.parse_map_bin("/home/dy/IC/C++/GEMV0/map.bin"))
     bin2hex_inst.get_weight_bias()
+
+
+#%%
+def signed_int_to_hex(num, bits=8):
+    """
+    将有符号整数转换为十六进制字符串（补码表示）
+    :param num: 有符号整数
+    :param bits: 位数（8、16、32等）
+    :return: 十六进制字符串
+    """
+    if num < 0:
+        num = (1 << bits) + num  # 计算补码
+    return f"{num:0{bits//4}X}"  # 格式化输出，如8位→2个十六进制字符
+
+# 示例
+print(signed_int_to_hex(-5, 8))   # 输出: "FB"（8位补码）
+print(signed_int_to_hex(-100, 16)) # 输出: "FF9C"（16位补码）
+
+import numpy as np
+def convert_to_twos_complement(arr, bits):
+    mask = (1 << bits) - 1
+    arr_signed = np.array(arr, dtype=np.int64)
+    return (arr_signed + (1 << bits)) & mask
+
+# 示例：9位补码
+A = [98*4, 4*98]
+A_9bit = convert_to_twos_complement(A, 16)  # 9位补码范围：-256~255
+print(f"9位补码: {[f'0x{x:03X}' for x in A_9bit]}")  # 输出: ['0x1E0', '0x064']
+
+#%%
+import numpy as np
+
+A = [-120]  # 测试数据（12位范围：-2048~2047）
+bits = 16
+mask = (1 << bits) - 1  # 12位掩码：0xFFF (二进制12个1)
+
+# 1. 将列表转为有符号整数数组
+A_signed = np.array(A, dtype=np.int64)
+
+# 2. 模拟12位补码（关键步骤）
+# 原理：(负数 + 2^bits) & mask 等效于12位补码
+A_unsigned = (A_signed + (1 << bits)) & mask  # 转为12位无符号补码
+
+# 3. 写入文件（按3位十六进制输出，对应12位）
+with open("npsave_12bit.txt", "w") as f:
+    np.savetxt(f, A_unsigned, fmt=f"%0{bits//4}x", delimiter="")  # 12位→3个十六进制字符
