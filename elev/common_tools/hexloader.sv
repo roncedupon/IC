@@ -84,8 +84,8 @@ class common_tools extends uvm_component;
         // Step 6. 如果需要字节序转换，在这里加 swap
         // -------------------------------
         // 例如小端 CPU，需要翻转:
-        // foreach(mem[i])
-        //     mem[i] = {mem[i][7:0], mem[i][15:8], mem[i][23:16], mem[i][31:24]};
+        foreach(mem[i])
+            mem[i] = {mem[i][7:0], mem[i][15:8], mem[i][23:16], mem[i][31:24]};
     endtask
 
     
@@ -94,8 +94,13 @@ endclass
 module top;
     initial begin
         bit [31:0]mem[];
+
         common_tools tools;
         tools=new();
         tools.read_cpu_hex("/home/dy/IC/elev/common_tools/hex.dat",mem);
+        
+        foreach(mem[i])begin
+            `uvm_info("TOP",$sformatf("mem[%d] is %x",i,mem[i]),UVM_LOW)
+        end
     end
 endmodule
