@@ -14,3 +14,36 @@ module ceiling_division;
         $display("ceil_div(257) = %0d (应输出3)", ceil_div(257));
     end
 endmodule
+
+
+function ceil_fun_error(int a,int b);//这是一个错误例子，因为函数没有返回值类型，导致下面的initial错误
+    return (a-1)/b+1;//[(N-1)/M]+1
+
+endfunction
+
+function int ceil_fun(int a, int b);
+    return (a-1)/b+1; // [(N-1)/M]+1
+endfunction
+
+module ceil_example;
+ real num;
+ real result;
+ initial begin
+   $display("ceil_fun_error : %d",ceil_fun_error(10,2));
+   $display("ceil_fun_error : %d",ceil_fun_error(10,3));
+   $display("ceil_fun_error : %d",ceil_fun_error(10,4));
+   $display("ceil_fun_error : %d",ceil_fun_error(10,5));
+   $display("ceil_fun_error : %d",ceil_fun_error(10,6));
+   $display("ceil_fun_error : %d",ceil_fun_error(10,7));
+
+    $display("ceil(%0d/%0d) = %0d", 10, 2, ceil_fun(10,2));
+    $display("ceil(%0d/%0d) = %0d", 10, 3, ceil_fun(10,3));
+    $display("ceil(%0d/%0d) = %0d", 10, 4, ceil_fun(10,4));
+    $display("ceil(%0d/%0d) = %0d", 10, 5, ceil_fun(10,5));
+    $display("ceil(%0d/%0d) = %0d", 10, 6, ceil_fun(10,6));
+    $display("ceil(%0d/%0d) = %0d", 10, 7, ceil_fun(10,7));   
+ end
+
+
+endmodule
+
