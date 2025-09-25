@@ -18,6 +18,7 @@ class common_tools extends uvm_component;
         int data_count = 4;
         int pos = 0;
         int mem_size;
+        string last_valid_line = "";
         string tokens[$];
 
         // -------------------------------
@@ -28,11 +29,17 @@ class common_tools extends uvm_component;
             `uvm_fatal(get_full_name(), $sformatf("%s not exist!!", hex_str))
             return;
         end
-        while(!$feof(fd)) begin // move to the last line
-            void'($fgets(line, fd));
-        end
-        $fclose(fd);
 
+        while(!$feof(fd)) begin
+            void'($fgets(line, fd));
+            // remove empty line
+            $display("line is %s,%d",line,line.len());
+            if (line.len() > 0 && line != "" && line != "\n") begin
+                last_valid_line = line;
+            end
+        end
+        line=last_valid_line;
+        $fclose(fd);
         `uvm_info(get_full_name(),$sformatf("last line is %s",line),UVM_LOW)
 
         // -------------------------------

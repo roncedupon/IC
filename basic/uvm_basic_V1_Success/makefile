@@ -6,7 +6,7 @@ PROJECT_HOME:=./
 
 
 FILE_LIST=filelist.f
-FSDB_FLAG=-fsdb
+FSDB_FLAG=-debug_access
 
 #是否dump多维数组
 DUMP_ARRAY_FLAG=1

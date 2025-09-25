@@ -32,5 +32,6 @@ module top;
         for (int i = 0; i < 10 && i < mem.size(); i++) begin
             $display("mem[%0d] = 0x%08h", i, mem[i]);
         end
+        `uvm_info(get_full_name,$sformatf("width32 mem width is %d | width8 mem depth is %d",mem_32bit.size(),mem_8bit.size()),UVM_LOW)        
     end
 endmodule

@@ -43,7 +43,7 @@ export VCS_ARCH_OVERRIDE=linux
 export LM_LICENSE_FILE=27050@ubuntuserver2004
 alias lmg_synopsys="lmgrd -c $SCL_HOME/admin/license/Synopsys.dat -l $SCL_HOME/admin/logs/debug.log"
 
-# export UVM_HOME=/home/dy/Softwares/Envs/uvm-1.1a
+#export UVM_HOME=/mnt/disk_0/softwares/uvm/uvm-1.2
 export UVM_HOME=$VCS_HOME/etc/uvm-1.2
 
 
