@@ -1,0 +1,246 @@
+
+**************************************************************************
+Basic SVT UVM Testbench Example for Synopsys Discovery UART VIP
+*************************************************************************
+
+CONTENTS:
+A. Introduction
+B. Running the Example Testbench
+C. Files in the Example
+D. SystemVerilog Testbench Description
+E. UVM Verification Environment 
+F. How to Contact Support
+
+-------------------------------------------------------------------------
+A. Introduction
+-------------------------------------------------------------------------
+
+This example shows how to implement a basic functioning UVM testbench using UART
+Verification IP. A quickstart navigation guide can be found at:
+    
+HTML Quickstart is available @ $DESIGNWARE_HOME/vip/svt/uart_svt/latest/examples/sverilog/tb_uart_svt_uvm_basic_sys/doc/tb_uart_svt_uvm_basic_sys/index_basic.html
+    
+The example consists of the following:
+
+- A top-level testbench in SystemVerilog
+- A hdl_interconnect representing the UART in the testbench and DTE UART 
+  and DCE UART interfaces are connected to hdl_interconnect
+- UVM verification environment
+- UART DTE and DCE slave agents are instantiated in the UVM verification environment
+- Four test files illustrating 
+  i.   Basic test with default sequence
+  ii.  Directed test with directed sequences
+  iii. Random test with random sequence
+  iv.  Reconfig test with reconfig sequence
+
+The UVM Synopsys Discovery UART VIP agents are connected in the following manner:
+
+                                     (UART Env)
+    ==================================================================================
+  ||     (UART DTE Agent)                                        (UART DCE Agent)     ||
+  ||   ---------------------                                    -------------------   ||
+  ||  |  ------    -------  |                                  |  -----   -------  |  ||
+  ||  | | DTE  |  |Monitor| |        ------------------        | | DCE | |Monitor| |  ||
+  ||  |  ------    -------  |<=====>| hdl_interconnect |<=====>|  -----   -------  |  ||
+  ||  |    *Active Mode*    |        ------------------        |   *Active Mode*   |  ||
+  ||   \___________________/                                    \_________________/   ||
+  ||                                                                                  ||
+    ==================================================================================
+
+
+In the remainder of this description, <design_dir> refers to the directory where
+the example was installed using script dw_vip_setup. The example source files
+would then exist at two locations:
+
+- "$DESIGNWARE_HOME/vip/svt/uart_svt/latest/examples/sverilog/tb_uart_svt_uvm_basic_sys" 
+- "<design_dir>/examples/sverilog/uart_svt/tb_uart_svt_uvm_basic_sys" 
+
+Note :- the quickstart guide is _only_ available at
+$DESIGNWARE_HOME/vip/svt/uart_svt/latest/examples/sverilog/tb_uart_svt_uvm_basic_sys/doc/tb_uart_svt_uvm_basic_sys/index_basic.html
+The quickstart is not installed in <design_dir>. Unless otherwise noted, the files
+described below are also found in <design_dir>.  
+
+Complete class reference HTML documentation of UART UVM Verification 
+IP is available at:
+  
+$DESIGNWARE_HOME/vip/svt/uart_svt/latest/doc/uart_svt_uvm_class_reference/html/index.html
+Note: Class reference has UVM 1.1d Base Class Library only.
+
+User guide, getting started and release notes pdf's are present under :
+$DESIGNWARE_HOME/vip/svt/uart_svt/latest/doc/uart_svt_uvm_user_guide.pdf
+$DESIGNWARE_HOME/vip/svt/uart_svt/latest/doc/uart_svt_uvm_getting_started.pdf
+$DESIGNWARE_HOME/vip/svt/uart_svt/latest/doc/uart_svt_release_notes.pdf
+
+------------------------------------------------------------------------
+B. Running the Example Testbench
+------------------------------------------------------------------------
+
+1. Install the example using the following command line:
+
+   % cd <location where example is to be installed>
+   % mkdir design_dir <provide any name of your choice>
+   % $DESIGNWARE_HOME/bin/dw_vip_setup -path ./design_dir  -e uart_svt/tb_uart_svt_uvm_basic_sys -svtb 
+
+2. Use either one of the following to run the testbench:
+
+   a) Use the Makefile:
+
+      Four tests are provided in the "tests" directory.
+      The tests are: 
+      1. ts.base_test.sv 
+      2. ts.directed_test.sv 
+      3. ts.random_test.sv 
+      4. ts.reconfig_test.sv 
+
+      For example, to run test ts.directed_test.sv, do following:
+      
+      gmake USE_SIMULATOR=vcsvlog directed_test WAVES=1
+
+      Invoke "gmake help" to show more options.
+   
+   b) Use the sim script:
+
+     For example, to run test ts.random_test.sv, do following:
+
+     ./run_uart_svt_uvm_basic_sys -w random_test vcsvlog-svlog 
+
+      Invoke "./run_uart_svt_uvm_basic_sys -help" to show more options.
+
+
+-------------------------------------------------------------------------
+C. Files in the Example
+-------------------------------------------------------------------------
+
+The following lists all the code files in this example.
+
+<tb_uart_svt_uvm_basic_sys>
+      |
+      |
+      |-> hdl_interconnect
+      |     -> hdl_interconnect.v
+      |     -> uart_svt_interconnect_sv_wrapper.sv
+      |-> env
+      |     -> cust_svt_uart_agent_configuration.sv
+      |     -> cust_svt_uart_transaction.sv
+      |     -> uart_basic_env.sv
+      |     -> uart_base_test.sv
+      |     -> uart_default_sequence.sv
+      |     -> uart_default_virtual_sequence.sv
+      |     -> uart_directed_sequence.sv
+      |     -> uart_null_virtual_sequence.sv
+      |     -> uart_random_sequence.sv
+      |     -> uart_virtual_sequencer.sv
+      |     -> uart_reset_if.sv
+      |     -> uart_simple_reset_sequence.sv
+      |-> tests
+      |     -> ts.base_test.sv
+      |     -> ts.directed_test.sv
+      |     -> ts.random_test.sv
+      |     -> ts.reconfig_test.sv
+      |-> top.sv
+      |-> top_test.sv
+      |-> README 
+      |-> waves.tcl
+      |-> Makefile
+      |-> modellist
+      |-> sim_build_options
+      |-> sim_run_options
+
+The interface definition file is originally located at:
+ 
+ Port interface  : $DESIGNWARE_HOME/vip/svt/uart_svt/latest/sverilog/include/svt_uart_if.svi 
+ 
+When you run dw_vip_setup (above), the interface file will be installed at:
+
+  ./design_dir/include/sverilog/svt_uart_if.svi 
+
+
+-------------------------------------------------------------------------
+D. SystemVerilog Testbench Description
+-------------------------------------------------------------------------
+
+The  top-level testbench is written in SystemVerilog. The UART interfaces 
+are represented as instances of 'interface' objects. The hdl_interconnect 
+is represented as a UART model with 'interface' connections as its ports.
+The UVM verification environment is represented as an uart_basic_env instance.
+The test file is created as a class which extends uart_base_test.
+
+The file containing the top-level testbench in the example is "top.sv".  
+This file which encapsulates individual tests is "top_test.sv".
+
+The UART model used in the example is defined as a hdl_interconnect, within a SystemVerilog
+wrapper. The intent is to demonstrate how a legacy core may be integrated into
+the SystemVerilog testbench. The example UART model has DTE and DCE UART interfaces. 
+
+
+The SystemVerilog wrapper for the UART model defines a module that takes 'interface'
+references as its port connections. The SystemVerilog wrapper instantiates
+the Verilog UART bus model, and connects UART DTE and DCE interfaces to the UART model.
+
+The example UART bus model is found in the file "hdl_interconnect.v". The example wrapper
+is found in the file "uart_svt_interconnect_sv_wrapper.sv".
+
+The entire UVM test environment is encapsulated in uart_basic_env.sv, which is
+instantiated in the UVM tests.  The tests gets included in 'top.sv',
+which eventually triggers the specific test by the use of run_test().
+
+-------------------------------------------------------------------------
+E. UVM Verification Environment Description
+-------------------------------------------------------------------------
+
+A complete description of the UVM environment (ENV) is beyond the scope of this
+README. Please refer to the UVM manual for details of a UVM environment.
+
+Following is a summary of the files used by the ENV:
+
+  - uart_svt_interconnect_sv_wrapper.sv.  A SystemVerilog module that wraps the
+    verilog RTL Interconnect.  This will be instantiated in the top-level SystemVerilog
+    file.
+  
+  - uart_basic_env.sv
+    This file serves as environment class.  The top-level environment is
+    implemented by extending uvm_env base class.  This class instantiates the
+    UART DTE and DCE agents and a virtual sequencer.
+
+  - cust_svt_uart_agent_configuration.sv
+    This file extends agent configuration (svt_uart_agent_configuration).
+    All the necessary configuration parameters are set up for the environment
+    in this class.
+
+  - cust_svt_uart_transaction.sv
+    This file extends the transaction (svt_uart_transaction).
+    Customized constraints are defined by this class.
+
+  - uart_simple_reset_sequence.sv
+    This file shows a virtual sequence that generates a simple sequence
+    to drive the reset pins.  This sequence is registered with the TB
+    virtual sequencer as the default sequence for the reset phase.
+
+  - uart_default_virtual_sequence.sv
+    This file implements a virtual sequence executes an
+    uart_default_sequence on DTE and DCE agent sequencer.  This sequence is registered with the 
+    UART ENV virtual sequencer as the default sequence for the main
+    phase.
+
+  - uart_null_virtual_sequence.sv
+    This file implements a virtual sequence with an empty body method.  This
+    sequence can be used by extended tests to disable the default sequence.
+
+  - uart_random_sequence.sv
+    This file shows a sequence (extending from uvm_sequence)
+    that generates constrained random svt_uart_transaction.  This is the
+    default sequence that set up by the base test.
+
+  - uart_directed_sequence.sv
+    This file shows a sequence (extending from uvm_sequence)
+    that generates a series of directed svt_uart_transaction.
+
+  - uart_default_sequence.sv
+    This file shows a sequence (extending from uvm_sequence)
+    that generates a default random svt_uart_transaction.
+
+--------------------------------------------------------------------------
+F. Contacting Customer Support
+--------------------------------------------------------------------------
+Please contact Synopsys Support Center or local CAE for support.
+

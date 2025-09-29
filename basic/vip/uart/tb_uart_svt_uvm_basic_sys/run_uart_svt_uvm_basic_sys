@@ -1,0 +1,4311 @@
+#!/bin/csh -f
+
+set name=$0
+set name=${name:t}
+
+if ( $?VC_HOME ) then
+    if ( $?VC_VIP_OVERRIDE ) then
+        setenv DESIGNWARE_HOME $VC_VIP_OVERRIDE
+    else
+        setenv DESIGNWARE_HOME "$VC_HOME/vl"
+    endif
+endif
+
+set incdir = 0
+set force32 = 0
+set nobuild = 0
+set buildonly = 0
+set noclean = 0
+set norun = 0
+set help = 0
+set clean = 0
+set verb = 0
+set debug = 0
+set cencrypt = 0
+set seed = 0
+set pa = ""
+set waves = ""
+
+while ( "$1" =~ \-* )
+
+    if ( "$1" =~ \-3* ) then
+        set force32 = 1
+        shift
+    else if ( "$1" =~ \-w* ) then
+        set waves = "dve"
+        if ( "$2" =~ fsdb* ) then
+            set waves = "fsdb"
+            shift
+        else if ( "$2" =~ ver* ) then
+            set waves = "verdi"
+            shift
+        else if ( "$2" =~ du* ) then
+            set waves = "dump"
+            shift
+        else if ( "$2" =~ vc* ) then
+            set waves = "dump"
+            shift
+        else if ( "$2" =~ dv* ) then
+            shift
+        endif
+        shift
+    else if ( "$1" =~ \-see* ) then
+        set seed = $2
+        shift
+        shift
+    else if ( "$1" =~ \-nor* ) then
+        set norun = 1
+        shift
+    else if ( "$1" =~ \-nob* ) then
+        if ( -d ./output/csrc ) then
+            set nobuild = 1
+        endif
+        shift
+    else if ( "$1" =~ \-build* ) then
+        set buildonly = 1
+        shift
+    else if ( "$1" =~ \-noc* ) then
+        set noclean = 1
+        shift
+    else if ( "$1" =~ \-inc* ) then
+        set incdir = 1
+        shift
+    else if ( "$1" =~ \-pa* ) then
+        set pa = "fsdb"
+        if ( "$2" =~ fsdb* ) then
+            set pa = "fsdb"
+            shift
+        endif
+        shift
+    else if ( "$1" =~ \-h* ) then
+        set help = 1
+        shift
+    else if ( "$1" =~ \-ver* ) then
+        set verb = 1
+        shift
+    else if ( "$1" =~ \-deb* ) then
+        set debug = 1
+        shift
+    else if ( "$1" =~ \-cl* ) then
+        set clean = 1
+        shift
+    else if ( "$1" =~ \-ce* ) then
+        set cencrypt = 1
+        shift
+    else
+        shift
+    endif
+
+end
+
+if ( ${clean} ) then
+    /bin/rm -rf hdl_files top_files synopsys_sim.setup work vcdplus.vcd vpdplus.vpd vc_hdrs.h wavesdump DVEfiles simv.cm simv.daidir simv.vdb verilog.dump test_top.fsdb INCA_libs vsim.wlf sim.cmd ncelab.log ncvlog.log ncsim.log ucli.key workspace pli.tab msglog.o >& /dev/null
+    /bin/rm -rf logs/* >& /dev/null
+    /bin/rm -rf output/* >& /dev/null
+    /bin/rm -rf coverage/* >& /dev/null
+    /bin/rm -rf *.xml >& /dev/null
+    /bin/rm -rf *.vpd >& /dev/null
+    /bin/rm -rf *.vcd >& /dev/null
+    /bin/rm -rf *.svd >& /dev/null
+    /bin/rm -rf *.data_trace >& /dev/null
+    /bin/rm -rf *.physical_service_trace >& /dev/null
+    /bin/rm -rf svt_debug.out svt_debug.transcript >& /dev/null
+    /bin/rm -rf partitionlib >& /dev/null
+    /bin/rm -rf *.mempa >& /dev/null
+    /bin/rm -rf *.link_service_trace >& /dev/null
+    exit( 0 )
+endif
+
+if ( ! ${#argv} || ${help} ) then
+    echo "  usage:  ${name} [-32] [-verbose] [-debug_opts] [-incdir] [-cencrypt] [-waves] [-clean] [-nobuild] [-buildonly] [-norun] [-pa] <scenario> <simulator>"
+    echo "  where   <scenario> is one of:   all base_test directed_test random_test reconfig_test"
+    echo "          <simulator> is one of:  ncvlog vcsvhdl vcszsimvlog vcspcvlog vcsmxpcvlog vcsscvlog vcsmxvlog vcsvlog ncmvlog mtivlog vcsmxpipvlog vcszebuvlog"
+    echo "          -32          forces 32-bit mode on 64-bit machines" 
+    echo "          -incdir      use DESIGNWARE_HOME include files instead of design directory" 
+    echo "          -cencrypt    enables the access to IEEE encrypted code files" 
+    echo "          -verbose     enable verbose mode during compilation" 
+    echo "          -debug_opts  enable debug mode for VIP technologies that support this option" 
+    echo "          -waves       [fsdb|verdi|dve|vcd] enables waves dump and optionally opens viewer (VCS only except fsdb)" 
+    echo "          -seed        run simulation with specified seed value" 
+    echo "          -clean       clean simulator generated files" 
+    echo "          -nobuild     skip simulator compilation" 
+    echo "          -buildonly   exit after simulator build" 
+    echo "          -norun       only echo commands (do not execute)" 
+    echo "          -pa          invoke Verdi after execution" 
+    exit( 1 )
+endif
+
+set scenario   = $1
+set simulator  = $2
+set control    = "svlog"
+set mode       = "svlog"
+
+if ( $simulator =~ *-* ) then
+    set mode      = `echo $simulator | sed -e 's/^.*-//'`
+    set simulator = `echo $simulator | sed -e 's/-.*$//'`
+endif
+
+set simulator = "${simulator}-${mode}"
+
+if ( ! $?DESIGNWARE_HOME ) then
+    echo "Please set your DESIGNWARE_HOME environment variable"
+    exit( 1 )
+endif
+
+set dw_home_dir   = "/mnt/disk_0/softwares/vips/designware2018"
+set design_dir    = "/mnt/disk_0/IC/basic/vip/uart/tb_uart_svt_uvm_basic_sys"
+
+set include_dir   = "${design_dir}/include"
+set src_dir       = "${design_dir}/src"
+set tbench_name   = "tb_uart_svt_uvm_basic_sys"
+set tbench_dir    = "${design_dir}/examples/sverilog/uart_svt/tb_uart_svt_uvm_basic_sys"
+set scenario_list = ( base_test directed_test random_test reconfig_test )
+
+if ( $scenario != "all" ) then
+    set scenario_list = ( $scenario )
+endif
+
+if ( ${incdir} ) then
+    set vcs_incdir_options = "+define+DESIGNWARE_INCDIR=/mnt/disk_0/softwares/vips/designware2018 +define+SVT_LOADER_UTIL_ENABLE_DWHOME_INCDIRS +incdir+/mnt/disk_0/softwares/vips/designware2018/vip/svt/uart_svt/R-2020.12/sverilog/include"
+    set mti_incdir_options = "+define+DESIGNWARE_INCDIR=/mnt/disk_0/softwares/vips/designware2018 +define+SVT_LOADER_UTIL_ENABLE_DWHOME_INCDIRS +incdir+/mnt/disk_0/softwares/vips/designware2018/vip/svt/uart_svt/R-2020.12/sverilog/include"
+else
+    set vcs_incdir_options = "+incdir+${src_dir}/sverilog/vcs +incdir+${include_dir}/sverilog +incdir+${src_dir}/verilog/vcs +incdir+${include_dir}/verilog"
+    set mti_incdir_options = "+incdir+${src_dir}/sverilog/mti +incdir+${include_dir}/sverilog +incdir+${src_dir}/verilog/mti +incdir+${include_dir}/verilog"
+endif
+
+if ( ${cencrypt} ) then
+    set vcs_cencrypt_options = "+define+SVT_ENABLE_COMMON_ENCRYPT"
+    set mti_cencrypt_options = "+define+SVT_ENABLE_COMMON_ENCRYPT"
+else
+    set vcs_cencrypt_options = ""
+    set mti_cencrypt_options = ""
+endif
+
+if ( ${verb} ) then
+    set vcs_quiet = ""
+    set cds_quiet = "-parseinfo include"
+else
+    set vcs_quiet = "-q"
+    set cds_quiet = ""
+endif
+
+if ( ${debug} ) then
+    set sim_run_debug = "+svt_debug_opts"
+    setenv SLI_DEBUG_SERVER file
+else
+    set sim_run_debug = ""
+endif
+if ( ${seed} ) then
+    set vcs_run_seed = "+ntb_random_seed=${seed}"
+    set ncv_run_seed = "-svseed ${seed}"
+    set mti_run_seed = "-sv_seed ${seed}"
+else
+    set vcs_run_seed = ""
+    set ncv_run_seed = ""
+    set mti_run_seed = ""
+endif
+
+set os_uname = `/bin/uname -s`
+set mach_uname = `/bin/uname -m`
+switch ( ${os_uname} )
+
+    case SunOS:
+
+      if ( ${mach_uname} == "i86pc" ) then
+        set bitarch = `/bin/isainfo -b`
+        set ld = "ld"
+        set elf = "-lelf"
+        set ccflags = ""
+        if ( ${bitarch} == 64 && ! ${force32} ) then
+            set platform = "x86sol64"
+            set vmm_platform = "sunos5x86_64"
+            set uvm_platform = "64bit"
+            set novas_platform = ""
+            set vcsflags = ""
+            set vcs_bitmode = "-full64"
+            set ncverilog_flags = "+nc64bit"
+            set ncvlog_flags = "-64BIT"
+            set ncvhdl_flags = "-64BIT"
+            set mtivlog_flags = ""
+            set ccflags_dyn = "-Kpic -m64"
+            set ldflags_dyn = "-G"
+            set mti_tool_path = "sunos5x86_64"
+            setenv MTI_VCO_MODE 64
+        else
+            set platform = "x86sol32"
+            set vmm_platform = "sunos5x86"
+            set uvm_platform = ""
+            set novas_platform = ""
+            set vcsflags = ""
+            set vcs_bitmode = ""
+            set ncverilog_flags = ""
+            set ncvlog_flags = ""
+            set ncvhdl_flags = ""
+            set mtivlog_flags = ""
+            set ccflags_dyn = "-Kpic -m32"
+            set ldflags_dyn = "-G"
+            set mti_tool_path = "bin"
+            setenv MTI_VCO_MODE 32
+        endif
+        set vcslibs = ""
+        set mtilibs = ""
+        set vuser_entry = ""
+        set cpplibs = "-lsocket"
+        set dyn_ext = "so"
+        set dyn_path_var = "LD_LIBRARY_PATH"
+      else
+        set bitarch = `/bin/isainfo -b`
+        set ld = "ld"
+        set elf = "-lelf"
+        set ccflags = ""
+        if ( ${bitarch} == 64 && ! ${force32} ) then
+            set platform = "sparc64"
+            set vmm_platform = "sunos5_64"
+            set uvm_platform = "64bit"
+            set novas_platform = ""
+            set vcsflags = ""
+            set vcs_bitmode = "-full64"
+            set ncverilog_flags = "+nc64bit"
+            set ncvlog_flags = "-64BIT"
+            set ncvhdl_flags = "-64BIT"
+            set mtivlog_flags = ""
+            set ccflags_dyn = "-Kpic -m64"
+            set ldflags_dyn = "-G"
+            set mti_tool_path = "sunos5v9"
+            setenv MTI_VCO_MODE 64
+        else
+            set platform = "sparcOS5"
+            set vmm_platform = "sunos5"
+            set uvm_platform = ""
+            set novas_platform = ""
+            set vcsflags = ""
+            set vcs_bitmode = ""
+            set ncverilog_flags = ""
+            set ncvlog_flags = ""
+            set ncvhdl_flags = ""
+            set mtivlog_flags = ""
+            set ccflags_dyn = "-Kpic -m32"
+            set ldflags_dyn = "-G"
+            set mti_tool_path = "bin"
+            setenv MTI_VCO_MODE 32
+        endif
+        set vcslibs = ""
+        set mtilibs = ""
+        set vuser_entry = ""
+        set cpplibs = "-lsocket"
+        set dyn_ext = "so"
+        set dyn_path_var = "LD_LIBRARY_PATH"
+      endif
+      breaksw
+
+    case Linux:
+
+        set bitarch = `/bin/uname -i`
+        set ld = "cc"
+        set elf = ""
+        set ncverilog_flags = ""
+        set ncvlog_flags = ""
+        set ncvhdl_flags = ""
+        set mtivlog_flags = ""
+        if ( ${bitarch} =~ *_64 && ! ${force32} ) then
+            if ( -e /etc/SuSE-release ) then
+                set platform = "suse64"
+            else
+                set platform = "amd64"
+            endif
+            set vmm_platform = "linux_x86_64"
+            set uvm_platform = "64bit"
+            set novas_platform = "LINUX64"
+            set vcsflags = ""
+            set vcs_bitmode = "-full64"
+            set ncverilog_flags = "+nc64bit"
+            set ncvlog_flags = "-64BIT"
+            set ncvhdl_flags = "-64BIT"
+            set ccflags = ""
+            set ccflags_dyn = "-fPIC"
+            set ldflags_dyn = "-shared"
+            set mti_tool_path = "linux_x86_64"
+            setenv MTI_VCO_MODE 64
+        else
+            if ( -e /etc/SuSE-release ) then
+                set platform = "suse32"
+            else
+                set platform = "linux"
+            endif
+            set vmm_platform = "linux"
+            set uvm_platform = ""
+            set novas_platform = "LINUX"
+            set vcsflags = ""
+            set vcs_bitmode = ""
+            set ccflags = "-m32"
+            set ccflags_dyn = "-m32 -fPIC"
+            set ldflags_dyn = "-m32 -shared"
+            set mti_tool_path = "bin"
+            setenv MTI_VCO_MODE 32
+        endif
+        set vcslibs = ""
+        set mtilibs = "-lc"
+        set vuser_entry = ""
+        set cpplibs = "-lm"
+        set dyn_ext = "so"
+        set dyn_path_var = "LD_LIBRARY_PATH"
+        breaksw
+
+    default:
+
+        echo "Unsupported platform '${os_uname}'"
+        exit( 1 )
+
+    breaksw
+
+endsw
+
+set sim_build_options = ""
+set vcs_build_options = ""
+set ncv_build_options = ""
+set mti_build_options = ""
+
+set sim_elab_options  = ""
+set vcs_elab_options  = ""
+set ncv_elab_options  = ""
+set mti_elab_options  = ""
+
+set sim_run_options   = ""
+set vcs_run_options   = ""
+set ncv_run_options   = ""
+set mti_run_options   = ""
+
+set uvm_home_dir      = ""
+if ( $?UVM_HOME ) then
+    if ( -d "$UVM_HOME/src" ) then
+        set uvm_home_dir = "$UVM_HOME"
+    else
+        echo "Invalid UVM_HOME setting"
+        exit( 1 )
+    endif
+else if ( "${simulator}" =~ vcs* ) then
+    if ( $?VCS_HOME ) then
+        set uvm_home_dir = "$VCS_HOME/etc/uvm"
+    endif
+else if ( "${simulator}" =~ mti* ) then
+    if ( $?MTI_HOME ) then
+        set mti_latest_uvm_ver = `/bin/egrep 'mtiUvm +=' $MTI_HOME/modelsim.ini | /bin/sed -e 's,^.*/,,g'`
+        set uvm_home_dir = "$MTI_HOME/verilog_src/${mti_latest_uvm_ver}"
+    endif
+else if ( "${simulator}" =~ ncv* ) then
+    if ( $?CDS_INST_DIR ) then
+        set uvm_home_dir = "$CDS_INST_DIR/tools/methodology/UVM/CDNS-1.1d/sv"
+    endif
+endif
+
+if ( ( "$uvm_home_dir" != "" ) && ( -d "$uvm_home_dir/src" ) ) then
+    set uvm_major_ver = `/usr/bin/find $uvm_home_dir/src -follow -type f -exec /bin/egrep '^.define +UVM_MAJOR_REV +[0-9]' {} \; |& /bin/grep -v ' loop ' | /usr/bin/awk '{print $3}'`
+    set uvm_minor_ver = `/usr/bin/find $uvm_home_dir/src -follow -type f -exec /bin/egrep '^.define +UVM_MINOR_REV +[0-9]' {} \; |& /bin/grep -v ' loop ' | /usr/bin/awk '{print $3}'`
+else
+    set uvm_major_ver = 1
+    set uvm_minor_ver = 1
+endif
+
+set vcs_lca_option     = ""
+if ( $?VCS_HOME ) then
+    if ( -x $VCS_HOME/bin/vcs ) then
+        set vcs_version = `$VCS_HOME/bin/vcs -id | /bin/grep 'Compiler version =' | /usr/bin/awk '{print $5}'`
+        if ( "$vcs_version" == "I-2014.03" ) then
+            set vcs_lca_option = "+warn=noFCDCI"
+        endif
+    endif
+endif
+
+
+if ( $?AUX_VCSFLAGS ) then
+    set aux_vcsflags = "${AUX_VCSFLAGS}"
+else
+    set aux_vcsflags = ""
+endif
+if ( $?AUX_MTIFLAGS ) then
+    set aux_mtiflags = "${AUX_MTIFLAGS}"
+else
+    set aux_mtiflags = ""
+endif
+if ( $?AUX_NCVFLAGS ) then
+    set aux_ncvflags = "${AUX_NCVFLAGS}"
+else
+    set aux_ncvflags = ""
+endif
+
+if ( "${pa}" == "fsdb" ) then
+    if ( $?NOVAS_HOME ) then
+        if ( ! $?VERDI_HOME ) then
+            setenv VERDI_HOME $NOVAS_HOME
+        endif
+    endif
+    if ( ! $?VERDI_HOME ) then
+        echo "The PA FSDB option requires the VERDI_HOME environment variable to be properly set"
+        exit( 1 )
+    endif
+    set sim_run_debug  = "${sim_run_debug} +svt_enable_pa=fsdb"
+    set vcs_pa_defines = '+define+SVT_FSDB_ENABLE +define+WAVES_FSDB +define+WAVES=\"fsdb\"'
+    set vcs_pa_options = "+plusarg_save -debug_access+pp+dmptf+thread -debug_region=cell+encrypt -notice"
+    set vcs_pa_options = "${vcs_pa_options} -P ${VERDI_HOME}/share/PLI/VCS/${novas_platform}/novas.tab ${VERDI_HOME}/share/PLI/VCS/${novas_platform}/pli.a"
+else if ( "${pa}" != "" ) then
+    set sim_run_debug  = "${sim_run_debug} +svt_enable_pa"
+    set vcs_pa_defines = ""
+    set vcs_pa_options = ""
+else
+    set vcs_pa_defines = ""
+    set vcs_pa_options = ""
+endif
+
+if ( "${waves}" != "" ) then
+    set vcs_waves_options = "+plusarg_save -debug_access+pp+dmptf+thread -debug_region=cell+encrypt -notice"
+    set ncv_waves_defines = ""
+    set ncv_waves_options = ""
+    set mti_waves_defines = ""
+    set mti_waves_options = ""
+    if ( ${waves} == "fsdb" ) then
+        if ( $?NOVAS_HOME ) then
+            if ( ! $?VERDI_HOME ) then
+                setenv VERDI_HOME $NOVAS_HOME
+            endif
+        endif
+        if ( ! $?VERDI_HOME ) then
+            echo "The WAVES FSDB option requires the VERDI_HOME environment variable to be properly set"
+            exit( 1 )
+        endif
+        set vcs_waves_defines = '+define+SVT_FSDB_ENABLE +define+WAVES_FSDB +define+WAVES=\"fsdb\"'
+        set vcs_waves_options = "${vcs_waves_options} -P ${VERDI_HOME}/share/PLI/VCS/${novas_platform}/novas.tab ${VERDI_HOME}/share/PLI/VCS/${novas_platform}/pli.a"
+        set ncv_waves_defines = '+define+SVT_FSDB_ENABLE +define+WAVES_FSDB +define+WAVES=\"fsdb\"'
+        set ncv_waves_options = "${ncv_waves_options} -L${VERDI_HOME}/share/PLI/IUS/${novas_platform}/boot -loadpli debpli:novas_pli_boot"
+        set mti_waves_defines = '+define+SVT_FSDB_ENABLE +define+WAVES_FSDB +define+WAVES=\"fsdb\"'
+        set mti_waves_options = "${mti_waves_options} -pli ${VERDI_HOME}/share/PLI/MODELSIM/${novas_platform}/novas_fli.so"
+        set vcs_waves_cmd = ""
+    else if ( ${waves} == "verdi" ) then
+        if ( $?NOVAS_HOME ) then
+            if ( ! $?VERDI_HOME ) then
+                setenv VERDI_HOME $NOVAS_HOME
+            endif
+        endif
+        if ( ! $?VERDI_HOME ) then
+            echo "The WAVES VERDI option requires the VERDI_HOME environment variable to be properly set"
+            exit( 1 )
+        endif
+        set vcs_waves_options = "${vcs_waves_options} -P ${VERDI_HOME}/share/PLI/VCS/${novas_platform}/novas.tab ${VERDI_HOME}/share/PLI/VCS/${novas_platform}/pli.a"
+        set vcs_waves_defines = '+define+WAVES_FSDB +define+WAVES=\"fsdb\"'
+        set vcs_waves_cmd = "; nWave -ssf test_top.fsdb"
+    else if ( ${waves} == "dve" ) then
+        set vcs_waves_defines = '+define+WAVES_DVE +define+WAVES=\"dve\"'
+        set ncv_waves_defines = ""
+        set vcs_waves_cmd = "-assert dumpoff +vpdfile+vpdplus.vpd -vcd vcdplus.vcd; touch vpdplus.vpd vcdplus.vcd; cp vpdplus.vpd wavesdump; if ( -z wavesdump ) cp vcdplus.vcd wavesdump; rm -f verilog.dump; ln -s wavesdump verilog.dump; dve ${vcs_bitmode}"
+        if ( -f ${tbench_dir}/waves.tcl ) then
+            /bin/grep -q '\-file verilog.dump' ${tbench_dir}/waves.tcl
+            if ( $status ) then
+                set vcs_waves_cmd = "${vcs_waves_cmd} -session ${tbench_dir}/waves.tcl -vpd verilog.dump"
+            else
+                set vcs_waves_cmd = "${vcs_waves_cmd} -session ${tbench_dir}/waves.tcl"
+            endif
+        else
+            set vcs_waves_cmd = "${vcs_waves_cmd} -vpd verilog.dump"
+        endif
+    else
+        set vcs_waves_defines = '+define+WAVES_VCD +define+WAVES=\"dve\"'
+        set vcs_waves_cmd = "-assert dumpoff +vpdfile+vpdplus.vpd -vcd vcdplus.vcd"
+    endif
+else
+    set vcs_waves_defines = ""
+    set vcs_waves_options = ""
+    set vcs_waves_cmd = ""
+    set ncv_waves_defines = ""
+    set ncv_waves_options = ""
+    set mti_waves_defines = ""
+    set mti_waves_options = ""
+endif
+
+if ( -f "${tbench_dir}/methodology" ) then
+    set methodology_mode = `cat ${tbench_dir}/methodology`
+    if ( "${methodology_mode}" =~ uvm* ) then
+        set vcsovmflags = ""
+        set mtiovmflags = ""
+        set ncvovmflags = ""
+        if ( $?UVM_HOME ) then
+            set irun_method     = "-uvmhome $UVM_HOME"
+            set vcsuvmflags     = "-CFLAGS -DVCS +incdir+$UVM_HOME/src $UVM_HOME/src/dpi/uvm_dpi.cc"
+            set vcselabuvmflags = "-CFLAGS -DVCS $UVM_HOME/src/dpi/uvm_dpi.cc"
+            set mtiuvmflags     = ""
+            set ncvuvmflags     = ""
+        else
+            set irun_method     = "-uvm"
+            set vcsuvmflags     = "-ntb_opts uvm"
+            set vcselabuvmflags = "-ntb_opts uvm"
+            set mtiuvmflags     = ""
+            set ncvuvmflags     = ""
+        endif
+    else if ( "${methodology_mode}" =~ ovm* ) then
+        set vcsuvmflags = ""
+        set vcselabuvmflags = ""
+        set mtiuvmflags = ""
+        set ncvuvmflags = ""
+        if ( $?OVM_HOME ) then
+            set irun_method = "-ovmhome $OVM_HOME"
+            set vcsovmflags = "+incdir+$OVM_HOME/src"
+            set mtiovmflags = "+incdir+$OVM_HOME/src"
+            set ncvovmflags = "-incdir $OVM_HOME/src"
+        else
+            set irun_method = "-ovm"
+            set vcsovmflags = ""
+            set mtiovmflags = ""
+            set ncvovmflags = ""
+        endif
+    else
+        set irun_method = ""
+        set vcsuvmflags = ""
+        set vcselabuvmflags = ""
+        set mtiuvmflags = ""
+        set ncvuvmflags = ""
+        set vcsovmflags = ""
+        set mtiovmflags = ""
+        set ncvovmflags = ""
+        set nobuild = 0
+    endif
+else
+    set methodology_mode = ""
+    set irun_method = ""
+    set vcsuvmflags = ""
+    set vcselabuvmflags = ""
+    set mtiuvmflags = ""
+    set ncvuvmflags = ""
+    set vcsovmflags = ""
+    set mtiovmflags = ""
+    set ncvovmflags = ""
+    set nobuild = 0
+endif
+
+if ( -f "${tbench_dir}/zebu_ip_libs" ) then
+    set zebu_ip_libs = `cat ${tbench_dir}/zebu_ip_libs`
+else
+    set zebu_ip_libs = ""
+endif
+
+if ( ( "${methodology_mode}" =~ uvm* ) && ( -f "${tbench_dir}/sim_uvm_options" ) ) then
+    /bin/grep -q 'disable_uvm_item_recording' ${tbench_dir}/sim_uvm_options
+    if ( ! $status ) then
+        if ( ( $uvm_major_ver == 1 ) && ( $uvm_minor_ver < 2 ) ) then
+            if ( "$uvm_home_dir" =~ "*M3586" ) then
+                set vcsuvmflags = "$vcsuvmflags +define+SVT_ENABLE_MANTIS_3586_FIX"
+                set mtiuvmflags = "$mtiuvmflags +define+SVT_ENABLE_MANTIS_3586_FIX"
+                set ncvuvmflags = "$ncvuvmflags -define SVT_ENABLE_MANTIS_3586_FIX"
+            else
+                set vcsuvmflags = "$vcsuvmflags +define+UVM_DISABLE_AUTO_ITEM_RECORDING"
+                set mtiuvmflags = "$mtiuvmflags +define+UVM_DISABLE_AUTO_ITEM_RECORDING"
+                set ncvuvmflags = "$ncvuvmflags -define UVM_DISABLE_AUTO_ITEM_RECORDING"
+            endif
+        endif
+    endif
+endif
+
+if ( "${vcselabuvmflags}" != "" ) then
+    set vcselabuvmflags = "${vcselabuvmflags} ${DESIGNWARE_HOME}/vip/common/latest/C/lib/${platform}/VipCommonNtb.so"
+endif
+
+unsetenv ${dyn_path_var}
+
+switch ( ${simulator} )
+
+    case "ncvlog-svlog":
+
+        set path = ( ${CDS_INST_DIR}/tools/bin $path )
+
+
+        if ( ! -f "${tbench_dir}/top.sv" ) then
+            echo "Simulator ncvlog-svlog is not supported by this example"
+            exit(0)
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/prescript.incdir" ) then
+            set prescript_file = "${tbench_dir}/prescript.incdir"
+        else
+            set prescript_file = "${tbench_dir}/prescript"
+        endif
+
+        if ( -f ${prescript_file} && ! ${norun} ) then
+            source ${prescript_file}
+            set ret_status = $status
+            if ( $ret_status ) then
+                if ( $ret_status == -1 ) then
+                    echo "Simulator ncvlog-svlog is not supported by this example"
+                    exit(0)
+                else
+                    echo "The script 'prescript' completed with an error status"
+                    exit(1)
+                endif
+            endif
+        endif
+
+        if ( -f "${tbench_dir}/sim_build_options" ) then
+            set sim_build_options = `/usr/bin/head -1 ${tbench_dir}/sim_build_options`
+            set sim_build_options = `echo $sim_build_options | /bin/sed -e 's,-ntb_opts uvm,,' -e 's,-CFLAGS -DVCS,,' -e 's,+incdir+$UVM_HOME/src,,' -e 's,$UVM_HOME/src/dpi/uvm_dpi.cc,,'`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/vcs_build_options.incdir" ) then
+            set vcs_build_options_file = "${tbench_dir}/vcs_build_options.incdir"
+        else
+            set vcs_build_options_file = "${tbench_dir}/vcs_build_options"
+        endif
+
+        if ( -f ${vcs_build_options_file} ) then
+            set vcs_build_options = `/usr/bin/head -1 ${vcs_build_options_file}`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/ncv_build_options.incdir" ) then
+            set ncv_build_options_file = "${tbench_dir}/ncv_build_options.incdir"
+        else
+            set ncv_build_options_file = "${tbench_dir}/ncv_build_options"
+        endif
+
+        if ( -f ${ncv_build_options_file} ) then
+            set ncv_build_options = `/usr/bin/head -1 ${ncv_build_options_file}`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/mti_build_options.incdir" ) then
+            set mti_build_options_file = "${tbench_dir}/mti_build_options.incdir"
+        else
+            set mti_build_options_file = "${tbench_dir}/mti_build_options"
+        endif
+
+        if ( -f ${mti_build_options_file} ) then
+            set mti_build_options = `/usr/bin/head -1 ${mti_build_options_file}`
+        endif
+
+        if ( -f "${tbench_dir}/sim_elab_options" ) then
+            set sim_elab_options = `/usr/bin/head -1 ${tbench_dir}/sim_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_elab_options" ) then
+            set vcs_elab_options = `/usr/bin/head -1 ${tbench_dir}/vcs_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_elab_options" ) then
+            set ncv_elab_options = `/usr/bin/head -1 ${tbench_dir}/ncv_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_elab_options" ) then
+            set mti_elab_options = `/usr/bin/head -1 ${tbench_dir}/mti_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_run_options" ) then
+            set sim_run_options = "${sim_run_options} `/usr/bin/head -1 ${tbench_dir}/sim_run_options`"
+        endif
+
+        if ( -f "${tbench_dir}/vcs_run_options" ) then
+            set vcs_run_options = `/usr/bin/head -1 ${tbench_dir}/vcs_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_run_options" ) then
+            set ncv_run_options = `/usr/bin/head -1 ${tbench_dir}/ncv_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_run_options" ) then
+            set mti_run_options = `/usr/bin/head -1 ${tbench_dir}/mti_run_options`
+        endif
+
+        foreach scenario ( $scenario_list )
+
+            cat << ! > top_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > hdl_files
+!
+
+            set program_name = `/bin/egrep '^\s*program\s*\w*\s*' ${tbench_dir}/tests/ts.${scenario}.sv | /bin/sed -e 's/program//' -e 's/automatic//' -e 's/\w*//' | /usr/bin/cut -d "(" -f1`
+
+            if ( ! ${nobuild} ) then
+                echo "# rm -rf output logs coverage work INCA_libs"
+                if ( ! ${norun} ) then
+                    eval rm -rf output logs coverage work INCA_libs
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# mkdir output logs coverage work"
+                if ( ! ${norun} ) then
+                    eval mkdir output logs coverage work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${buildonly} ) then
+
+                echo "# irun -access rw -messages -sv -licqueue -zlib 5 -l ./logs/simulate__${scenario}.log ${cds_quiet} ${irun_method} ${ncvlog_flags} ${aux_ncvflags} ${sim_build_options} ${ncv_build_options} ${ncv_waves_options} ${ncv_waves_defines} ${ncvuvmflags} ${ncvovmflags} -uvmnoautocompile  -define SVT_UVM_TECHNOLOGY  -define CADENCE -errormax 5 -nowarn NOTIND -nowarn PMBDVX -nowarn ECBICP -nowarn AAMNSD -nowarn LVLFNC -nowarn PMBMDV -nowarn WARIPR -nowarn IGNFMT -nowarn CUVIHR -nowarn FUNTSK  -incdir ${src_dir}/sverilog/ncv -incdir ${include_dir}/sverilog -incdir ${src_dir}/verilog/ncv -incdir ${include_dir}/verilog -incdir ${tbench_dir} -incdir ${tbench_dir}/../../env -incdir ${tbench_dir}/../env -incdir ${tbench_dir}/env -incdir ${tbench_dir}/dut -incdir ${tbench_dir}/hdl_interconnect -incdir ${tbench_dir}/tests ${sim_elab_options} ${ncv_elab_options} ${sim_run_debug} ${ncv_run_seed} ${sim_run_options} ${ncv_run_options} -nowarn SYSFMW -sv_lib ${DESIGNWARE_HOME}/vip/common/latest/C/lib/${platform}/VipCommonNtb   -f top_files -f hdl_files"
+                if ( ! ${norun} ) then
+                    eval irun -access rw -messages -sv -licqueue -zlib 5 -l ./logs/simulate__${scenario}.log ${cds_quiet} ${irun_method} ${ncvlog_flags} ${aux_ncvflags} ${sim_build_options} ${ncv_build_options} ${ncv_waves_options} ${ncv_waves_defines} ${ncvuvmflags} ${ncvovmflags} -uvmnoautocompile  -define SVT_UVM_TECHNOLOGY  -define CADENCE -errormax 5 -nowarn NOTIND -nowarn PMBDVX -nowarn ECBICP -nowarn AAMNSD -nowarn LVLFNC -nowarn PMBMDV -nowarn WARIPR -nowarn IGNFMT -nowarn CUVIHR -nowarn FUNTSK  -incdir ${src_dir}/sverilog/ncv -incdir ${include_dir}/sverilog -incdir ${src_dir}/verilog/ncv -incdir ${include_dir}/verilog -incdir ${tbench_dir} -incdir ${tbench_dir}/../../env -incdir ${tbench_dir}/../env -incdir ${tbench_dir}/env -incdir ${tbench_dir}/dut -incdir ${tbench_dir}/hdl_interconnect -incdir ${tbench_dir}/tests ${sim_elab_options} ${ncv_elab_options} ${sim_run_debug} ${ncv_run_seed} ${sim_run_options} ${ncv_run_options} -nowarn SYSFMW -sv_lib ${DESIGNWARE_HOME}/vip/common/latest/C/lib/${platform}/VipCommonNtb   -f top_files -f hdl_files
+                endif
+
+                if ( ${status} ) then
+                    exit( 10 )
+                endif
+
+                sleep 2
+
+                if ( -f "${tbench_dir}/postscript" && ! ${norun} ) then
+                    source ${tbench_dir}/postscript
+                    if ( $status ) then
+                        echo "The script 'postscript' completed with a non-zero status"
+                        exit(1)
+                    endif
+                endif
+
+                if ( "${pa}" == "fsdb" ) then 
+                    ${VERDI_HOME}/bin/verdi -workMode protocolDebug -ssf test_top.fsdb
+                else if ( "${pa}" != "" ) then 
+                    ${DESIGNWARE_HOME}/bin/pa -dir . -ts
+                endif
+
+            endif
+
+        end
+
+        breaksw
+
+    case "vcsvhdl-svtb":
+
+        set path = ( ${VCS_HOME}/bin $path )
+
+
+        if ( ! -f "${tbench_dir}/top.vhd" ) then
+            echo "Simulator vcsvhdl-svtb is not supported by this example"
+            exit(0)
+        endif
+
+        if ( -f "${tbench_dir}/sim_build_options" ) then
+            set sim_build_options = `/usr/bin/head -1 ${tbench_dir}/sim_build_options`
+            set sim_build_options = `echo $sim_build_options | /bin/sed -e 's,-ntb_opts uvm,,' -e 's,-CFLAGS -DVCS,,' -e 's,+incdir+$UVM_HOME/src,,' -e 's,$UVM_HOME/src/dpi/uvm_dpi.cc,,'`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_build_options" ) then
+            set vcs_build_options = `/usr/bin/head -1 ${tbench_dir}/vcs_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_build_options" ) then
+            set ncv_build_options = `/usr/bin/head -1 ${tbench_dir}/ncv_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_build_options" ) then
+            set mti_build_options = `/usr/bin/head -1 ${tbench_dir}/mti_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_elab_options" ) then
+            set sim_elab_options = `/usr/bin/head -1 ${tbench_dir}/sim_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_elab_options" ) then
+            set vcs_elab_options = `/usr/bin/head -1 ${tbench_dir}/vcs_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_elab_options" ) then
+            set ncv_elab_options = `/usr/bin/head -1 ${tbench_dir}/ncv_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_elab_options" ) then
+            set mti_elab_options = `/usr/bin/head -1 ${tbench_dir}/mti_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_run_options" ) then
+            set sim_run_options = `/usr/bin/head -1 ${tbench_dir}/sim_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_run_options" ) then
+            set vcs_run_options = `/usr/bin/head -1 ${tbench_dir}/vcs_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_run_options" ) then
+            set ncv_run_options = `/usr/bin/head -1 ${tbench_dir}/ncv_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_run_options" ) then
+            set mti_run_options = `/usr/bin/head -1 ${tbench_dir}/mti_run_options`
+        endif
+
+        foreach scenario ( $scenario_list )
+
+            if ( -f "${tbench_dir}/prescript" && ! ${norun} ) then
+                source ${tbench_dir}/prescript
+                set ret_status = $status
+                if ( $ret_status ) then
+                    if ( $ret_status == -1 ) then
+                        echo "Simulator vcsvhdl-svtb is not supported by this example"
+                        exit(0)
+                    endif
+                        echo "The script 'prescript' completed with an error status"
+                        exit(1)
+                    endif
+                endif
+            endif
+
+            cat << ! > tb_uart_svt_uvm_basic_sys.config
+program UartTxrxSvtProgram.vrp
+program UartMonitorSvtProgram.vrp
+program UartAgentSvtProgram.vrp
+!
+
+            cat << ! > hdl_files
+${tbench_dir}/top.vhd
+!
+
+            cat << ! > modif_files
+${include_dir}/svtb/UartAgentSvtInterface.svi
+${include_dir}/svtb/UartTxrxSvtInterface.svi
+${include_dir}/svtb/UartMonitorSvtInterface.svi
+!
+
+            cat << ! > envif_files
+/mnt/disk_0/IC/basic/vip/uart/tb_uart_svt_uvm_basic_sys/examples/sverilog/uart_svt/tb_uart_svt_uvm_basic_sys/env/uart_reset_if.svi
+!
+
+            cat << ! > pkg_files
+!
+
+            cat << ! > top_files
+${tbench_dir}/top.vhd
+!
+
+            cat << ! > test_files
+${tbench_dir}/tests/ts.${scenario}.sv
+!
+
+            set program_name = `/bin/egrep '^\s*program\s*\w*\s*' ${tbench_dir}/tests/ts.${scenario}.sv | /bin/sed -e 's/program//' -e 's/automatic//' -e 's/\w*//' | /usr/bin/cut -d "(" -f1`
+
+            set timescale = `/bin/egrep '^\s*.timescale\s*\w*\s*' ${tbench_dir}/top.vhd | /bin/sed -e 's/ *//g' | /bin/sed -e 's/.timescale//'`
+
+            if ( ! ${nobuild} ) then
+                echo "# rm -rf output logs coverage work"
+                if ( ! ${norun} ) then
+                    eval rm -rf output logs coverage work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# mkdir output logs coverage work"
+                if ( ! ${norun} ) then
+                    eval mkdir output logs coverage work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# "printf 'WORK > work\nwork : ./work\n'" > synopsys_sim.setup"
+                if ( ! ${norun} ) then
+                    eval "printf 'WORK > work\nwork : ./work\n'" > synopsys_sim.setup
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vlogan -l ./logs/vloganalyze.log ${vcs_quiet} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} +define+DW_VIP_USE_SVTB_WRAPPER +define+SYNOPSYS_SV -ntb_define NTB  -ntb_opts use_sigprop  -ntb_vipext .ov +define+NTB -ntb_incdir ${include_dir}/vera+${src_dir}/vera +incdir+${include_dir}/{verilog,svtb} +incdir+${tbench_dir}/{.,../env,env,dut,hdl_interconnect} ${vcslibs}  -f vlog_files"
+                if ( ! ${norun} ) then
+                    eval vlogan -l ./logs/vloganalyze.log ${vcs_quiet} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} +define+DW_VIP_USE_SVTB_WRAPPER +define+SYNOPSYS_SV -ntb_define NTB  -ntb_opts use_sigprop  -ntb_vipext .ov +define+NTB -ntb_incdir ${include_dir}/vera+${src_dir}/vera +incdir+${include_dir}/{verilog,svtb} +incdir+${tbench_dir}/{.,../env,env,dut,hdl_interconnect} ${vcslibs}  -f vlog_files
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vhdlan -l ./logs/vhdlanalyze.log ${vcs_bitmode} ${vcsflags} -f vhdl_files"
+                if ( ! ${norun} ) then
+                    eval vhdlan -l ./logs/vhdlanalyze.log ${vcs_bitmode} ${vcsflags} -f vhdl_files
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs -l ./logs/compile.log cfgtest -Mdir=./output/csrc -ntb_opts use_sigprop -t NS ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} -o ./output/simvhdlsvtb"
+                if ( ! ${norun} ) then
+                    eval vcs -l ./logs/compile.log cfgtest -Mdir=./output/csrc -ntb_opts use_sigprop -t NS ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} -o ./output/simvhdlsvtb
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${buildonly} ) then
+
+                echo "# ./output/simvhdlsvtb ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run"
+                if ( ! ${norun} ) then
+                    eval ./output/simvhdlsvtb ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run
+                endif
+
+                if ( ${status} ) then
+                    exit( 10 )
+                endif
+
+                sleep 2
+
+                if ( -f "${tbench_dir}/postscript" && ! ${norun} ) then
+                    source ${tbench_dir}/postscript
+                    if ( $status ) then
+                        echo "The script 'postscript' completed with a non-zero status"
+                        exit(1)
+                    endif
+                endif
+
+            endif
+
+        end
+
+        breaksw
+
+    case "vcszsimvlog-svlog":
+
+        set path = ( ${VCS_HOME}/bin ${ZEBU_ROOT}/bin $path )
+
+
+        if ( ! -f "${tbench_dir}/top.sv" ) then
+            echo "Simulator vcszsimvlog-svlog is not supported by this example"
+            exit(0)
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/prescript.incdir" ) then
+            set prescript_file = "${tbench_dir}/prescript.incdir"
+        else
+            set prescript_file = "${tbench_dir}/prescript"
+        endif
+
+        if ( -f ${prescript_file} && ! ${norun} ) then
+            source ${prescript_file}
+            set ret_status = $status
+            if ( $ret_status ) then
+                if ( $ret_status == -1 ) then
+                    echo "Simulator vcszsimvlog-svlog is not supported by this example"
+                    exit(0)
+                else
+                    echo "The script 'prescript' completed with an error status"
+                    exit(1)
+                endif
+            endif
+        endif
+
+        if ( -f "${tbench_dir}/sim_build_options" ) then
+            set sim_build_options = `/usr/bin/head -1 ${tbench_dir}/sim_build_options`
+            set sim_build_options = `echo $sim_build_options | /bin/sed -e 's,-ntb_opts uvm,,' -e 's,-CFLAGS -DVCS,,' -e 's,+incdir+$UVM_HOME/src,,' -e 's,$UVM_HOME/src/dpi/uvm_dpi.cc,,'`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/vcs_build_options.incdir" ) then
+            set vcs_build_options_file = "${tbench_dir}/vcs_build_options.incdir"
+        else
+            set vcs_build_options_file = "${tbench_dir}/vcs_build_options"
+        endif
+
+        if ( -f ${vcs_build_options_file} ) then
+            set vcs_build_options = `/usr/bin/head -1 ${vcs_build_options_file}`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/ncv_build_options.incdir" ) then
+            set ncv_build_options_file = "${tbench_dir}/ncv_build_options.incdir"
+        else
+            set ncv_build_options_file = "${tbench_dir}/ncv_build_options"
+        endif
+
+        if ( -f ${ncv_build_options_file} ) then
+            set ncv_build_options = `/usr/bin/head -1 ${ncv_build_options_file}`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/mti_build_options.incdir" ) then
+            set mti_build_options_file = "${tbench_dir}/mti_build_options.incdir"
+        else
+            set mti_build_options_file = "${tbench_dir}/mti_build_options"
+        endif
+
+        if ( -f ${mti_build_options_file} ) then
+            set mti_build_options = `/usr/bin/head -1 ${mti_build_options_file}`
+        endif
+
+        if ( -f "${tbench_dir}/sim_elab_options" ) then
+            set sim_elab_options = `/usr/bin/head -1 ${tbench_dir}/sim_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_elab_options" ) then
+            set vcs_elab_options = `/usr/bin/head -1 ${tbench_dir}/vcs_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_elab_options" ) then
+            set ncv_elab_options = `/usr/bin/head -1 ${tbench_dir}/ncv_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_elab_options" ) then
+            set mti_elab_options = `/usr/bin/head -1 ${tbench_dir}/mti_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_run_options" ) then
+            set sim_run_options = "${sim_run_options} `/usr/bin/head -1 ${tbench_dir}/sim_run_options`"
+        endif
+
+        if ( -f "${tbench_dir}/vcs_run_options" ) then
+            set vcs_run_options = `/usr/bin/head -1 ${tbench_dir}/vcs_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_run_options" ) then
+            set ncv_run_options = `/usr/bin/head -1 ${tbench_dir}/ncv_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_run_options" ) then
+            set mti_run_options = `/usr/bin/head -1 ${tbench_dir}/mti_run_options`
+        endif
+
+        foreach scenario ( $scenario_list )
+
+            cat << ! > top_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > hdl_files
+!
+
+            set program_name = `/bin/egrep '^\s*program\s*\w*\s*' ${tbench_dir}/tests/ts.${scenario}.sv | /bin/sed -e 's/program//' -e 's/automatic//' -e 's/\w*//' | /usr/bin/cut -d "(" -f1`
+
+            if ( ! ${nobuild} ) then
+                echo "# rm -rf output logs coverage zcui.work"
+                if ( ! ${norun} ) then
+                    eval rm -rf output logs coverage zcui.work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# mkdir output logs coverage"
+                if ( ! ${norun} ) then
+                    eval mkdir output logs coverage
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+                echo "# setenv LD_LIBRARY_PATH ${ZEBU_ROOT}/lib:${ZEBU_IP_ROOT}/lib"
+                if ( ! ${norun} ) then
+                    eval setenv LD_LIBRARY_PATH ${ZEBU_ROOT}/lib:${ZEBU_IP_ROOT}/lib
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+
+                echo "# setenv ZEBU_SYSTEM_DIR ${ZEBU_SYSTEM_ROOT}/${ZEBU_DEVICE}"
+                if ( ! ${norun} ) then
+                    eval setenv ZEBU_SYSTEM_DIR ${ZEBU_SYSTEM_ROOT}/${ZEBU_DEVICE}
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+
+                echo "# setenv FILE_CONF ${ZEBU_SYSTEM_ROOT}/${ZEBU_DEVICE}/config/zse_configuration.tcl"
+                if ( ! ${norun} ) then
+                    eval setenv FILE_CONF ${ZEBU_SYSTEM_ROOT}/${ZEBU_DEVICE}/config/zse_configuration.tcl
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+
+            if ( ! ${nobuild} ) then
+                echo "# zCui -n --sem -u project.utf"
+                if ( ! ${norun} ) then
+                    eval zCui -n --sem -u project.utf
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs -l ./logs/compile.log ${vcs_quiet} -Mdir=./output/csrc ${vcs_incdir_options} ${vcs_cencrypt_options} ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog +define+COEMU +define+ZEBUMODE -L${ZEBU_IP_ROOT}/lib -lZebuXtor -lZebuXtorUVM ${zebu_ip_libs} ${ZEBU_IP_ROOT}/vlog/svt_dpi.sv -CFLAGS -I${ZEBU_IP_ROOT}/include -CFLAGS -I${ZEBU_ROOT}/include ${tbench_dir}/hw_platform.cpp -CFLAGS -DZEBUWORK=zcui.work/zebu.work -L${ZEBU_ROOT}/lib -lZebu -lHWAccessCommon -lZebuDB -lzRtl -lzRtlRt -lZebuRDB_ro -ntb_opts check=all -ntb_opts sv_dwfork ${sim_build_options} ${vcs_build_options} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_waves_options} ${vcs_pa_options} ${vcs_lca_option} +define+SVT_UVM_TECHNOLOGY +incdir+${ZEBU_IP_ROOT}/vlog   +define+SYNOPSYS_SV  ${vcslibs} +incdir+${tbench_dir}/{.,../../env,../env,env,dut,hdl_interconnect,lib,tests}  -o ./output/simvcssvlog -f top_files -f hdl_files"
+                if ( ! ${norun} ) then
+                    eval vcs -l ./logs/compile.log ${vcs_quiet} -Mdir=./output/csrc ${vcs_incdir_options} ${vcs_cencrypt_options} ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog +define+COEMU +define+ZEBUMODE -L${ZEBU_IP_ROOT}/lib -lZebuXtor -lZebuXtorUVM ${zebu_ip_libs} ${ZEBU_IP_ROOT}/vlog/svt_dpi.sv -CFLAGS -I${ZEBU_IP_ROOT}/include -CFLAGS -I${ZEBU_ROOT}/include ${tbench_dir}/hw_platform.cpp -CFLAGS -DZEBUWORK=zcui.work/zebu.work -L${ZEBU_ROOT}/lib -lZebu -lHWAccessCommon -lZebuDB -lzRtl -lzRtlRt -lZebuRDB_ro -ntb_opts check=all -ntb_opts sv_dwfork ${sim_build_options} ${vcs_build_options} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_waves_options} ${vcs_pa_options} ${vcs_lca_option} +define+SVT_UVM_TECHNOLOGY +incdir+${ZEBU_IP_ROOT}/vlog   +define+SYNOPSYS_SV  ${vcslibs} +incdir+${tbench_dir}/{.,../../env,../env,env,dut,hdl_interconnect,lib,tests}  -o ./output/simvcssvlog -f top_files -f hdl_files
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${buildonly} ) then
+
+                echo "# ./output/simvcssvlog ${sim_run_debug} ${vcs_run_seed} ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}"
+                if ( ! ${norun} ) then
+                    eval ./output/simvcssvlog ${sim_run_debug} ${vcs_run_seed} ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}
+                endif
+
+                if ( ${status} ) then
+                    exit( 10 )
+                endif
+
+                sleep 2
+
+                if ( -f "${tbench_dir}/postscript" && ! ${norun} ) then
+                    source ${tbench_dir}/postscript
+                    if ( $status ) then
+                        echo "The script 'postscript' completed with a non-zero status"
+                        exit(1)
+                    endif
+                endif
+
+                if ( "${pa}" == "fsdb" ) then 
+                    ${VERDI_HOME}/bin/verdi -workMode protocolDebug -ssf test_top.fsdb
+                else if ( "${pa}" != "" ) then 
+                    ${DESIGNWARE_HOME}/bin/pa -dir . -ts
+                endif
+
+            endif
+
+        end
+
+        breaksw
+
+    case "vcspcvlog-svtb":
+
+        set path = ( ${VCS_HOME}/bin $path )
+
+
+        if ( ! -f "${tbench_dir}/pc.optcfg" ) then
+            echo "Simulator vcspcvlog-svtb is not supported by this example"
+            exit(0)
+        endif
+
+        if ( ! -f "${tbench_dir}/top.sv" ) then
+            echo "Simulator vcspcvlog-svtb is not supported by this example"
+            exit(0)
+        endif
+
+        if ( -f "${tbench_dir}/sim_build_options" ) then
+            set sim_build_options = `/usr/bin/head -1 ${tbench_dir}/sim_build_options`
+            set sim_build_options = `echo $sim_build_options | /bin/sed -e 's,-ntb_opts uvm,,' -e 's,-CFLAGS -DVCS,,' -e 's,+incdir+$UVM_HOME/src,,' -e 's,$UVM_HOME/src/dpi/uvm_dpi.cc,,'`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_build_options" ) then
+            set vcs_build_options = `/usr/bin/head -1 ${tbench_dir}/vcs_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_build_options" ) then
+            set ncv_build_options = `/usr/bin/head -1 ${tbench_dir}/ncv_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_build_options" ) then
+            set mti_build_options = `/usr/bin/head -1 ${tbench_dir}/mti_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_elab_options" ) then
+            set sim_elab_options = `/usr/bin/head -1 ${tbench_dir}/sim_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_elab_options" ) then
+            set vcs_elab_options = `/usr/bin/head -1 ${tbench_dir}/vcs_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_elab_options" ) then
+            set ncv_elab_options = `/usr/bin/head -1 ${tbench_dir}/ncv_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_elab_options" ) then
+            set mti_elab_options = `/usr/bin/head -1 ${tbench_dir}/mti_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_run_options" ) then
+            set sim_run_options = `/usr/bin/head -1 ${tbench_dir}/sim_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_run_options" ) then
+            set vcs_run_options = `/usr/bin/head -1 ${tbench_dir}/vcs_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_run_options" ) then
+            set ncv_run_options = `/usr/bin/head -1 ${tbench_dir}/ncv_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_run_options" ) then
+            set mti_run_options = `/usr/bin/head -1 ${tbench_dir}/mti_run_options`
+        endif
+
+        foreach scenario ( $scenario_list )
+
+            if ( -f "${tbench_dir}/prescript" && ! ${norun} ) then
+                source ${tbench_dir}/prescript
+                set ret_status = $status
+                if ( $ret_status ) then
+                    if ( $ret_status == -1 ) then
+                        echo "Simulator vcspcvlog-svtb is not supported by this example"
+                        exit(0)
+                    endif
+                        echo "The script 'prescript' completed with an error status"
+                        exit(1)
+                    endif
+                endif
+            endif
+
+            cat << ! > tb_uart_svt_uvm_basic_sys.config
+program UartTxrxSvtProgram.vrp
+program UartMonitorSvtProgram.vrp
+program UartAgentSvtProgram.vrp
+!
+
+            cat << ! > hdl_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > modif_files
+${include_dir}/svtb/UartAgentSvtInterface.svi
+${include_dir}/svtb/UartTxrxSvtInterface.svi
+${include_dir}/svtb/UartMonitorSvtInterface.svi
+!
+
+            cat << ! > envif_files
+/mnt/disk_0/IC/basic/vip/uart/tb_uart_svt_uvm_basic_sys/examples/sverilog/uart_svt/tb_uart_svt_uvm_basic_sys/env/uart_reset_if.svi
+!
+
+            cat << ! > pkg_files
+!
+
+            cat << ! > top_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > test_files
+${tbench_dir}/tests/ts.${scenario}.sv
+!
+
+            set program_name = `/bin/egrep '^\s*program\s*\w*\s*' ${tbench_dir}/tests/ts.${scenario}.sv | /bin/sed -e 's/program//' -e 's/automatic//' -e 's/\w*//' | /usr/bin/cut -d "(" -f1`
+
+            set timescale = `/bin/egrep '^\s*.timescale\s*\w*\s*' ${tbench_dir}/top.sv | /bin/sed -e 's/ *//g' | /bin/sed -e 's/.timescale//'`
+
+            if ( ! ${nobuild} ) then
+                echo "# rm -rf output logs coverage"
+                if ( ! ${norun} ) then
+                    eval rm -rf output logs coverage
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# mkdir output logs coverage"
+                if ( ! ${norun} ) then
+                    eval mkdir output logs coverage
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs -l ./logs/compile.log ${vcs_quiet} -Mdir=./output/csrc ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_waves_options} ${vcs_pa_options} ${vcs_lca_option} +define+SYNOPSYS_SV -ntb_define NTB  -ntb_opts use_sigprop  -ntb_vipext .ov +define+NTB -ntb_incdir ${include_dir}/vera+${src_dir}/vera+${tbench_dir}/env+${tbench_dir}/hdl_interconnect +incdir+${include_dir}/{verilog,svtb,sverilog} +incdir+${src_dir}/sverilog/vcs +incdir+${tbench_dir}/{.,../env,env,dut,hdl_interconnect,lib,tests} ${vcslibs} -partcomp -fastpartcomp=j4 +optconfigfile+${tbench_dir}/pc.optcfg -lca -o ./output/simvcspcsvtb  -f hdl_files"
+                if ( ! ${norun} ) then
+                    eval vcs -l ./logs/compile.log ${vcs_quiet} -Mdir=./output/csrc ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_waves_options} ${vcs_pa_options} ${vcs_lca_option} +define+SYNOPSYS_SV -ntb_define NTB  -ntb_opts use_sigprop  -ntb_vipext .ov +define+NTB -ntb_incdir ${include_dir}/vera+${src_dir}/vera+${tbench_dir}/env+${tbench_dir}/hdl_interconnect +incdir+${include_dir}/{verilog,svtb,sverilog} +incdir+${src_dir}/sverilog/vcs +incdir+${tbench_dir}/{.,../env,env,dut,hdl_interconnect,lib,tests} ${vcslibs} -partcomp -fastpartcomp=j4 +optconfigfile+${tbench_dir}/pc.optcfg -lca -o ./output/simvcspcsvtb  -f hdl_files
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${buildonly} ) then
+
+                echo "# ./output/simvcspcsvtb ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}"
+                if ( ! ${norun} ) then
+                    eval ./output/simvcspcsvtb ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}
+                endif
+
+                if ( ${status} ) then
+                    exit( 10 )
+                endif
+
+                sleep 2
+
+                if ( -f "${tbench_dir}/postscript" && ! ${norun} ) then
+                    source ${tbench_dir}/postscript
+                    if ( $status ) then
+                        echo "The script 'postscript' completed with a non-zero status"
+                        exit(1)
+                    endif
+                endif
+
+            endif
+
+        end
+
+        breaksw
+
+    case "ncvlog-svtb":
+
+        set path = ( ${CDS_INST_DIR}/tools/bin $path )
+
+
+        if ( ! -f "${tbench_dir}/top.sv" ) then
+            echo "Simulator ncvlog-svtb is not supported by this example"
+            exit(0)
+        endif
+
+        if ( -f "${tbench_dir}/sim_build_options" ) then
+            set sim_build_options = `/usr/bin/head -1 ${tbench_dir}/sim_build_options`
+            set sim_build_options = `echo $sim_build_options | /bin/sed -e 's,-ntb_opts uvm,,' -e 's,-CFLAGS -DVCS,,' -e 's,+incdir+$UVM_HOME/src,,' -e 's,$UVM_HOME/src/dpi/uvm_dpi.cc,,'`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_build_options" ) then
+            set vcs_build_options = `/usr/bin/head -1 ${tbench_dir}/vcs_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_build_options" ) then
+            set ncv_build_options = `/usr/bin/head -1 ${tbench_dir}/ncv_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_build_options" ) then
+            set mti_build_options = `/usr/bin/head -1 ${tbench_dir}/mti_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_elab_options" ) then
+            set sim_elab_options = `/usr/bin/head -1 ${tbench_dir}/sim_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_elab_options" ) then
+            set vcs_elab_options = `/usr/bin/head -1 ${tbench_dir}/vcs_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_elab_options" ) then
+            set ncv_elab_options = `/usr/bin/head -1 ${tbench_dir}/ncv_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_elab_options" ) then
+            set mti_elab_options = `/usr/bin/head -1 ${tbench_dir}/mti_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_run_options" ) then
+            set sim_run_options = `/usr/bin/head -1 ${tbench_dir}/sim_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_run_options" ) then
+            set vcs_run_options = `/usr/bin/head -1 ${tbench_dir}/vcs_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_run_options" ) then
+            set ncv_run_options = `/usr/bin/head -1 ${tbench_dir}/ncv_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_run_options" ) then
+            set mti_run_options = `/usr/bin/head -1 ${tbench_dir}/mti_run_options`
+        endif
+
+        foreach scenario ( $scenario_list )
+
+            if ( -f "${tbench_dir}/prescript" && ! ${norun} ) then
+                source ${tbench_dir}/prescript
+                set ret_status = $status
+                if ( $ret_status ) then
+                    if ( $ret_status == -1 ) then
+                        echo "Simulator ncvlog-svtb is not supported by this example"
+                        exit(0)
+                    endif
+                        echo "The script 'prescript' completed with an error status"
+                        exit(1)
+                    endif
+                endif
+            endif
+
+            cat << ! > tb_uart_svt_uvm_basic_sys.config
+program UartTxrxSvtProgram.vrp
+program UartMonitorSvtProgram.vrp
+program UartAgentSvtProgram.vrp
+!
+
+            cat << ! > hdl_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > modif_files
+${include_dir}/svtb/UartAgentSvtInterface.svi
+${include_dir}/svtb/UartTxrxSvtInterface.svi
+${include_dir}/svtb/UartMonitorSvtInterface.svi
+!
+
+            cat << ! > envif_files
+/mnt/disk_0/IC/basic/vip/uart/tb_uart_svt_uvm_basic_sys/examples/sverilog/uart_svt/tb_uart_svt_uvm_basic_sys/env/uart_reset_if.svi
+!
+
+            cat << ! > pkg_files
+!
+
+            cat << ! > top_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > test_files
+${tbench_dir}/tests/ts.${scenario}.sv
+!
+
+            set program_name = `/bin/egrep '^\s*program\s*\w*\s*' ${tbench_dir}/tests/ts.${scenario}.sv | /bin/sed -e 's/program//' -e 's/automatic//' -e 's/\w*//' | /usr/bin/cut -d "(" -f1`
+
+            set timescale = `/bin/egrep '^\s*.timescale\s*\w*\s*' ${tbench_dir}/top.sv | /bin/sed -e 's/ *//g' | /bin/sed -e 's/.timescale//'`
+
+            if ( ! ${nobuild} ) then
+                echo "# rm -rf output logs coverage work INCA_libs"
+                if ( ! ${norun} ) then
+                    eval rm -rf output logs coverage work INCA_libs
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# mkdir output logs coverage work"
+                if ( ! ${norun} ) then
+                    eval mkdir output logs coverage work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# c++ -Wno-deprecated ${ccflags_dyn} ${ldflags_dyn} -DNC_VERILOG -DCADENCE -I ${CDS_INST_DIR}/tools/include -o uvm_dpi.so ${UVM_HOME}/src/dpi/uvm_dpi.cc"
+                if ( ! ${norun} ) then
+                    eval c++ -Wno-deprecated ${ccflags_dyn} ${ldflags_dyn} -DNC_VERILOG -DCADENCE -I ${CDS_INST_DIR}/tools/include -o uvm_dpi.so ${UVM_HOME}/src/dpi/uvm_dpi.cc
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${buildonly} ) then
+
+                echo "# irun -access rw -messages -sv -licqueue -zlib 5 -l ./logs/simulate__${scenario}.log ${cds_quiet} ${irun_method} ${ncvlog_flags} ${aux_ncvflags} ${sim_build_options} ${ncv_build_options} -define CADENCE -errormax 5 -nowarn NOTIND -nowarn PMBDVX -nowarn ECBICP -nowarn AAMNSD -nowarn LVLFNC -nowarn PMBMDV -nowarn WARIPR -nowarn IGNFMT -nowarn CUVIHR -nowarn FUNTSK -incdir ${UVM_HOME}/src -incdir ${src_dir}/sverilog/ncv -incdir ${include_dir}/sverilog -incdir ${src_dir}/verilog/ncv -incdir ${include_dir}/verilog -incdir ${tbench_dir} -incdir ${tbench_dir}/../../env -incdir ${tbench_dir}/../env -incdir ${tbench_dir}/env -incdir ${tbench_dir}/dut -incdir ${tbench_dir}/hdl_interconnect -incdir ${tbench_dir}/tests ${sim_elab_options} ${ncv_elab_options} ${sim_run_options} ${ncv_run_options} -nowarn SYSFMW -sv_lib ${DESIGNWARE_HOME}/vip/common/latest/C/lib/${platform}/VipCommonNtb -sv_lib uvm_dpi -f hdl_files"
+                if ( ! ${norun} ) then
+                    eval irun -access rw -messages -sv -licqueue -zlib 5 -l ./logs/simulate__${scenario}.log ${cds_quiet} ${irun_method} ${ncvlog_flags} ${aux_ncvflags} ${sim_build_options} ${ncv_build_options} -define CADENCE -errormax 5 -nowarn NOTIND -nowarn PMBDVX -nowarn ECBICP -nowarn AAMNSD -nowarn LVLFNC -nowarn PMBMDV -nowarn WARIPR -nowarn IGNFMT -nowarn CUVIHR -nowarn FUNTSK -incdir ${UVM_HOME}/src -incdir ${src_dir}/sverilog/ncv -incdir ${include_dir}/sverilog -incdir ${src_dir}/verilog/ncv -incdir ${include_dir}/verilog -incdir ${tbench_dir} -incdir ${tbench_dir}/../../env -incdir ${tbench_dir}/../env -incdir ${tbench_dir}/env -incdir ${tbench_dir}/dut -incdir ${tbench_dir}/hdl_interconnect -incdir ${tbench_dir}/tests ${sim_elab_options} ${ncv_elab_options} ${sim_run_options} ${ncv_run_options} -nowarn SYSFMW -sv_lib ${DESIGNWARE_HOME}/vip/common/latest/C/lib/${platform}/VipCommonNtb -sv_lib uvm_dpi -f hdl_files
+                endif
+
+                if ( ${status} ) then
+                    exit( 10 )
+                endif
+
+                sleep 2
+
+                if ( -f "${tbench_dir}/postscript" && ! ${norun} ) then
+                    source ${tbench_dir}/postscript
+                    if ( $status ) then
+                        echo "The script 'postscript' completed with a non-zero status"
+                        exit(1)
+                    endif
+                endif
+
+            endif
+
+        end
+
+        breaksw
+
+    case "vcsmxpcvlog-svtb":
+
+        set path = ( ${VCS_HOME}/bin $path )
+
+
+        if ( ! -f "${tbench_dir}/pc.optcfg" ) then
+            echo "Simulator vcsmxpcvlog-svtb is not supported by this example"
+            exit(0)
+        endif
+
+        if ( ! -f "${tbench_dir}/top.sv" ) then
+            echo "Simulator vcsmxpcvlog-svtb is not supported by this example"
+            exit(0)
+        endif
+
+        if ( -f "${tbench_dir}/sim_build_options" ) then
+            set sim_build_options = `/usr/bin/head -1 ${tbench_dir}/sim_build_options`
+            set sim_build_options = `echo $sim_build_options | /bin/sed -e 's,-ntb_opts uvm,,' -e 's,-CFLAGS -DVCS,,' -e 's,+incdir+$UVM_HOME/src,,' -e 's,$UVM_HOME/src/dpi/uvm_dpi.cc,,'`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_build_options" ) then
+            set vcs_build_options = `/usr/bin/head -1 ${tbench_dir}/vcs_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_build_options" ) then
+            set ncv_build_options = `/usr/bin/head -1 ${tbench_dir}/ncv_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_build_options" ) then
+            set mti_build_options = `/usr/bin/head -1 ${tbench_dir}/mti_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_elab_options" ) then
+            set sim_elab_options = `/usr/bin/head -1 ${tbench_dir}/sim_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_elab_options" ) then
+            set vcs_elab_options = `/usr/bin/head -1 ${tbench_dir}/vcs_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_elab_options" ) then
+            set ncv_elab_options = `/usr/bin/head -1 ${tbench_dir}/ncv_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_elab_options" ) then
+            set mti_elab_options = `/usr/bin/head -1 ${tbench_dir}/mti_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_run_options" ) then
+            set sim_run_options = `/usr/bin/head -1 ${tbench_dir}/sim_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_run_options" ) then
+            set vcs_run_options = `/usr/bin/head -1 ${tbench_dir}/vcs_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_run_options" ) then
+            set ncv_run_options = `/usr/bin/head -1 ${tbench_dir}/ncv_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_run_options" ) then
+            set mti_run_options = `/usr/bin/head -1 ${tbench_dir}/mti_run_options`
+        endif
+
+        foreach scenario ( $scenario_list )
+
+            if ( -f "${tbench_dir}/prescript" && ! ${norun} ) then
+                source ${tbench_dir}/prescript
+                set ret_status = $status
+                if ( $ret_status ) then
+                    if ( $ret_status == -1 ) then
+                        echo "Simulator vcsmxpcvlog-svtb is not supported by this example"
+                        exit(0)
+                    endif
+                        echo "The script 'prescript' completed with an error status"
+                        exit(1)
+                    endif
+                endif
+            endif
+
+            cat << ! > tb_uart_svt_uvm_basic_sys.config
+program UartTxrxSvtProgram.vrp
+program UartMonitorSvtProgram.vrp
+program UartAgentSvtProgram.vrp
+!
+
+            cat << ! > hdl_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > modif_files
+${include_dir}/svtb/UartAgentSvtInterface.svi
+${include_dir}/svtb/UartTxrxSvtInterface.svi
+${include_dir}/svtb/UartMonitorSvtInterface.svi
+!
+
+            cat << ! > envif_files
+/mnt/disk_0/IC/basic/vip/uart/tb_uart_svt_uvm_basic_sys/examples/sverilog/uart_svt/tb_uart_svt_uvm_basic_sys/env/uart_reset_if.svi
+!
+
+            cat << ! > pkg_files
+!
+
+            cat << ! > top_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > test_files
+${tbench_dir}/tests/ts.${scenario}.sv
+!
+
+            set program_name = `/bin/egrep '^\s*program\s*\w*\s*' ${tbench_dir}/tests/ts.${scenario}.sv | /bin/sed -e 's/program//' -e 's/automatic//' -e 's/\w*//' | /usr/bin/cut -d "(" -f1`
+
+            set timescale = `/bin/egrep '^\s*.timescale\s*\w*\s*' ${tbench_dir}/top.sv | /bin/sed -e 's/ *//g' | /bin/sed -e 's/.timescale//'`
+
+            if ( ! ${nobuild} ) then
+                echo "# rm -rf output logs coverage work"
+                if ( ! ${norun} ) then
+                    eval rm -rf output logs coverage work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# mkdir output logs coverage work"
+                if ( ! ${norun} ) then
+                    eval mkdir output logs coverage work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# "printf 'WORK > work\nwork : ./work\n'" > synopsys_sim.setup"
+                if ( ! ${norun} ) then
+                    eval "printf 'WORK > work\nwork : ./work\n'" > synopsys_sim.setup
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vlogan -ntb_opts uvm-1.${uvm_minor_ver} -ntb_opts vera_compat ${vcs_quiet} ${vcs_bitmode} +define+UVM_DISABLE_AUTO_ITEM_RECORDING ${vcsflags} ${sim_build_options}"
+                if ( ! ${norun} ) then
+                    eval vlogan -ntb_opts uvm-1.${uvm_minor_ver} -ntb_opts vera_compat ${vcs_quiet} ${vcs_bitmode} +define+UVM_DISABLE_AUTO_ITEM_RECORDING ${vcsflags} ${sim_build_options}
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vlogan -l ./logs/analyze.log ${vcs_quiet} ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_lca_option} +define+SYNOPSYS_SV -ntb_define NTB  -ntb_opts use_sigprop  -ntb_vipext .ov +define+NTB -ntb_incdir ${include_dir}/vera+${src_dir}/vera+${tbench_dir}/env+${tbench_dir}/hdl_interconnect +incdir+${include_dir}/{verilog,svtb,sverilog} +incdir+${src_dir}/sverilog/vcs +incdir+${tbench_dir}/{.,../env,env,dut,hdl_interconnect,lib,tests} ${vcslibs}  -f hdl_files"
+                if ( ! ${norun} ) then
+                    eval vlogan -l ./logs/analyze.log ${vcs_quiet} ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_lca_option} +define+SYNOPSYS_SV -ntb_define NTB  -ntb_opts use_sigprop  -ntb_vipext .ov +define+NTB -ntb_incdir ${include_dir}/vera+${src_dir}/vera+${tbench_dir}/env+${tbench_dir}/hdl_interconnect +incdir+${include_dir}/{verilog,svtb,sverilog} +incdir+${src_dir}/sverilog/vcs +incdir+${tbench_dir}/{.,../env,env,dut,hdl_interconnect,lib,tests} ${vcslibs}  -f hdl_files
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs -l ./logs/compile.log -Mdir=./output/csrc -ntb_opts use_sigprop ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} -partcomp -fastpartcomp=j4 +optconfigfile+${tbench_dir}/pc.optcfg -lca -o ./output/simvcsmxpcsvtb test_top"
+                if ( ! ${norun} ) then
+                    eval vcs -l ./logs/compile.log -Mdir=./output/csrc -ntb_opts use_sigprop ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} -partcomp -fastpartcomp=j4 +optconfigfile+${tbench_dir}/pc.optcfg -lca -o ./output/simvcsmxpcsvtb test_top
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${buildonly} ) then
+
+                echo "# ./output/simvcsmxpcsvtb ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}"
+                if ( ! ${norun} ) then
+                    eval ./output/simvcsmxpcsvtb ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}
+                endif
+
+                if ( ${status} ) then
+                    exit( 10 )
+                endif
+
+                sleep 2
+
+                if ( -f "${tbench_dir}/postscript" && ! ${norun} ) then
+                    source ${tbench_dir}/postscript
+                    if ( $status ) then
+                        echo "The script 'postscript' completed with a non-zero status"
+                        exit(1)
+                    endif
+                endif
+
+            endif
+
+        end
+
+        breaksw
+
+    case "vcsscvlog-svtb":
+
+        set path = ( ${VCS_HOME}/bin $path )
+
+
+        if ( ! -f "${tbench_dir}/top.sv" ) then
+            echo "Simulator vcsscvlog-svtb is not supported by this example"
+            exit(0)
+        endif
+
+        if ( -f "${tbench_dir}/sim_build_options" ) then
+            set sim_build_options = `/usr/bin/head -1 ${tbench_dir}/sim_build_options`
+            set sim_build_options = `echo $sim_build_options | /bin/sed -e 's,-ntb_opts uvm,,' -e 's,-CFLAGS -DVCS,,' -e 's,+incdir+$UVM_HOME/src,,' -e 's,$UVM_HOME/src/dpi/uvm_dpi.cc,,'`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_build_options" ) then
+            set vcs_build_options = `/usr/bin/head -1 ${tbench_dir}/vcs_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_build_options" ) then
+            set ncv_build_options = `/usr/bin/head -1 ${tbench_dir}/ncv_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_build_options" ) then
+            set mti_build_options = `/usr/bin/head -1 ${tbench_dir}/mti_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_elab_options" ) then
+            set sim_elab_options = `/usr/bin/head -1 ${tbench_dir}/sim_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_elab_options" ) then
+            set vcs_elab_options = `/usr/bin/head -1 ${tbench_dir}/vcs_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_elab_options" ) then
+            set ncv_elab_options = `/usr/bin/head -1 ${tbench_dir}/ncv_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_elab_options" ) then
+            set mti_elab_options = `/usr/bin/head -1 ${tbench_dir}/mti_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_run_options" ) then
+            set sim_run_options = `/usr/bin/head -1 ${tbench_dir}/sim_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_run_options" ) then
+            set vcs_run_options = `/usr/bin/head -1 ${tbench_dir}/vcs_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_run_options" ) then
+            set ncv_run_options = `/usr/bin/head -1 ${tbench_dir}/ncv_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_run_options" ) then
+            set mti_run_options = `/usr/bin/head -1 ${tbench_dir}/mti_run_options`
+        endif
+
+        foreach scenario ( $scenario_list )
+
+            if ( -f "${tbench_dir}/prescript" && ! ${norun} ) then
+                source ${tbench_dir}/prescript
+                set ret_status = $status
+                if ( $ret_status ) then
+                    if ( $ret_status == -1 ) then
+                        echo "Simulator vcsscvlog-svtb is not supported by this example"
+                        exit(0)
+                    endif
+                        echo "The script 'prescript' completed with an error status"
+                        exit(1)
+                    endif
+                endif
+            endif
+
+            cat << ! > tb_uart_svt_uvm_basic_sys.config
+program UartTxrxSvtProgram.vrp
+program UartMonitorSvtProgram.vrp
+program UartAgentSvtProgram.vrp
+!
+
+            cat << ! > hdl_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > modif_files
+${include_dir}/svtb/UartAgentSvtInterface.svi
+${include_dir}/svtb/UartTxrxSvtInterface.svi
+${include_dir}/svtb/UartMonitorSvtInterface.svi
+!
+
+            cat << ! > envif_files
+/mnt/disk_0/IC/basic/vip/uart/tb_uart_svt_uvm_basic_sys/examples/sverilog/uart_svt/tb_uart_svt_uvm_basic_sys/env/uart_reset_if.svi
+!
+
+            cat << ! > pkg_files
+!
+
+            cat << ! > top_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > test_files
+${tbench_dir}/tests/ts.${scenario}.sv
+!
+
+            set program_name = `/bin/egrep '^\s*program\s*\w*\s*' ${tbench_dir}/tests/ts.${scenario}.sv | /bin/sed -e 's/program//' -e 's/automatic//' -e 's/\w*//' | /usr/bin/cut -d "(" -f1`
+
+            set timescale = `/bin/egrep '^\s*.timescale\s*\w*\s*' ${tbench_dir}/top.sv | /bin/sed -e 's/ *//g' | /bin/sed -e 's/.timescale//'`
+
+            if ( ! ${nobuild} ) then
+                echo "# rm -rf output logs coverage lib"
+                if ( ! ${norun} ) then
+                    eval rm -rf output logs coverage lib
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# mkdir output logs coverage lib"
+                if ( ! ${norun} ) then
+                    eval mkdir output logs coverage lib
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# "printf 'WORK > DEFAULT\nDEFAULT : ./lib\n'" > synopsys_sim.setup"
+                if ( ! ${norun} ) then
+                    eval "printf 'WORK > DEFAULT\nDEFAULT : ./lib\n'" > synopsys_sim.setup
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vlogan -l ./logs/analyze.log ${vcs_quiet} ${vcsuvmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog -timescale=${timescale} ${sim_build_options} ${vcs_build_options} ${vcs_waves_defines} ${vcs_pa_defines} +define+SYNOPSYS_SV +define+SEP_CMP -lca -sep_cmp -ntb_define NTB  -ntb_opts use_sigprop  -ntb_vipext .ov +define+NTB -ntb_incdir ${include_dir}/vera+${src_dir}/vera +incdir+${include_dir}/verilog+${include_dir}/svtb+${tbench_dir}/../env+${tbench_dir}/env+${tbench_dir}/dut+${tbench_dir}/hdl_interconnect ${vcslibs}  -f modif_files -f pkg_files"
+                if ( ! ${norun} ) then
+                    eval vlogan -l ./logs/analyze.log ${vcs_quiet} ${vcsuvmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog -timescale=${timescale} ${sim_build_options} ${vcs_build_options} ${vcs_waves_defines} ${vcs_pa_defines} +define+SYNOPSYS_SV +define+SEP_CMP -lca -sep_cmp -ntb_define NTB  -ntb_opts use_sigprop  -ntb_vipext .ov +define+NTB -ntb_incdir ${include_dir}/vera+${src_dir}/vera +incdir+${include_dir}/verilog+${include_dir}/svtb+${tbench_dir}/../env+${tbench_dir}/env+${tbench_dir}/dut+${tbench_dir}/hdl_interconnect ${vcslibs}  -f modif_files -f pkg_files
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs ${vcs_bitmode} ${vcsflags} -l ./logs/compile.log -lca -sep_cmp  -ntb_opts use_sigprop  SYNOPSYS_VIP_PACKAGE"
+                if ( ! ${norun} ) then
+                    eval vcs ${vcs_bitmode} ${vcsflags} -l ./logs/compile.log -lca -sep_cmp  -ntb_opts use_sigprop  SYNOPSYS_VIP_PACKAGE
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vlogan -l ./logs/analyze.log ${vcs_quiet} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog -timescale=${timescale} ${sim_build_options} ${vcs_build_options} ${vcs_waves_defines} ${vcs_pa_defines} +define+SYNOPSYS_SV +define+SEP_CMP -lca -sep_cmp -partition CORE -ntb_define NTB  -ntb_opts use_sigprop  -ntb_vipext .ov +define+NTB -ntb_incdir ${include_dir}/vera+${src_dir}/vera +incdir+${include_dir}/verilog+${include_dir}/svtb+${tbench_dir}/../env+${tbench_dir}/env+${tbench_dir}/dut+${tbench_dir}/hdl_interconnect ${vcslibs}  -f envif_files -f test_files"
+                if ( ! ${norun} ) then
+                    eval vlogan -l ./logs/analyze.log ${vcs_quiet} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog -timescale=${timescale} ${sim_build_options} ${vcs_build_options} ${vcs_waves_defines} ${vcs_pa_defines} +define+SYNOPSYS_SV +define+SEP_CMP -lca -sep_cmp -partition CORE -ntb_define NTB  -ntb_opts use_sigprop  -ntb_vipext .ov +define+NTB -ntb_incdir ${include_dir}/vera+${src_dir}/vera +incdir+${include_dir}/verilog+${include_dir}/svtb+${tbench_dir}/../env+${tbench_dir}/env+${tbench_dir}/dut+${tbench_dir}/hdl_interconnect ${vcslibs}  -f envif_files -f test_files
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs ${vcs_bitmode} ${vcsflags} -l ./logs/compile.log -lca -sep_cmp -sverilog  -ntb_opts use_sigprop  CORE"
+                if ( ! ${norun} ) then
+                    eval vcs ${vcs_bitmode} ${vcsflags} -l ./logs/compile.log -lca -sep_cmp -sverilog  -ntb_opts use_sigprop  CORE
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs ${vcs_bitmode} ${vcsflags} -lca -sep_cmp -sverilog  -ntb_opts use_sigprop  -ntb_opts genShellOnly CORE"
+                if ( ! ${norun} ) then
+                    eval vcs ${vcs_bitmode} ${vcsflags} -lca -sep_cmp -sverilog  -ntb_opts use_sigprop  -ntb_opts genShellOnly CORE
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs ${vcs_bitmode} ${vcsflags} -lca -sep_cmp -sverilog -Mdir=./output/csrc +define+SVTB_SEP_COMP -ntb_vl  -ntb_opts use_sigprop  +incdir+${tbench_dir}/env+${tbench_dir}/dut ${program_name}.svshell -f top_files -o ./output/simvcsscsvtb"
+                if ( ! ${norun} ) then
+                    eval vcs ${vcs_bitmode} ${vcsflags} -lca -sep_cmp -sverilog -Mdir=./output/csrc +define+SVTB_SEP_COMP -ntb_vl  -ntb_opts use_sigprop  +incdir+${tbench_dir}/env+${tbench_dir}/dut ${program_name}.svshell -f top_files -o ./output/simvcsscsvtb
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${buildonly} ) then
+
+                echo "# ./output/simvcsscsvtb ${sim_run_options} ${vcs_run_options} -sep_cmp=CORE -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}"
+                if ( ! ${norun} ) then
+                    eval ./output/simvcsscsvtb ${sim_run_options} ${vcs_run_options} -sep_cmp=CORE -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}
+                endif
+
+                if ( ${status} ) then
+                    exit( 10 )
+                endif
+
+                sleep 2
+
+                if ( -f "${tbench_dir}/postscript" && ! ${norun} ) then
+                    source ${tbench_dir}/postscript
+                    if ( $status ) then
+                        echo "The script 'postscript' completed with a non-zero status"
+                        exit(1)
+                    endif
+                endif
+
+            endif
+
+        end
+
+        breaksw
+
+    case "vcsmxvlog-svtb":
+
+        set path = ( ${VCS_HOME}/bin $path )
+
+
+        if ( ! -f "${tbench_dir}/top.sv" ) then
+            echo "Simulator vcsmxvlog-svtb is not supported by this example"
+            exit(0)
+        endif
+
+        if ( -f "${tbench_dir}/sim_build_options" ) then
+            set sim_build_options = `/usr/bin/head -1 ${tbench_dir}/sim_build_options`
+            set sim_build_options = `echo $sim_build_options | /bin/sed -e 's,-ntb_opts uvm,,' -e 's,-CFLAGS -DVCS,,' -e 's,+incdir+$UVM_HOME/src,,' -e 's,$UVM_HOME/src/dpi/uvm_dpi.cc,,'`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_build_options" ) then
+            set vcs_build_options = `/usr/bin/head -1 ${tbench_dir}/vcs_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_build_options" ) then
+            set ncv_build_options = `/usr/bin/head -1 ${tbench_dir}/ncv_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_build_options" ) then
+            set mti_build_options = `/usr/bin/head -1 ${tbench_dir}/mti_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_elab_options" ) then
+            set sim_elab_options = `/usr/bin/head -1 ${tbench_dir}/sim_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_elab_options" ) then
+            set vcs_elab_options = `/usr/bin/head -1 ${tbench_dir}/vcs_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_elab_options" ) then
+            set ncv_elab_options = `/usr/bin/head -1 ${tbench_dir}/ncv_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_elab_options" ) then
+            set mti_elab_options = `/usr/bin/head -1 ${tbench_dir}/mti_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_run_options" ) then
+            set sim_run_options = `/usr/bin/head -1 ${tbench_dir}/sim_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_run_options" ) then
+            set vcs_run_options = `/usr/bin/head -1 ${tbench_dir}/vcs_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_run_options" ) then
+            set ncv_run_options = `/usr/bin/head -1 ${tbench_dir}/ncv_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_run_options" ) then
+            set mti_run_options = `/usr/bin/head -1 ${tbench_dir}/mti_run_options`
+        endif
+
+        foreach scenario ( $scenario_list )
+
+            if ( -f "${tbench_dir}/prescript" && ! ${norun} ) then
+                source ${tbench_dir}/prescript
+                set ret_status = $status
+                if ( $ret_status ) then
+                    if ( $ret_status == -1 ) then
+                        echo "Simulator vcsmxvlog-svtb is not supported by this example"
+                        exit(0)
+                    endif
+                        echo "The script 'prescript' completed with an error status"
+                        exit(1)
+                    endif
+                endif
+            endif
+
+            cat << ! > tb_uart_svt_uvm_basic_sys.config
+program UartTxrxSvtProgram.vrp
+program UartMonitorSvtProgram.vrp
+program UartAgentSvtProgram.vrp
+!
+
+            cat << ! > hdl_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > modif_files
+${include_dir}/svtb/UartAgentSvtInterface.svi
+${include_dir}/svtb/UartTxrxSvtInterface.svi
+${include_dir}/svtb/UartMonitorSvtInterface.svi
+!
+
+            cat << ! > envif_files
+/mnt/disk_0/IC/basic/vip/uart/tb_uart_svt_uvm_basic_sys/examples/sverilog/uart_svt/tb_uart_svt_uvm_basic_sys/env/uart_reset_if.svi
+!
+
+            cat << ! > pkg_files
+!
+
+            cat << ! > top_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > test_files
+${tbench_dir}/tests/ts.${scenario}.sv
+!
+
+            set program_name = `/bin/egrep '^\s*program\s*\w*\s*' ${tbench_dir}/tests/ts.${scenario}.sv | /bin/sed -e 's/program//' -e 's/automatic//' -e 's/\w*//' | /usr/bin/cut -d "(" -f1`
+
+            set timescale = `/bin/egrep '^\s*.timescale\s*\w*\s*' ${tbench_dir}/top.sv | /bin/sed -e 's/ *//g' | /bin/sed -e 's/.timescale//'`
+
+            if ( ! ${nobuild} ) then
+                echo "# rm -rf output logs coverage work"
+                if ( ! ${norun} ) then
+                    eval rm -rf output logs coverage work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# mkdir output logs coverage work"
+                if ( ! ${norun} ) then
+                    eval mkdir output logs coverage work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# "printf 'WORK > work\nwork : ./work\n'" > synopsys_sim.setup"
+                if ( ! ${norun} ) then
+                    eval "printf 'WORK > work\nwork : ./work\n'" > synopsys_sim.setup
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vlogan -ntb_opts uvm-1.${uvm_minor_ver} -ntb_opts vera_compat ${vcs_quiet} ${vcs_bitmode} +define+UVM_DISABLE_AUTO_ITEM_RECORDING ${vcsflags} ${sim_build_options}"
+                if ( ! ${norun} ) then
+                    eval vlogan -ntb_opts uvm-1.${uvm_minor_ver} -ntb_opts vera_compat ${vcs_quiet} ${vcs_bitmode} +define+UVM_DISABLE_AUTO_ITEM_RECORDING ${vcsflags} ${sim_build_options}
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vlogan -l ./logs/analyze.log ${vcs_quiet} ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_lca_option} +define+SYNOPSYS_SV -ntb_define NTB  -ntb_opts use_sigprop  -ntb_vipext .ov +define+NTB -ntb_incdir ${include_dir}/vera+${src_dir}/vera+${tbench_dir}/env+${tbench_dir}/hdl_interconnect +incdir+${include_dir}/{verilog,svtb,sverilog} +incdir+${src_dir}/sverilog/vcs +incdir+${tbench_dir}/{.,../env,env,dut,hdl_interconnect,lib,tests} ${vcslibs}  -f hdl_files"
+                if ( ! ${norun} ) then
+                    eval vlogan -l ./logs/analyze.log ${vcs_quiet} ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_lca_option} +define+SYNOPSYS_SV -ntb_define NTB  -ntb_opts use_sigprop  -ntb_vipext .ov +define+NTB -ntb_incdir ${include_dir}/vera+${src_dir}/vera+${tbench_dir}/env+${tbench_dir}/hdl_interconnect +incdir+${include_dir}/{verilog,svtb,sverilog} +incdir+${src_dir}/sverilog/vcs +incdir+${tbench_dir}/{.,../env,env,dut,hdl_interconnect,lib,tests} ${vcslibs}  -f hdl_files
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs -l ./logs/compile.log -Mdir=./output/csrc -ntb_opts use_sigprop ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} -o ./output/simvcsmxsvtb test_top"
+                if ( ! ${norun} ) then
+                    eval vcs -l ./logs/compile.log -Mdir=./output/csrc -ntb_opts use_sigprop ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} -o ./output/simvcsmxsvtb test_top
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${buildonly} ) then
+
+                echo "# ./output/simvcsmxsvtb ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}"
+                if ( ! ${norun} ) then
+                    eval ./output/simvcsmxsvtb ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}
+                endif
+
+                if ( ${status} ) then
+                    exit( 10 )
+                endif
+
+                sleep 2
+
+                if ( -f "${tbench_dir}/postscript" && ! ${norun} ) then
+                    source ${tbench_dir}/postscript
+                    if ( $status ) then
+                        echo "The script 'postscript' completed with a non-zero status"
+                        exit(1)
+                    endif
+                endif
+
+            endif
+
+        end
+
+        breaksw
+
+    case "vcsvlog-svlog":
+
+        set path = ( ${VCS_HOME}/bin $path )
+
+
+        if ( ! -f "${tbench_dir}/top.sv" ) then
+            echo "Simulator vcsvlog-svlog is not supported by this example"
+            exit(0)
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/prescript.incdir" ) then
+            set prescript_file = "${tbench_dir}/prescript.incdir"
+        else
+            set prescript_file = "${tbench_dir}/prescript"
+        endif
+
+        if ( -f ${prescript_file} && ! ${norun} ) then
+            source ${prescript_file}
+            set ret_status = $status
+            if ( $ret_status ) then
+                if ( $ret_status == -1 ) then
+                    echo "Simulator vcsvlog-svlog is not supported by this example"
+                    exit(0)
+                else
+                    echo "The script 'prescript' completed with an error status"
+                    exit(1)
+                endif
+            endif
+        endif
+
+        if ( -f "${tbench_dir}/sim_build_options" ) then
+            set sim_build_options = `/usr/bin/head -1 ${tbench_dir}/sim_build_options`
+            set sim_build_options = `echo $sim_build_options | /bin/sed -e 's,-ntb_opts uvm,,' -e 's,-CFLAGS -DVCS,,' -e 's,+incdir+$UVM_HOME/src,,' -e 's,$UVM_HOME/src/dpi/uvm_dpi.cc,,'`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/vcs_build_options.incdir" ) then
+            set vcs_build_options_file = "${tbench_dir}/vcs_build_options.incdir"
+        else
+            set vcs_build_options_file = "${tbench_dir}/vcs_build_options"
+        endif
+
+        if ( -f ${vcs_build_options_file} ) then
+            set vcs_build_options = `/usr/bin/head -1 ${vcs_build_options_file}`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/ncv_build_options.incdir" ) then
+            set ncv_build_options_file = "${tbench_dir}/ncv_build_options.incdir"
+        else
+            set ncv_build_options_file = "${tbench_dir}/ncv_build_options"
+        endif
+
+        if ( -f ${ncv_build_options_file} ) then
+            set ncv_build_options = `/usr/bin/head -1 ${ncv_build_options_file}`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/mti_build_options.incdir" ) then
+            set mti_build_options_file = "${tbench_dir}/mti_build_options.incdir"
+        else
+            set mti_build_options_file = "${tbench_dir}/mti_build_options"
+        endif
+
+        if ( -f ${mti_build_options_file} ) then
+            set mti_build_options = `/usr/bin/head -1 ${mti_build_options_file}`
+        endif
+
+        if ( -f "${tbench_dir}/sim_elab_options" ) then
+            set sim_elab_options = `/usr/bin/head -1 ${tbench_dir}/sim_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_elab_options" ) then
+            set vcs_elab_options = `/usr/bin/head -1 ${tbench_dir}/vcs_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_elab_options" ) then
+            set ncv_elab_options = `/usr/bin/head -1 ${tbench_dir}/ncv_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_elab_options" ) then
+            set mti_elab_options = `/usr/bin/head -1 ${tbench_dir}/mti_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_run_options" ) then
+            set sim_run_options = "${sim_run_options} `/usr/bin/head -1 ${tbench_dir}/sim_run_options`"
+        endif
+
+        if ( -f "${tbench_dir}/vcs_run_options" ) then
+            set vcs_run_options = `/usr/bin/head -1 ${tbench_dir}/vcs_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_run_options" ) then
+            set ncv_run_options = `/usr/bin/head -1 ${tbench_dir}/ncv_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_run_options" ) then
+            set mti_run_options = `/usr/bin/head -1 ${tbench_dir}/mti_run_options`
+        endif
+
+        foreach scenario ( $scenario_list )
+
+            cat << ! > top_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > hdl_files
+!
+
+            set program_name = `/bin/egrep '^\s*program\s*\w*\s*' ${tbench_dir}/tests/ts.${scenario}.sv | /bin/sed -e 's/program//' -e 's/automatic//' -e 's/\w*//' | /usr/bin/cut -d "(" -f1`
+
+            if ( ! ${nobuild} ) then
+                echo "# rm -rf output logs coverage"
+                if ( ! ${norun} ) then
+                    eval rm -rf output logs coverage
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# mkdir output logs coverage"
+                if ( ! ${norun} ) then
+                    eval mkdir output logs coverage
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs -l ./logs/compile.log ${vcs_quiet} -Mdir=./output/csrc ${vcs_incdir_options} ${vcs_cencrypt_options} ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_waves_options} ${vcs_pa_options} ${vcs_lca_option} +define+SVT_UVM_TECHNOLOGY   +define+SYNOPSYS_SV  ${vcslibs} +incdir+${tbench_dir}/{.,../../env,../env,env,dut,hdl_interconnect,lib,tests}  -o ./output/simvcssvlog -f top_files -f hdl_files"
+                if ( ! ${norun} ) then
+                    eval vcs -l ./logs/compile.log ${vcs_quiet} -Mdir=./output/csrc ${vcs_incdir_options} ${vcs_cencrypt_options} ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_waves_options} ${vcs_pa_options} ${vcs_lca_option} +define+SVT_UVM_TECHNOLOGY   +define+SYNOPSYS_SV  ${vcslibs} +incdir+${tbench_dir}/{.,../../env,../env,env,dut,hdl_interconnect,lib,tests}  -o ./output/simvcssvlog -f top_files -f hdl_files
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${buildonly} ) then
+
+                echo "# ./output/simvcssvlog ${sim_run_debug} ${vcs_run_seed} ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}"
+                if ( ! ${norun} ) then
+                    eval ./output/simvcssvlog ${sim_run_debug} ${vcs_run_seed} ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}
+                endif
+
+                if ( ${status} ) then
+                    exit( 10 )
+                endif
+
+                sleep 2
+
+                if ( -f "${tbench_dir}/postscript" && ! ${norun} ) then
+                    source ${tbench_dir}/postscript
+                    if ( $status ) then
+                        echo "The script 'postscript' completed with a non-zero status"
+                        exit(1)
+                    endif
+                endif
+
+                if ( "${pa}" == "fsdb" ) then 
+                    ${VERDI_HOME}/bin/verdi -workMode protocolDebug -ssf test_top.fsdb
+                else if ( "${pa}" != "" ) then 
+                    ${DESIGNWARE_HOME}/bin/pa -dir . -ts
+                endif
+
+            endif
+
+        end
+
+        breaksw
+
+    case "vcsmxvlog-svlog":
+
+        set path = ( ${VCS_HOME}/bin $path )
+
+
+        if ( ! -f "${tbench_dir}/top.sv" ) then
+            echo "Simulator vcsmxvlog-svlog is not supported by this example"
+            exit(0)
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/prescript.incdir" ) then
+            set prescript_file = "${tbench_dir}/prescript.incdir"
+        else
+            set prescript_file = "${tbench_dir}/prescript"
+        endif
+
+        if ( -f ${prescript_file} && ! ${norun} ) then
+            source ${prescript_file}
+            set ret_status = $status
+            if ( $ret_status ) then
+                if ( $ret_status == -1 ) then
+                    echo "Simulator vcsmxvlog-svlog is not supported by this example"
+                    exit(0)
+                else
+                    echo "The script 'prescript' completed with an error status"
+                    exit(1)
+                endif
+            endif
+        endif
+
+        if ( -f "${tbench_dir}/sim_build_options" ) then
+            set sim_build_options = `/usr/bin/head -1 ${tbench_dir}/sim_build_options`
+            set sim_build_options = `echo $sim_build_options | /bin/sed -e 's,-ntb_opts uvm,,' -e 's,-CFLAGS -DVCS,,' -e 's,+incdir+$UVM_HOME/src,,' -e 's,$UVM_HOME/src/dpi/uvm_dpi.cc,,'`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/vcs_build_options.incdir" ) then
+            set vcs_build_options_file = "${tbench_dir}/vcs_build_options.incdir"
+        else
+            set vcs_build_options_file = "${tbench_dir}/vcs_build_options"
+        endif
+
+        if ( -f ${vcs_build_options_file} ) then
+            set vcs_build_options = `/usr/bin/head -1 ${vcs_build_options_file}`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/ncv_build_options.incdir" ) then
+            set ncv_build_options_file = "${tbench_dir}/ncv_build_options.incdir"
+        else
+            set ncv_build_options_file = "${tbench_dir}/ncv_build_options"
+        endif
+
+        if ( -f ${ncv_build_options_file} ) then
+            set ncv_build_options = `/usr/bin/head -1 ${ncv_build_options_file}`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/mti_build_options.incdir" ) then
+            set mti_build_options_file = "${tbench_dir}/mti_build_options.incdir"
+        else
+            set mti_build_options_file = "${tbench_dir}/mti_build_options"
+        endif
+
+        if ( -f ${mti_build_options_file} ) then
+            set mti_build_options = `/usr/bin/head -1 ${mti_build_options_file}`
+        endif
+
+        if ( -f "${tbench_dir}/sim_elab_options" ) then
+            set sim_elab_options = `/usr/bin/head -1 ${tbench_dir}/sim_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_elab_options" ) then
+            set vcs_elab_options = `/usr/bin/head -1 ${tbench_dir}/vcs_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_elab_options" ) then
+            set ncv_elab_options = `/usr/bin/head -1 ${tbench_dir}/ncv_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_elab_options" ) then
+            set mti_elab_options = `/usr/bin/head -1 ${tbench_dir}/mti_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_run_options" ) then
+            set sim_run_options = "${sim_run_options} `/usr/bin/head -1 ${tbench_dir}/sim_run_options`"
+        endif
+
+        if ( -f "${tbench_dir}/vcs_run_options" ) then
+            set vcs_run_options = `/usr/bin/head -1 ${tbench_dir}/vcs_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_run_options" ) then
+            set ncv_run_options = `/usr/bin/head -1 ${tbench_dir}/ncv_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_run_options" ) then
+            set mti_run_options = `/usr/bin/head -1 ${tbench_dir}/mti_run_options`
+        endif
+
+        foreach scenario ( $scenario_list )
+
+            cat << ! > top_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > hdl_files
+!
+
+            set program_name = `/bin/egrep '^\s*program\s*\w*\s*' ${tbench_dir}/tests/ts.${scenario}.sv | /bin/sed -e 's/program//' -e 's/automatic//' -e 's/\w*//' | /usr/bin/cut -d "(" -f1`
+
+            if ( ! ${nobuild} ) then
+                echo "# rm -rf output logs coverage work"
+                if ( ! ${norun} ) then
+                    eval rm -rf output logs coverage work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# mkdir output logs coverage work"
+                if ( ! ${norun} ) then
+                    eval mkdir output logs coverage work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# "printf 'WORK > work\nwork : ./work\n'" > synopsys_sim.setup"
+                if ( ! ${norun} ) then
+                    eval "printf 'WORK > work\nwork : ./work\n'" > synopsys_sim.setup
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vlogan -ntb_opts uvm-1.${uvm_minor_ver} ${vcs_quiet} ${vcs_bitmode} ${vcsflags} ${sim_build_options} ${vcs_build_options}"
+                if ( ! ${norun} ) then
+                    eval vlogan -ntb_opts uvm-1.${uvm_minor_ver} ${vcs_quiet} ${vcs_bitmode} ${vcsflags} ${sim_build_options} ${vcs_build_options}
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vlogan -l ./logs/analyze.log ${vcs_quiet} ${vcs_incdir_options} ${vcs_cencrypt_options} ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_lca_option} +define+SVT_UVM_TECHNOLOGY   +define+SYNOPSYS_SV  ${vcslibs} +incdir+${tbench_dir}/{.,../../env,../env,env,dut,hdl_interconnect,lib,tests} -f top_files -f hdl_files"
+                if ( ! ${norun} ) then
+                    eval vlogan -l ./logs/analyze.log ${vcs_quiet} ${vcs_incdir_options} ${vcs_cencrypt_options} ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_lca_option} +define+SVT_UVM_TECHNOLOGY   +define+SYNOPSYS_SV  ${vcslibs} +incdir+${tbench_dir}/{.,../../env,../env,env,dut,hdl_interconnect,lib,tests} -f top_files -f hdl_files
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs -l ./logs/compile.log -Mdir=./output/csrc ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} ${program_name} -o ./output/simvcsmxsvlog test_top"
+                if ( ! ${norun} ) then
+                    eval vcs -l ./logs/compile.log -Mdir=./output/csrc ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} ${program_name} -o ./output/simvcsmxsvlog test_top
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${buildonly} ) then
+
+                echo "# ./output/simvcsmxsvlog ${sim_run_debug} ${vcs_run_seed} ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}"
+                if ( ! ${norun} ) then
+                    eval ./output/simvcsmxsvlog ${sim_run_debug} ${vcs_run_seed} ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}
+                endif
+
+                if ( ${status} ) then
+                    exit( 10 )
+                endif
+
+                sleep 2
+
+                if ( -f "${tbench_dir}/postscript" && ! ${norun} ) then
+                    source ${tbench_dir}/postscript
+                    if ( $status ) then
+                        echo "The script 'postscript' completed with a non-zero status"
+                        exit(1)
+                    endif
+                endif
+
+                if ( "${pa}" == "fsdb" ) then 
+                    ${VERDI_HOME}/bin/verdi -workMode protocolDebug -ssf test_top.fsdb
+                else if ( "${pa}" != "" ) then 
+                    ${DESIGNWARE_HOME}/bin/pa -dir . -ts
+                endif
+
+            endif
+
+        end
+
+        breaksw
+
+    case "ncmvlog-svlog":
+
+        set path = ( ${CDS_INST_DIR}/tools/bin $path )
+
+
+        if ( ! -f "${tbench_dir}/top.sv" ) then
+            echo "Simulator ncmvlog-svlog is not supported by this example"
+            exit(0)
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/prescript.incdir" ) then
+            set prescript_file = "${tbench_dir}/prescript.incdir"
+        else
+            set prescript_file = "${tbench_dir}/prescript"
+        endif
+
+        if ( -f ${prescript_file} && ! ${norun} ) then
+            source ${prescript_file}
+            set ret_status = $status
+            if ( $ret_status ) then
+                if ( $ret_status == -1 ) then
+                    echo "Simulator ncmvlog-svlog is not supported by this example"
+                    exit(0)
+                else
+                    echo "The script 'prescript' completed with an error status"
+                    exit(1)
+                endif
+            endif
+        endif
+
+        if ( -f "${tbench_dir}/sim_build_options" ) then
+            set sim_build_options = `/usr/bin/head -1 ${tbench_dir}/sim_build_options`
+            set sim_build_options = `echo $sim_build_options | /bin/sed -e 's,-ntb_opts uvm,,' -e 's,-CFLAGS -DVCS,,' -e 's,+incdir+$UVM_HOME/src,,' -e 's,$UVM_HOME/src/dpi/uvm_dpi.cc,,'`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/vcs_build_options.incdir" ) then
+            set vcs_build_options_file = "${tbench_dir}/vcs_build_options.incdir"
+        else
+            set vcs_build_options_file = "${tbench_dir}/vcs_build_options"
+        endif
+
+        if ( -f ${vcs_build_options_file} ) then
+            set vcs_build_options = `/usr/bin/head -1 ${vcs_build_options_file}`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/ncv_build_options.incdir" ) then
+            set ncv_build_options_file = "${tbench_dir}/ncv_build_options.incdir"
+        else
+            set ncv_build_options_file = "${tbench_dir}/ncv_build_options"
+        endif
+
+        if ( -f ${ncv_build_options_file} ) then
+            set ncv_build_options = `/usr/bin/head -1 ${ncv_build_options_file}`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/mti_build_options.incdir" ) then
+            set mti_build_options_file = "${tbench_dir}/mti_build_options.incdir"
+        else
+            set mti_build_options_file = "${tbench_dir}/mti_build_options"
+        endif
+
+        if ( -f ${mti_build_options_file} ) then
+            set mti_build_options = `/usr/bin/head -1 ${mti_build_options_file}`
+        endif
+
+        if ( -f "${tbench_dir}/sim_elab_options" ) then
+            set sim_elab_options = `/usr/bin/head -1 ${tbench_dir}/sim_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_elab_options" ) then
+            set vcs_elab_options = `/usr/bin/head -1 ${tbench_dir}/vcs_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_elab_options" ) then
+            set ncv_elab_options = `/usr/bin/head -1 ${tbench_dir}/ncv_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_elab_options" ) then
+            set mti_elab_options = `/usr/bin/head -1 ${tbench_dir}/mti_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_run_options" ) then
+            set sim_run_options = "${sim_run_options} `/usr/bin/head -1 ${tbench_dir}/sim_run_options`"
+        endif
+
+        if ( -f "${tbench_dir}/vcs_run_options" ) then
+            set vcs_run_options = `/usr/bin/head -1 ${tbench_dir}/vcs_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_run_options" ) then
+            set ncv_run_options = `/usr/bin/head -1 ${tbench_dir}/ncv_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_run_options" ) then
+            set mti_run_options = `/usr/bin/head -1 ${tbench_dir}/mti_run_options`
+        endif
+
+        foreach scenario ( $scenario_list )
+
+            cat << ! > top_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > hdl_files
+!
+
+            set program_name = `/bin/egrep '^\s*program\s*\w*\s*' ${tbench_dir}/tests/ts.${scenario}.sv | /bin/sed -e 's/program//' -e 's/automatic//' -e 's/\w*//' | /usr/bin/cut -d "(" -f1`
+
+            if ( ! ${nobuild} ) then
+                echo "# rm -rf output logs coverage work INCA_libs"
+                if ( ! ${norun} ) then
+                    eval rm -rf output logs coverage work INCA_libs
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# mkdir output logs coverage work"
+                if ( ! ${norun} ) then
+                    eval mkdir output logs coverage work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# c++ -Wno-deprecated ${ccflags_dyn} ${ldflags_dyn} -I ${CDS_INST_DIR}/tools/inca/include -o uvm_dpi.so ${UVM_HOME}/src/dpi/uvm_dpi.cc"
+                if ( ! ${norun} ) then
+                    eval c++ -Wno-deprecated ${ccflags_dyn} ${ldflags_dyn} -I ${CDS_INST_DIR}/tools/inca/include -o uvm_dpi.so ${UVM_HOME}/src/dpi/uvm_dpi.cc
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# ncvlog -sv -messages ${ncvlog_flags} ${sim_build_options} ${ncv_build_options} ${ncvuvmflags} ${ncvovmflags} ${aux_ncvflags} -define SVT_UVM_TECHNOLOGY   -define CADENCE -errormax 5 -nowarn NOTIND -nowarn PMBDVX -nowarn ECBICP -nowarn AAMNSD -nowarn LVLFNC -nowarn PMBMDV -nowarn WARIPR  -incdir ${UVM_HOME}/src -incdir ${src_dir}/sverilog/ncv -incdir ${include_dir}/sverilog -incdir ${src_dir}/verilog/ncv -incdir ${include_dir}/verilog -incdir ${tbench_dir} -incdir ${tbench_dir}/../../env -incdir ${tbench_dir}/../env -incdir ${tbench_dir}/env -incdir ${tbench_dir}/dut -incdir ${tbench_dir}/hdl_interconnect -incdir ${tbench_dir}/tests  -f top_files -f hdl_files"
+                if ( ! ${norun} ) then
+                    eval ncvlog -sv -messages ${ncvlog_flags} ${sim_build_options} ${ncv_build_options} ${ncvuvmflags} ${ncvovmflags} ${aux_ncvflags} -define SVT_UVM_TECHNOLOGY   -define CADENCE -errormax 5 -nowarn NOTIND -nowarn PMBDVX -nowarn ECBICP -nowarn AAMNSD -nowarn LVLFNC -nowarn PMBMDV -nowarn WARIPR  -incdir ${UVM_HOME}/src -incdir ${src_dir}/sverilog/ncv -incdir ${include_dir}/sverilog -incdir ${src_dir}/verilog/ncv -incdir ${include_dir}/verilog -incdir ${tbench_dir} -incdir ${tbench_dir}/../../env -incdir ${tbench_dir}/../env -incdir ${tbench_dir}/env -incdir ${tbench_dir}/dut -incdir ${tbench_dir}/hdl_interconnect -incdir ${tbench_dir}/tests  -f top_files -f hdl_files
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# ncelab ${ncvlog_flags} ${sim_elab_options} ${ncv_elab_options} -loadpli ${CDS_INST_DIR}/tools/methodology/UVM/CDNS-1.1d/sv/lib/${uvm_platform}/libuvmpli:uvm_pli_boot -nowarn WARIPR -nowarn CUVIHR -access rw test_top"
+                if ( ! ${norun} ) then
+                    eval ncelab ${ncvlog_flags} ${sim_elab_options} ${ncv_elab_options} -loadpli ${CDS_INST_DIR}/tools/methodology/UVM/CDNS-1.1d/sv/lib/${uvm_platform}/libuvmpli:uvm_pli_boot -nowarn WARIPR -nowarn CUVIHR -access rw test_top
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${buildonly} ) then
+
+                echo "# ncsim -messages ${ncvlog_flags} ${sim_run_options} ${ncv_run_seed} ${ncv_run_options} -nowarn SYSFMW -sv_lib ${DESIGNWARE_HOME}/vip/common/latest/C/lib/${platform}/VipCommonNtb  -sv_lib uvm_dpi test_top"
+                if ( ! ${norun} ) then
+                    eval ncsim -messages ${ncvlog_flags} ${sim_run_options} ${ncv_run_seed} ${ncv_run_options} -nowarn SYSFMW -sv_lib ${DESIGNWARE_HOME}/vip/common/latest/C/lib/${platform}/VipCommonNtb  -sv_lib uvm_dpi test_top
+                endif
+
+                if ( ${status} ) then
+                    exit( 10 )
+                endif
+
+                sleep 2
+
+                if ( -f "${tbench_dir}/postscript" && ! ${norun} ) then
+                    source ${tbench_dir}/postscript
+                    if ( $status ) then
+                        echo "The script 'postscript' completed with a non-zero status"
+                        exit(1)
+                    endif
+                endif
+
+                if ( "${pa}" == "fsdb" ) then 
+                    ${VERDI_HOME}/bin/verdi -workMode protocolDebug -ssf test_top.fsdb
+                else if ( "${pa}" != "" ) then 
+                    ${DESIGNWARE_HOME}/bin/pa -dir . -ts
+                endif
+
+            endif
+
+        end
+
+        breaksw
+
+    case "mtivlog-svtb":
+
+        set path = ( ${MTI_HOME}/${mti_tool_path} $path )
+
+
+        if ( ! -f "${tbench_dir}/top.sv" ) then
+            echo "Simulator mtivlog-svtb is not supported by this example"
+            exit(0)
+        endif
+
+        if ( -f "${tbench_dir}/sim_build_options" ) then
+            set sim_build_options = `/usr/bin/head -1 ${tbench_dir}/sim_build_options`
+            set sim_build_options = `echo $sim_build_options | /bin/sed -e 's,-ntb_opts uvm,,' -e 's,-CFLAGS -DVCS,,' -e 's,+incdir+$UVM_HOME/src,,' -e 's,$UVM_HOME/src/dpi/uvm_dpi.cc,,'`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_build_options" ) then
+            set vcs_build_options = `/usr/bin/head -1 ${tbench_dir}/vcs_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_build_options" ) then
+            set ncv_build_options = `/usr/bin/head -1 ${tbench_dir}/ncv_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_build_options" ) then
+            set mti_build_options = `/usr/bin/head -1 ${tbench_dir}/mti_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_elab_options" ) then
+            set sim_elab_options = `/usr/bin/head -1 ${tbench_dir}/sim_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_elab_options" ) then
+            set vcs_elab_options = `/usr/bin/head -1 ${tbench_dir}/vcs_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_elab_options" ) then
+            set ncv_elab_options = `/usr/bin/head -1 ${tbench_dir}/ncv_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_elab_options" ) then
+            set mti_elab_options = `/usr/bin/head -1 ${tbench_dir}/mti_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_run_options" ) then
+            set sim_run_options = `/usr/bin/head -1 ${tbench_dir}/sim_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_run_options" ) then
+            set vcs_run_options = `/usr/bin/head -1 ${tbench_dir}/vcs_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_run_options" ) then
+            set ncv_run_options = `/usr/bin/head -1 ${tbench_dir}/ncv_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_run_options" ) then
+            set mti_run_options = `/usr/bin/head -1 ${tbench_dir}/mti_run_options`
+        endif
+
+        foreach scenario ( $scenario_list )
+
+            if ( -f "${tbench_dir}/prescript" && ! ${norun} ) then
+                source ${tbench_dir}/prescript
+                set ret_status = $status
+                if ( $ret_status ) then
+                    if ( $ret_status == -1 ) then
+                        echo "Simulator mtivlog-svtb is not supported by this example"
+                        exit(0)
+                    endif
+                        echo "The script 'prescript' completed with an error status"
+                        exit(1)
+                    endif
+                endif
+            endif
+
+            cat << ! > tb_uart_svt_uvm_basic_sys.config
+program UartTxrxSvtProgram.vrp
+program UartMonitorSvtProgram.vrp
+program UartAgentSvtProgram.vrp
+!
+
+            cat << ! > hdl_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > modif_files
+${include_dir}/svtb/UartAgentSvtInterface.svi
+${include_dir}/svtb/UartTxrxSvtInterface.svi
+${include_dir}/svtb/UartMonitorSvtInterface.svi
+!
+
+            cat << ! > envif_files
+/mnt/disk_0/IC/basic/vip/uart/tb_uart_svt_uvm_basic_sys/examples/sverilog/uart_svt/tb_uart_svt_uvm_basic_sys/env/uart_reset_if.svi
+!
+
+            cat << ! > pkg_files
+!
+
+            cat << ! > top_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > test_files
+${tbench_dir}/tests/ts.${scenario}.sv
+!
+
+            set program_name = `/bin/egrep '^\s*program\s*\w*\s*' ${tbench_dir}/tests/ts.${scenario}.sv | /bin/sed -e 's/program//' -e 's/automatic//' -e 's/\w*//' | /usr/bin/cut -d "(" -f1`
+
+            set timescale = `/bin/egrep '^\s*.timescale\s*\w*\s*' ${tbench_dir}/top.sv | /bin/sed -e 's/ *//g' | /bin/sed -e 's/.timescale//'`
+
+            if ( ! ${nobuild} ) then
+                echo "# rm -rf output logs coverage work"
+                if ( ! ${norun} ) then
+                    eval rm -rf output logs coverage work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# mkdir output logs coverage"
+                if ( ! ${norun} ) then
+                    eval mkdir output logs coverage
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# c++ -Wno-deprecated ${ccflags_dyn} ${ldflags_dyn} -DQUESTA -I ${MTI_HOME}/include -o uvm_dpi.so ${UVM_HOME}/src/dpi/uvm_dpi.cc"
+                if ( ! ${norun} ) then
+                    eval c++ -Wno-deprecated ${ccflags_dyn} ${ldflags_dyn} -DQUESTA -I ${MTI_HOME}/include -o uvm_dpi.so ${UVM_HOME}/src/dpi/uvm_dpi.cc
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vlib work"
+                if ( ! ${norun} ) then
+                    eval vlib work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vlog -sv -mfcu ${aux_mtiflags} ${sim_build_options} ${mti_build_options} -l ./logs/compile.log +define+QUESTA +define+MODELTECH -suppress 2181,2217,2240,2227,2283 +incdir+${UVM_HOME}/src +incdir+${include_dir}/svtb +incdir+${include_dir}/verilog +incdir+${include_dir}/sverilog +incdir+${src_dir}/sverilog/mti +incdir+${tbench_dir} +incdir+${tbench_dir}/../../env +incdir+${tbench_dir}/../env +incdir+${tbench_dir}/env +incdir+${tbench_dir}/dut +incdir+${tbench_dir}/hdl_interconnect +incdir+${tbench_dir}/tests -f hdl_files"
+                if ( ! ${norun} ) then
+                    eval vlog -sv -mfcu ${aux_mtiflags} ${sim_build_options} ${mti_build_options} -l ./logs/compile.log +define+QUESTA +define+MODELTECH -suppress 2181,2217,2240,2227,2283 +incdir+${UVM_HOME}/src +incdir+${include_dir}/svtb +incdir+${include_dir}/verilog +incdir+${include_dir}/sverilog +incdir+${src_dir}/sverilog/mti +incdir+${tbench_dir} +incdir+${tbench_dir}/../../env +incdir+${tbench_dir}/../env +incdir+${tbench_dir}/env +incdir+${tbench_dir}/dut +incdir+${tbench_dir}/hdl_interconnect +incdir+${tbench_dir}/tests -f hdl_files
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# "printf 'set SolveArrayResizeMax 0\nonbreak resume\nrun -all\nquit\n'" > sim.cmd"
+                if ( ! ${norun} ) then
+                    eval "printf 'set SolveArrayResizeMax 0\nonbreak resume\nrun -all\nquit\n'" > sim.cmd
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${buildonly} ) then
+
+                echo "# vsim ${sim_run_options} ${mti_run_options} -l ./logs/simulate__${scenario}.log -permit_unmatched_virtual_intf -suppress 3534 -c -sv_lib ${DESIGNWARE_HOME}/vip/common/latest/C/lib/${platform}/VipCommonNtb -sv_lib uvm_dpi -do sim.cmd work.test_top"
+                if ( ! ${norun} ) then
+                    eval vsim ${sim_run_options} ${mti_run_options} -l ./logs/simulate__${scenario}.log -permit_unmatched_virtual_intf -suppress 3534 -c -sv_lib ${DESIGNWARE_HOME}/vip/common/latest/C/lib/${platform}/VipCommonNtb -sv_lib uvm_dpi -do sim.cmd work.test_top
+                endif
+
+                if ( ${status} ) then
+                    exit( 10 )
+                endif
+
+                sleep 2
+
+                if ( -f "${tbench_dir}/postscript" && ! ${norun} ) then
+                    source ${tbench_dir}/postscript
+                    if ( $status ) then
+                        echo "The script 'postscript' completed with a non-zero status"
+                        exit(1)
+                    endif
+                endif
+
+            endif
+
+        end
+
+        breaksw
+
+    case "vcsmxpcvlog-svlog":
+
+        set path = ( ${VCS_HOME}/bin $path )
+
+
+        if ( ! -f "${tbench_dir}/pc.optcfg" ) then
+            echo "Simulator vcsmxpcvlog-svlog is not supported by this example"
+            exit(0)
+        endif
+
+        if ( ! -f "${tbench_dir}/top.sv" ) then
+            echo "Simulator vcsmxpcvlog-svlog is not supported by this example"
+            exit(0)
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/prescript.incdir" ) then
+            set prescript_file = "${tbench_dir}/prescript.incdir"
+        else
+            set prescript_file = "${tbench_dir}/prescript"
+        endif
+
+        if ( -f ${prescript_file} && ! ${norun} ) then
+            source ${prescript_file}
+            set ret_status = $status
+            if ( $ret_status ) then
+                if ( $ret_status == -1 ) then
+                    echo "Simulator vcsmxpcvlog-svlog is not supported by this example"
+                    exit(0)
+                else
+                    echo "The script 'prescript' completed with an error status"
+                    exit(1)
+                endif
+            endif
+        endif
+
+        if ( -f "${tbench_dir}/sim_build_options" ) then
+            set sim_build_options = `/usr/bin/head -1 ${tbench_dir}/sim_build_options`
+            set sim_build_options = `echo $sim_build_options | /bin/sed -e 's,-ntb_opts uvm,,' -e 's,-CFLAGS -DVCS,,' -e 's,+incdir+$UVM_HOME/src,,' -e 's,$UVM_HOME/src/dpi/uvm_dpi.cc,,'`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/vcs_build_options.incdir" ) then
+            set vcs_build_options_file = "${tbench_dir}/vcs_build_options.incdir"
+        else
+            set vcs_build_options_file = "${tbench_dir}/vcs_build_options"
+        endif
+
+        if ( -f ${vcs_build_options_file} ) then
+            set vcs_build_options = `/usr/bin/head -1 ${vcs_build_options_file}`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/ncv_build_options.incdir" ) then
+            set ncv_build_options_file = "${tbench_dir}/ncv_build_options.incdir"
+        else
+            set ncv_build_options_file = "${tbench_dir}/ncv_build_options"
+        endif
+
+        if ( -f ${ncv_build_options_file} ) then
+            set ncv_build_options = `/usr/bin/head -1 ${ncv_build_options_file}`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/mti_build_options.incdir" ) then
+            set mti_build_options_file = "${tbench_dir}/mti_build_options.incdir"
+        else
+            set mti_build_options_file = "${tbench_dir}/mti_build_options"
+        endif
+
+        if ( -f ${mti_build_options_file} ) then
+            set mti_build_options = `/usr/bin/head -1 ${mti_build_options_file}`
+        endif
+
+        if ( -f "${tbench_dir}/sim_elab_options" ) then
+            set sim_elab_options = `/usr/bin/head -1 ${tbench_dir}/sim_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_elab_options" ) then
+            set vcs_elab_options = `/usr/bin/head -1 ${tbench_dir}/vcs_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_elab_options" ) then
+            set ncv_elab_options = `/usr/bin/head -1 ${tbench_dir}/ncv_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_elab_options" ) then
+            set mti_elab_options = `/usr/bin/head -1 ${tbench_dir}/mti_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_run_options" ) then
+            set sim_run_options = "${sim_run_options} `/usr/bin/head -1 ${tbench_dir}/sim_run_options`"
+        endif
+
+        if ( -f "${tbench_dir}/vcs_run_options" ) then
+            set vcs_run_options = `/usr/bin/head -1 ${tbench_dir}/vcs_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_run_options" ) then
+            set ncv_run_options = `/usr/bin/head -1 ${tbench_dir}/ncv_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_run_options" ) then
+            set mti_run_options = `/usr/bin/head -1 ${tbench_dir}/mti_run_options`
+        endif
+
+        foreach scenario ( $scenario_list )
+
+            cat << ! > top_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > hdl_files
+!
+
+            set program_name = `/bin/egrep '^\s*program\s*\w*\s*' ${tbench_dir}/tests/ts.${scenario}.sv | /bin/sed -e 's/program//' -e 's/automatic//' -e 's/\w*//' | /usr/bin/cut -d "(" -f1`
+
+            if ( ! ${nobuild} ) then
+                echo "# mkdir -p output logs coverage work"
+                if ( ! ${norun} ) then
+                    eval mkdir -p output logs coverage work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# "printf 'WORK > work\nwork : ./work\n'" > synopsys_sim.setup"
+                if ( ! ${norun} ) then
+                    eval "printf 'WORK > work\nwork : ./work\n'" > synopsys_sim.setup
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vlogan -ntb_opts uvm-1.${uvm_minor_ver} ${vcs_quiet} ${vcs_bitmode} ${vcsflags} ${sim_build_options} ${vcs_build_options}"
+                if ( ! ${norun} ) then
+                    eval vlogan -ntb_opts uvm-1.${uvm_minor_ver} ${vcs_quiet} ${vcs_bitmode} ${vcsflags} ${sim_build_options} ${vcs_build_options}
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vlogan -l ./logs/analyze.log ${vcs_quiet} ${vcs_incdir_options} ${vcs_cencrypt_options} ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_lca_option} +define+SVT_UVM_TECHNOLOGY   +define+SYNOPSYS_SV  ${vcslibs} +incdir+${tbench_dir}/{.,../../env,../env,env,dut,hdl_interconnect,lib,tests} -f top_files -f hdl_files"
+                if ( ! ${norun} ) then
+                    eval vlogan -l ./logs/analyze.log ${vcs_quiet} ${vcs_incdir_options} ${vcs_cencrypt_options} ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_lca_option} +define+SVT_UVM_TECHNOLOGY   +define+SYNOPSYS_SV  ${vcslibs} +incdir+${tbench_dir}/{.,../../env,../env,env,dut,hdl_interconnect,lib,tests} -f top_files -f hdl_files
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs -l ./logs/compile.log -Mdir=./output/csrc ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} ${program_name} -partcomp -fastpartcomp=j4 +optconfigfile+${tbench_dir}/pc.optcfg -lca -o ./output/simvcsmxpcsvlog test_top"
+                if ( ! ${norun} ) then
+                    eval vcs -l ./logs/compile.log -Mdir=./output/csrc ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} ${program_name} -partcomp -fastpartcomp=j4 +optconfigfile+${tbench_dir}/pc.optcfg -lca -o ./output/simvcsmxpcsvlog test_top
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${buildonly} ) then
+
+                echo "# ./output/simvcsmxpcsvlog ${sim_run_debug} ${vcs_run_seed} ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}"
+                if ( ! ${norun} ) then
+                    eval ./output/simvcsmxpcsvlog ${sim_run_debug} ${vcs_run_seed} ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}
+                endif
+
+                if ( ${status} ) then
+                    exit( 10 )
+                endif
+
+                sleep 2
+
+                if ( -f "${tbench_dir}/postscript" && ! ${norun} ) then
+                    source ${tbench_dir}/postscript
+                    if ( $status ) then
+                        echo "The script 'postscript' completed with a non-zero status"
+                        exit(1)
+                    endif
+                endif
+
+                if ( "${pa}" == "fsdb" ) then 
+                    ${VERDI_HOME}/bin/verdi -workMode protocolDebug -ssf test_top.fsdb
+                else if ( "${pa}" != "" ) then 
+                    ${DESIGNWARE_HOME}/bin/pa -dir . -ts
+                endif
+
+            endif
+
+        end
+
+        breaksw
+
+    case "vcsmxpipvlog-svtb":
+
+        set path = ( ${VCS_HOME}/bin $path )
+
+
+        if ( ! -f "${tbench_dir}/pc.optcfg" ) then
+            echo "Simulator vcsmxpipvlog-svtb is not supported by this example"
+            exit(0)
+        endif
+
+        if ( ! -f "${tbench_dir}/top.sv" ) then
+            echo "Simulator vcsmxpipvlog-svtb is not supported by this example"
+            exit(0)
+        endif
+
+        if ( -f "${tbench_dir}/sim_build_options" ) then
+            set sim_build_options = `/usr/bin/head -1 ${tbench_dir}/sim_build_options`
+            set sim_build_options = `echo $sim_build_options | /bin/sed -e 's,-ntb_opts uvm,,' -e 's,-CFLAGS -DVCS,,' -e 's,+incdir+$UVM_HOME/src,,' -e 's,$UVM_HOME/src/dpi/uvm_dpi.cc,,'`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_build_options" ) then
+            set vcs_build_options = `/usr/bin/head -1 ${tbench_dir}/vcs_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_build_options" ) then
+            set ncv_build_options = `/usr/bin/head -1 ${tbench_dir}/ncv_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_build_options" ) then
+            set mti_build_options = `/usr/bin/head -1 ${tbench_dir}/mti_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_elab_options" ) then
+            set sim_elab_options = `/usr/bin/head -1 ${tbench_dir}/sim_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_elab_options" ) then
+            set vcs_elab_options = `/usr/bin/head -1 ${tbench_dir}/vcs_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_elab_options" ) then
+            set ncv_elab_options = `/usr/bin/head -1 ${tbench_dir}/ncv_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_elab_options" ) then
+            set mti_elab_options = `/usr/bin/head -1 ${tbench_dir}/mti_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_run_options" ) then
+            set sim_run_options = `/usr/bin/head -1 ${tbench_dir}/sim_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_run_options" ) then
+            set vcs_run_options = `/usr/bin/head -1 ${tbench_dir}/vcs_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_run_options" ) then
+            set ncv_run_options = `/usr/bin/head -1 ${tbench_dir}/ncv_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_run_options" ) then
+            set mti_run_options = `/usr/bin/head -1 ${tbench_dir}/mti_run_options`
+        endif
+
+        foreach scenario ( $scenario_list )
+
+            if ( -f "${tbench_dir}/prescript" && ! ${norun} ) then
+                source ${tbench_dir}/prescript
+                set ret_status = $status
+                if ( $ret_status ) then
+                    if ( $ret_status == -1 ) then
+                        echo "Simulator vcsmxpipvlog-svtb is not supported by this example"
+                        exit(0)
+                    endif
+                        echo "The script 'prescript' completed with an error status"
+                        exit(1)
+                    endif
+                endif
+            endif
+
+            cat << ! > tb_uart_svt_uvm_basic_sys.config
+program UartTxrxSvtProgram.vrp
+program UartMonitorSvtProgram.vrp
+program UartAgentSvtProgram.vrp
+!
+
+            cat << ! > hdl_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > modif_files
+${include_dir}/svtb/UartAgentSvtInterface.svi
+${include_dir}/svtb/UartTxrxSvtInterface.svi
+${include_dir}/svtb/UartMonitorSvtInterface.svi
+!
+
+            cat << ! > envif_files
+/mnt/disk_0/IC/basic/vip/uart/tb_uart_svt_uvm_basic_sys/examples/sverilog/uart_svt/tb_uart_svt_uvm_basic_sys/env/uart_reset_if.svi
+!
+
+            cat << ! > pkg_files
+!
+
+            cat << ! > top_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > test_files
+${tbench_dir}/tests/ts.${scenario}.sv
+!
+
+            set program_name = `/bin/egrep '^\s*program\s*\w*\s*' ${tbench_dir}/tests/ts.${scenario}.sv | /bin/sed -e 's/program//' -e 's/automatic//' -e 's/\w*//' | /usr/bin/cut -d "(" -f1`
+
+            set timescale = `/bin/egrep '^\s*.timescale\s*\w*\s*' ${tbench_dir}/top.sv | /bin/sed -e 's/ *//g' | /bin/sed -e 's/.timescale//'`
+
+            if ( ! ${nobuild} ) then
+                echo "# rm -rf output logs coverage work"
+                if ( ! ${norun} ) then
+                    eval rm -rf output logs coverage work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# mkdir output logs coverage work"
+                if ( ! ${norun} ) then
+                    eval mkdir output logs coverage work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# "printf 'WORK > work\nwork : ./work\n'" > synopsys_sim.setup"
+                if ( ! ${norun} ) then
+                    eval "printf 'WORK > work\nwork : ./work\n'" > synopsys_sim.setup
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vlogan -ntb_opts uvm-1.${uvm_minor_ver} -ntb_opts vera_compat ${vcs_quiet} ${vcs_bitmode} +define+UVM_DISABLE_AUTO_ITEM_RECORDING ${vcsflags} ${sim_build_options}"
+                if ( ! ${norun} ) then
+                    eval vlogan -ntb_opts uvm-1.${uvm_minor_ver} -ntb_opts vera_compat ${vcs_quiet} ${vcs_bitmode} +define+UVM_DISABLE_AUTO_ITEM_RECORDING ${vcsflags} ${sim_build_options}
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vlogan -l ./logs/analyze.log ${vcs_quiet} ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_lca_option} +define+SYNOPSYS_SV -ntb_define NTB  -ntb_opts use_sigprop  -ntb_vipext .ov +define+NTB -ntb_incdir ${include_dir}/vera+${src_dir}/vera+${tbench_dir}/env+${tbench_dir}/hdl_interconnect +incdir+${include_dir}/{verilog,svtb,sverilog} +incdir+${src_dir}/sverilog/vcs +incdir+${tbench_dir}/{.,../env,env,dut,hdl_interconnect,lib,tests} ${vcslibs}  -f hdl_files"
+                if ( ! ${norun} ) then
+                    eval vlogan -l ./logs/analyze.log ${vcs_quiet} ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_lca_option} +define+SYNOPSYS_SV -ntb_define NTB  -ntb_opts use_sigprop  -ntb_vipext .ov +define+NTB -ntb_incdir ${include_dir}/vera+${src_dir}/vera+${tbench_dir}/env+${tbench_dir}/hdl_interconnect +incdir+${include_dir}/{verilog,svtb,sverilog} +incdir+${src_dir}/sverilog/vcs +incdir+${tbench_dir}/{.,../env,env,dut,hdl_interconnect,lib,tests} ${vcslibs}  -f hdl_files
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs -l ./logs/compile_package.log -Mdir=./output/csrc -ntb_opts use_sigprop ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} -fastpartcomp=j4 -genip uvm_pkg -lca"
+                if ( ! ${norun} ) then
+                    eval vcs -l ./logs/compile_package.log -Mdir=./output/csrc -ntb_opts use_sigprop ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} -fastpartcomp=j4 -genip uvm_pkg -lca
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs -l ./logs/compile_package.log -Mdir=./output/csrc -ntb_opts use_sigprop ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} -fastpartcomp=j4 -genip svt_uvm_pkg -lca"
+                if ( ! ${norun} ) then
+                    eval vcs -l ./logs/compile_package.log -Mdir=./output/csrc -ntb_opts use_sigprop ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} -fastpartcomp=j4 -genip svt_uvm_pkg -lca
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs -l ./logs/compile_package.log -Mdir=./output/csrc -ntb_opts use_sigprop ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} -fastpartcomp=j4 -genip svt_uart_uvm_pkg -lca"
+                if ( ! ${norun} ) then
+                    eval vcs -l ./logs/compile_package.log -Mdir=./output/csrc -ntb_opts use_sigprop ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} -fastpartcomp=j4 -genip svt_uart_uvm_pkg -lca
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs -l ./logs/compile.log -Mdir=./output/csrc -ntb_opts use_sigprop ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} -fastpartcomp=j4 -integ -lca -o ./output/simvcsmxpipsvtb test_top"
+                if ( ! ${norun} ) then
+                    eval vcs -l ./logs/compile.log -Mdir=./output/csrc -ntb_opts use_sigprop ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} -fastpartcomp=j4 -integ -lca -o ./output/simvcsmxpipsvtb test_top
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${buildonly} ) then
+
+                echo "# ./output/simvcsmxpipsvtb ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}"
+                if ( ! ${norun} ) then
+                    eval ./output/simvcsmxpipsvtb ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}
+                endif
+
+                if ( ${status} ) then
+                    exit( 10 )
+                endif
+
+                sleep 2
+
+                if ( -f "${tbench_dir}/postscript" && ! ${norun} ) then
+                    source ${tbench_dir}/postscript
+                    if ( $status ) then
+                        echo "The script 'postscript' completed with a non-zero status"
+                        exit(1)
+                    endif
+                endif
+
+            endif
+
+        end
+
+        breaksw
+
+    case "vcsvlog-svtb":
+
+        set path = ( ${VCS_HOME}/bin $path )
+
+
+        if ( ! -f "${tbench_dir}/top.sv" ) then
+            echo "Simulator vcsvlog-svtb is not supported by this example"
+            exit(0)
+        endif
+
+        if ( -f "${tbench_dir}/sim_build_options" ) then
+            set sim_build_options = `/usr/bin/head -1 ${tbench_dir}/sim_build_options`
+            set sim_build_options = `echo $sim_build_options | /bin/sed -e 's,-ntb_opts uvm,,' -e 's,-CFLAGS -DVCS,,' -e 's,+incdir+$UVM_HOME/src,,' -e 's,$UVM_HOME/src/dpi/uvm_dpi.cc,,'`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_build_options" ) then
+            set vcs_build_options = `/usr/bin/head -1 ${tbench_dir}/vcs_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_build_options" ) then
+            set ncv_build_options = `/usr/bin/head -1 ${tbench_dir}/ncv_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_build_options" ) then
+            set mti_build_options = `/usr/bin/head -1 ${tbench_dir}/mti_build_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_elab_options" ) then
+            set sim_elab_options = `/usr/bin/head -1 ${tbench_dir}/sim_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_elab_options" ) then
+            set vcs_elab_options = `/usr/bin/head -1 ${tbench_dir}/vcs_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_elab_options" ) then
+            set ncv_elab_options = `/usr/bin/head -1 ${tbench_dir}/ncv_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_elab_options" ) then
+            set mti_elab_options = `/usr/bin/head -1 ${tbench_dir}/mti_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_run_options" ) then
+            set sim_run_options = `/usr/bin/head -1 ${tbench_dir}/sim_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_run_options" ) then
+            set vcs_run_options = `/usr/bin/head -1 ${tbench_dir}/vcs_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_run_options" ) then
+            set ncv_run_options = `/usr/bin/head -1 ${tbench_dir}/ncv_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_run_options" ) then
+            set mti_run_options = `/usr/bin/head -1 ${tbench_dir}/mti_run_options`
+        endif
+
+        foreach scenario ( $scenario_list )
+
+            if ( -f "${tbench_dir}/prescript" && ! ${norun} ) then
+                source ${tbench_dir}/prescript
+                set ret_status = $status
+                if ( $ret_status ) then
+                    if ( $ret_status == -1 ) then
+                        echo "Simulator vcsvlog-svtb is not supported by this example"
+                        exit(0)
+                    endif
+                        echo "The script 'prescript' completed with an error status"
+                        exit(1)
+                    endif
+                endif
+            endif
+
+            cat << ! > tb_uart_svt_uvm_basic_sys.config
+program UartTxrxSvtProgram.vrp
+program UartMonitorSvtProgram.vrp
+program UartAgentSvtProgram.vrp
+!
+
+            cat << ! > hdl_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > modif_files
+${include_dir}/svtb/UartAgentSvtInterface.svi
+${include_dir}/svtb/UartTxrxSvtInterface.svi
+${include_dir}/svtb/UartMonitorSvtInterface.svi
+!
+
+            cat << ! > envif_files
+/mnt/disk_0/IC/basic/vip/uart/tb_uart_svt_uvm_basic_sys/examples/sverilog/uart_svt/tb_uart_svt_uvm_basic_sys/env/uart_reset_if.svi
+!
+
+            cat << ! > pkg_files
+!
+
+            cat << ! > top_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > test_files
+${tbench_dir}/tests/ts.${scenario}.sv
+!
+
+            set program_name = `/bin/egrep '^\s*program\s*\w*\s*' ${tbench_dir}/tests/ts.${scenario}.sv | /bin/sed -e 's/program//' -e 's/automatic//' -e 's/\w*//' | /usr/bin/cut -d "(" -f1`
+
+            set timescale = `/bin/egrep '^\s*.timescale\s*\w*\s*' ${tbench_dir}/top.sv | /bin/sed -e 's/ *//g' | /bin/sed -e 's/.timescale//'`
+
+            if ( ! ${nobuild} ) then
+                echo "# rm -rf output logs coverage"
+                if ( ! ${norun} ) then
+                    eval rm -rf output logs coverage
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# mkdir output logs coverage"
+                if ( ! ${norun} ) then
+                    eval mkdir output logs coverage
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs -l ./logs/compile.log ${vcs_quiet} -Mdir=./output/csrc ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_waves_options} ${vcs_pa_options} ${vcs_lca_option} +define+SYNOPSYS_SV -ntb_define NTB  -ntb_opts use_sigprop  -ntb_vipext .ov +define+NTB -ntb_incdir ${include_dir}/vera+${src_dir}/vera+${tbench_dir}/env+${tbench_dir}/hdl_interconnect +incdir+${include_dir}/{verilog,svtb,sverilog} +incdir+${src_dir}/sverilog/vcs +incdir+${tbench_dir}/{.,../env,env,dut,hdl_interconnect,lib,tests} ${vcslibs} -o ./output/simvcssvtb  -f hdl_files"
+                if ( ! ${norun} ) then
+                    eval vcs -l ./logs/compile.log ${vcs_quiet} -Mdir=./output/csrc ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_waves_options} ${vcs_pa_options} ${vcs_lca_option} +define+SYNOPSYS_SV -ntb_define NTB  -ntb_opts use_sigprop  -ntb_vipext .ov +define+NTB -ntb_incdir ${include_dir}/vera+${src_dir}/vera+${tbench_dir}/env+${tbench_dir}/hdl_interconnect +incdir+${include_dir}/{verilog,svtb,sverilog} +incdir+${src_dir}/sverilog/vcs +incdir+${tbench_dir}/{.,../env,env,dut,hdl_interconnect,lib,tests} ${vcslibs} -o ./output/simvcssvtb  -f hdl_files
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${buildonly} ) then
+
+                echo "# ./output/simvcssvtb ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}"
+                if ( ! ${norun} ) then
+                    eval ./output/simvcssvtb ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}
+                endif
+
+                if ( ${status} ) then
+                    exit( 10 )
+                endif
+
+                sleep 2
+
+                if ( -f "${tbench_dir}/postscript" && ! ${norun} ) then
+                    source ${tbench_dir}/postscript
+                    if ( $status ) then
+                        echo "The script 'postscript' completed with a non-zero status"
+                        exit(1)
+                    endif
+                endif
+
+            endif
+
+        end
+
+        breaksw
+
+    case "vcsmxpipvlog-svlog":
+
+        set path = ( ${VCS_HOME}/bin $path )
+
+
+        if ( ! -f "${tbench_dir}/pc.optcfg" ) then
+            echo "Simulator vcsmxpipvlog-svlog is not supported by this example"
+            exit(0)
+        endif
+
+        if ( ! -f "${tbench_dir}/top.sv" ) then
+            echo "Simulator vcsmxpipvlog-svlog is not supported by this example"
+            exit(0)
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/prescript.incdir" ) then
+            set prescript_file = "${tbench_dir}/prescript.incdir"
+        else
+            set prescript_file = "${tbench_dir}/prescript"
+        endif
+
+        if ( -f ${prescript_file} && ! ${norun} ) then
+            source ${prescript_file}
+            set ret_status = $status
+            if ( $ret_status ) then
+                if ( $ret_status == -1 ) then
+                    echo "Simulator vcsmxpipvlog-svlog is not supported by this example"
+                    exit(0)
+                else
+                    echo "The script 'prescript' completed with an error status"
+                    exit(1)
+                endif
+            endif
+        endif
+
+        if ( -f "${tbench_dir}/sim_build_options" ) then
+            set sim_build_options = `/usr/bin/head -1 ${tbench_dir}/sim_build_options`
+            set sim_build_options = `echo $sim_build_options | /bin/sed -e 's,-ntb_opts uvm,,' -e 's,-CFLAGS -DVCS,,' -e 's,+incdir+$UVM_HOME/src,,' -e 's,$UVM_HOME/src/dpi/uvm_dpi.cc,,'`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/vcs_build_options.incdir" ) then
+            set vcs_build_options_file = "${tbench_dir}/vcs_build_options.incdir"
+        else
+            set vcs_build_options_file = "${tbench_dir}/vcs_build_options"
+        endif
+
+        if ( -f ${vcs_build_options_file} ) then
+            set vcs_build_options = `/usr/bin/head -1 ${vcs_build_options_file}`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/ncv_build_options.incdir" ) then
+            set ncv_build_options_file = "${tbench_dir}/ncv_build_options.incdir"
+        else
+            set ncv_build_options_file = "${tbench_dir}/ncv_build_options"
+        endif
+
+        if ( -f ${ncv_build_options_file} ) then
+            set ncv_build_options = `/usr/bin/head -1 ${ncv_build_options_file}`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/mti_build_options.incdir" ) then
+            set mti_build_options_file = "${tbench_dir}/mti_build_options.incdir"
+        else
+            set mti_build_options_file = "${tbench_dir}/mti_build_options"
+        endif
+
+        if ( -f ${mti_build_options_file} ) then
+            set mti_build_options = `/usr/bin/head -1 ${mti_build_options_file}`
+        endif
+
+        if ( -f "${tbench_dir}/sim_elab_options" ) then
+            set sim_elab_options = `/usr/bin/head -1 ${tbench_dir}/sim_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_elab_options" ) then
+            set vcs_elab_options = `/usr/bin/head -1 ${tbench_dir}/vcs_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_elab_options" ) then
+            set ncv_elab_options = `/usr/bin/head -1 ${tbench_dir}/ncv_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_elab_options" ) then
+            set mti_elab_options = `/usr/bin/head -1 ${tbench_dir}/mti_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_run_options" ) then
+            set sim_run_options = "${sim_run_options} `/usr/bin/head -1 ${tbench_dir}/sim_run_options`"
+        endif
+
+        if ( -f "${tbench_dir}/vcs_run_options" ) then
+            set vcs_run_options = `/usr/bin/head -1 ${tbench_dir}/vcs_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_run_options" ) then
+            set ncv_run_options = `/usr/bin/head -1 ${tbench_dir}/ncv_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_run_options" ) then
+            set mti_run_options = `/usr/bin/head -1 ${tbench_dir}/mti_run_options`
+        endif
+
+        foreach scenario ( $scenario_list )
+
+            cat << ! > top_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > hdl_files
+!
+
+            set program_name = `/bin/egrep '^\s*program\s*\w*\s*' ${tbench_dir}/tests/ts.${scenario}.sv | /bin/sed -e 's/program//' -e 's/automatic//' -e 's/\w*//' | /usr/bin/cut -d "(" -f1`
+
+            if ( ! ${nobuild} ) then
+                echo "# mkdir -p output logs coverage work"
+                if ( ! ${norun} ) then
+                    eval mkdir -p output logs coverage work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# "printf 'WORK > work\nwork : ./work\n'" > synopsys_sim.setup"
+                if ( ! ${norun} ) then
+                    eval "printf 'WORK > work\nwork : ./work\n'" > synopsys_sim.setup
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vlogan -ntb_opts uvm-1.${uvm_minor_ver} ${vcs_quiet} ${vcs_bitmode} ${vcsflags} ${sim_build_options} ${vcs_build_options}"
+                if ( ! ${norun} ) then
+                    eval vlogan -ntb_opts uvm-1.${uvm_minor_ver} ${vcs_quiet} ${vcs_bitmode} ${vcsflags} ${sim_build_options} ${vcs_build_options}
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vlogan -l ./logs/analyze.log ${vcs_quiet} ${vcs_incdir_options} ${vcs_cencrypt_options} ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_lca_option} +define+SVT_UVM_TECHNOLOGY   +define+SYNOPSYS_SV  ${vcslibs} +incdir+${tbench_dir}/{.,../../env,../env,env,dut,hdl_interconnect,lib,tests} -f top_files -f hdl_files"
+                if ( ! ${norun} ) then
+                    eval vlogan -l ./logs/analyze.log ${vcs_quiet} ${vcs_incdir_options} ${vcs_cencrypt_options} ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_lca_option} +define+SVT_UVM_TECHNOLOGY   +define+SYNOPSYS_SV  ${vcslibs} +incdir+${tbench_dir}/{.,../../env,../env,env,dut,hdl_interconnect,lib,tests} -f top_files -f hdl_files
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs -l ./logs/compile_package.log -Mdir=./output/csrc ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} -fastpartcomp=j4 -genip uvm_pkg -lca"
+                if ( ! ${norun} ) then
+                    eval vcs -l ./logs/compile_package.log -Mdir=./output/csrc ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} -fastpartcomp=j4 -genip uvm_pkg -lca
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs -l ./logs/compile_package.log -Mdir=./output/csrc ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} -fastpartcomp=j4 -genip svt_uvm_pkg -lca"
+                if ( ! ${norun} ) then
+                    eval vcs -l ./logs/compile_package.log -Mdir=./output/csrc ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} -fastpartcomp=j4 -genip svt_uvm_pkg -lca
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs -l ./logs/compile_package.log -Mdir=./output/csrc ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} -fastpartcomp=j4 -genip svt_uart_uvm_pkg -lca"
+                if ( ! ${norun} ) then
+                    eval vcs -l ./logs/compile_package.log -Mdir=./output/csrc ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} -fastpartcomp=j4 -genip svt_uart_uvm_pkg -lca
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs -l ./logs/compile.log -Mdir=./output/csrc ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} ${program_name} -fastpartcomp=j4 -integ -lca -o ./output/simvcsmxpipsvlog test_top"
+                if ( ! ${norun} ) then
+                    eval vcs -l ./logs/compile.log -Mdir=./output/csrc ${vcselabuvmflags} ${vcs_bitmode} ${vcsflags} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_options} ${vcs_pa_options} ${program_name} -fastpartcomp=j4 -integ -lca -o ./output/simvcsmxpipsvlog test_top
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${buildonly} ) then
+
+                echo "# ./output/simvcsmxpipsvlog ${sim_run_debug} ${vcs_run_seed} ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}"
+                if ( ! ${norun} ) then
+                    eval ./output/simvcsmxpipsvlog ${sim_run_debug} ${vcs_run_seed} ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}
+                endif
+
+                if ( ${status} ) then
+                    exit( 10 )
+                endif
+
+                sleep 2
+
+                if ( -f "${tbench_dir}/postscript" && ! ${norun} ) then
+                    source ${tbench_dir}/postscript
+                    if ( $status ) then
+                        echo "The script 'postscript' completed with a non-zero status"
+                        exit(1)
+                    endif
+                endif
+
+                if ( "${pa}" == "fsdb" ) then 
+                    ${VERDI_HOME}/bin/verdi -workMode protocolDebug -ssf test_top.fsdb
+                else if ( "${pa}" != "" ) then 
+                    ${DESIGNWARE_HOME}/bin/pa -dir . -ts
+                endif
+
+            endif
+
+        end
+
+        breaksw
+
+    case "mtivlog-svlog":
+
+        set path = ( ${MTI_HOME}/${mti_tool_path} $path )
+
+
+        if ( ! -f "${tbench_dir}/top.sv" ) then
+            echo "Simulator mtivlog-svlog is not supported by this example"
+            exit(0)
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/prescript.incdir" ) then
+            set prescript_file = "${tbench_dir}/prescript.incdir"
+        else
+            set prescript_file = "${tbench_dir}/prescript"
+        endif
+
+        if ( -f ${prescript_file} && ! ${norun} ) then
+            source ${prescript_file}
+            set ret_status = $status
+            if ( $ret_status ) then
+                if ( $ret_status == -1 ) then
+                    echo "Simulator mtivlog-svlog is not supported by this example"
+                    exit(0)
+                else
+                    echo "The script 'prescript' completed with an error status"
+                    exit(1)
+                endif
+            endif
+        endif
+
+        if ( -f "${tbench_dir}/sim_build_options" ) then
+            set sim_build_options = `/usr/bin/head -1 ${tbench_dir}/sim_build_options`
+            set sim_build_options = `echo $sim_build_options | /bin/sed -e 's,-ntb_opts uvm,,' -e 's,-CFLAGS -DVCS,,' -e 's,+incdir+$UVM_HOME/src,,' -e 's,$UVM_HOME/src/dpi/uvm_dpi.cc,,'`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/vcs_build_options.incdir" ) then
+            set vcs_build_options_file = "${tbench_dir}/vcs_build_options.incdir"
+        else
+            set vcs_build_options_file = "${tbench_dir}/vcs_build_options"
+        endif
+
+        if ( -f ${vcs_build_options_file} ) then
+            set vcs_build_options = `/usr/bin/head -1 ${vcs_build_options_file}`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/ncv_build_options.incdir" ) then
+            set ncv_build_options_file = "${tbench_dir}/ncv_build_options.incdir"
+        else
+            set ncv_build_options_file = "${tbench_dir}/ncv_build_options"
+        endif
+
+        if ( -f ${ncv_build_options_file} ) then
+            set ncv_build_options = `/usr/bin/head -1 ${ncv_build_options_file}`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/mti_build_options.incdir" ) then
+            set mti_build_options_file = "${tbench_dir}/mti_build_options.incdir"
+        else
+            set mti_build_options_file = "${tbench_dir}/mti_build_options"
+        endif
+
+        if ( -f ${mti_build_options_file} ) then
+            set mti_build_options = `/usr/bin/head -1 ${mti_build_options_file}`
+        endif
+
+        if ( -f "${tbench_dir}/sim_elab_options" ) then
+            set sim_elab_options = `/usr/bin/head -1 ${tbench_dir}/sim_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_elab_options" ) then
+            set vcs_elab_options = `/usr/bin/head -1 ${tbench_dir}/vcs_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_elab_options" ) then
+            set ncv_elab_options = `/usr/bin/head -1 ${tbench_dir}/ncv_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_elab_options" ) then
+            set mti_elab_options = `/usr/bin/head -1 ${tbench_dir}/mti_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_run_options" ) then
+            set sim_run_options = "${sim_run_options} `/usr/bin/head -1 ${tbench_dir}/sim_run_options`"
+        endif
+
+        if ( -f "${tbench_dir}/vcs_run_options" ) then
+            set vcs_run_options = `/usr/bin/head -1 ${tbench_dir}/vcs_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_run_options" ) then
+            set ncv_run_options = `/usr/bin/head -1 ${tbench_dir}/ncv_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_run_options" ) then
+            set mti_run_options = `/usr/bin/head -1 ${tbench_dir}/mti_run_options`
+        endif
+
+        foreach scenario ( $scenario_list )
+
+            cat << ! > top_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > hdl_files
+!
+
+            set program_name = `/bin/egrep '^\s*program\s*\w*\s*' ${tbench_dir}/tests/ts.${scenario}.sv | /bin/sed -e 's/program//' -e 's/automatic//' -e 's/\w*//' | /usr/bin/cut -d "(" -f1`
+
+            if ( ! ${nobuild} ) then
+                echo "# rm -rf output logs coverage work"
+                if ( ! ${norun} ) then
+                    eval rm -rf output logs coverage work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# mkdir output logs coverage"
+                if ( ! ${norun} ) then
+                    eval mkdir output logs coverage
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# c++ -Wno-deprecated ${ccflags_dyn} ${ldflags_dyn} -DQUESTA -I ${MTI_HOME}/include -o uvm_dpi.so ${UVM_HOME}/src/dpi/uvm_dpi.cc"
+                if ( ! ${norun} ) then
+                    eval c++ -Wno-deprecated ${ccflags_dyn} ${ldflags_dyn} -DQUESTA -I ${MTI_HOME}/include -o uvm_dpi.so ${UVM_HOME}/src/dpi/uvm_dpi.cc
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vlib work"
+                if ( ! ${norun} ) then
+                    eval vlib work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vlog -sv -mfcu ${mti_incdir_options} ${mti_cencrypt_options} ${mtivlog_flags} ${aux_mtiflags} ${sim_build_options} ${mti_build_options} ${mtiuvmflags} ${mtiovmflags} ${mti_waves_defines} -l ./logs/compile.log +define+SVT_UVM_TECHNOLOGY    +define+QUESTA +define+MODELTECH -suppress 2181,2217,2240,2227,2283  +incdir+${UVM_HOME}/src +incdir+${tbench_dir} +incdir+${tbench_dir}/../../env +incdir+${tbench_dir}/../env +incdir+${tbench_dir}/env +incdir+${tbench_dir}/dut +incdir+${tbench_dir}/hdl_interconnect +incdir+${tbench_dir}/tests  -f top_files -f hdl_files"
+                if ( ! ${norun} ) then
+                    eval vlog -sv -mfcu ${mti_incdir_options} ${mti_cencrypt_options} ${mtivlog_flags} ${aux_mtiflags} ${sim_build_options} ${mti_build_options} ${mtiuvmflags} ${mtiovmflags} ${mti_waves_defines} -l ./logs/compile.log +define+SVT_UVM_TECHNOLOGY    +define+QUESTA +define+MODELTECH -suppress 2181,2217,2240,2227,2283  +incdir+${UVM_HOME}/src +incdir+${tbench_dir} +incdir+${tbench_dir}/../../env +incdir+${tbench_dir}/../env +incdir+${tbench_dir}/env +incdir+${tbench_dir}/dut +incdir+${tbench_dir}/hdl_interconnect +incdir+${tbench_dir}/tests  -f top_files -f hdl_files
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# "printf 'set SolveArrayResizeMax 0\nonbreak resume\nrun -all\nquit\n'" > sim.cmd"
+                if ( ! ${norun} ) then
+                    eval "printf 'set SolveArrayResizeMax 0\nonbreak resume\nrun -all\nquit\n'" > sim.cmd
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${buildonly} ) then
+
+                echo "# vsim ${sim_run_debug} ${mti_run_seed} ${sim_run_options} ${mti_run_options} ${mti_waves_options} -l ./logs/simulate__${scenario}.log -permit_unmatched_virtual_intf -suppress 3534 -c -sv_lib ${DESIGNWARE_HOME}/vip/common/latest/C/lib/${platform}/VipCommonNtb  -sv_lib uvm_dpi -do sim.cmd work.test_top"
+                if ( ! ${norun} ) then
+                    eval vsim ${sim_run_debug} ${mti_run_seed} ${sim_run_options} ${mti_run_options} ${mti_waves_options} -l ./logs/simulate__${scenario}.log -permit_unmatched_virtual_intf -suppress 3534 -c -sv_lib ${DESIGNWARE_HOME}/vip/common/latest/C/lib/${platform}/VipCommonNtb  -sv_lib uvm_dpi -do sim.cmd work.test_top
+                endif
+
+                if ( ${status} ) then
+                    exit( 10 )
+                endif
+
+                sleep 2
+
+                if ( -f "${tbench_dir}/postscript" && ! ${norun} ) then
+                    source ${tbench_dir}/postscript
+                    if ( $status ) then
+                        echo "The script 'postscript' completed with a non-zero status"
+                        exit(1)
+                    endif
+                endif
+
+                if ( "${pa}" == "fsdb" ) then 
+                    ${VERDI_HOME}/bin/verdi -workMode protocolDebug -ssf test_top.fsdb
+                else if ( "${pa}" != "" ) then 
+                    ${DESIGNWARE_HOME}/bin/pa -dir . -ts
+                endif
+
+            endif
+
+        end
+
+        breaksw
+
+    case "vcszebuvlog-svlog":
+
+        set path = ( ${VCS_HOME}/bin ${ZEBU_ROOT}/bin $path )
+
+
+        if ( ! -f "${tbench_dir}/top.sv" ) then
+            echo "Simulator vcszebuvlog-svlog is not supported by this example"
+            exit(0)
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/prescript.incdir" ) then
+            set prescript_file = "${tbench_dir}/prescript.incdir"
+        else
+            set prescript_file = "${tbench_dir}/prescript"
+        endif
+
+        if ( -f ${prescript_file} && ! ${norun} ) then
+            source ${prescript_file}
+            set ret_status = $status
+            if ( $ret_status ) then
+                if ( $ret_status == -1 ) then
+                    echo "Simulator vcszebuvlog-svlog is not supported by this example"
+                    exit(0)
+                else
+                    echo "The script 'prescript' completed with an error status"
+                    exit(1)
+                endif
+            endif
+        endif
+
+        if ( -f "${tbench_dir}/sim_build_options" ) then
+            set sim_build_options = `/usr/bin/head -1 ${tbench_dir}/sim_build_options`
+            set sim_build_options = `echo $sim_build_options | /bin/sed -e 's,-ntb_opts uvm,,' -e 's,-CFLAGS -DVCS,,' -e 's,+incdir+$UVM_HOME/src,,' -e 's,$UVM_HOME/src/dpi/uvm_dpi.cc,,'`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/vcs_build_options.incdir" ) then
+            set vcs_build_options_file = "${tbench_dir}/vcs_build_options.incdir"
+        else
+            set vcs_build_options_file = "${tbench_dir}/vcs_build_options"
+        endif
+
+        if ( -f ${vcs_build_options_file} ) then
+            set vcs_build_options = `/usr/bin/head -1 ${vcs_build_options_file}`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/ncv_build_options.incdir" ) then
+            set ncv_build_options_file = "${tbench_dir}/ncv_build_options.incdir"
+        else
+            set ncv_build_options_file = "${tbench_dir}/ncv_build_options"
+        endif
+
+        if ( -f ${ncv_build_options_file} ) then
+            set ncv_build_options = `/usr/bin/head -1 ${ncv_build_options_file}`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/mti_build_options.incdir" ) then
+            set mti_build_options_file = "${tbench_dir}/mti_build_options.incdir"
+        else
+            set mti_build_options_file = "${tbench_dir}/mti_build_options"
+        endif
+
+        if ( -f ${mti_build_options_file} ) then
+            set mti_build_options = `/usr/bin/head -1 ${mti_build_options_file}`
+        endif
+
+        if ( -f "${tbench_dir}/sim_elab_options" ) then
+            set sim_elab_options = `/usr/bin/head -1 ${tbench_dir}/sim_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_elab_options" ) then
+            set vcs_elab_options = `/usr/bin/head -1 ${tbench_dir}/vcs_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_elab_options" ) then
+            set ncv_elab_options = `/usr/bin/head -1 ${tbench_dir}/ncv_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_elab_options" ) then
+            set mti_elab_options = `/usr/bin/head -1 ${tbench_dir}/mti_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_run_options" ) then
+            set sim_run_options = "${sim_run_options} `/usr/bin/head -1 ${tbench_dir}/sim_run_options`"
+        endif
+
+        if ( -f "${tbench_dir}/vcs_run_options" ) then
+            set vcs_run_options = `/usr/bin/head -1 ${tbench_dir}/vcs_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_run_options" ) then
+            set ncv_run_options = `/usr/bin/head -1 ${tbench_dir}/ncv_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_run_options" ) then
+            set mti_run_options = `/usr/bin/head -1 ${tbench_dir}/mti_run_options`
+        endif
+
+        foreach scenario ( $scenario_list )
+
+            cat << ! > top_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > hdl_files
+!
+
+            set program_name = `/bin/egrep '^\s*program\s*\w*\s*' ${tbench_dir}/tests/ts.${scenario}.sv | /bin/sed -e 's/program//' -e 's/automatic//' -e 's/\w*//' | /usr/bin/cut -d "(" -f1`
+
+            if ( ! ${nobuild} ) then
+                echo "# rm -rf output logs coverage zcui.work"
+                if ( ! ${norun} ) then
+                    eval rm -rf output logs coverage zcui.work
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# mkdir output logs coverage"
+                if ( ! ${norun} ) then
+                    eval mkdir output logs coverage
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+                echo "# setenv LD_LIBRARY_PATH ${ZEBU_ROOT}/lib:${ZEBU_IP_ROOT}/lib:${VERDI_HOME}/share/FsdbWriter/${novas_platform}"
+                if ( ! ${norun} ) then
+                    eval setenv LD_LIBRARY_PATH ${ZEBU_ROOT}/lib:${ZEBU_IP_ROOT}/lib:${VERDI_HOME}/share/FsdbWriter/${novas_platform}
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+
+                echo "# setenv SNPS_ZEBU_INTERNAL_DEV_VCS 1; source ${ZEBU_ROOT}/zebu_env.csh"
+                if ( ! ${norun} ) then
+                    eval setenv SNPS_ZEBU_INTERNAL_DEV_VCS 1; source ${ZEBU_ROOT}/zebu_env.csh
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+
+                echo "# setenv ZEBU_SYSTEM_DIR ${ZEBU_SYSTEM_ROOT}/${ZEBU_DEVICE}"
+                if ( ! ${norun} ) then
+                    eval setenv ZEBU_SYSTEM_DIR ${ZEBU_SYSTEM_ROOT}/${ZEBU_DEVICE}
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+
+                echo "# setenv FILE_CONF ${ZEBU_SYSTEM_ROOT}/${ZEBU_DEVICE}/config/zse_configuration.tcl"
+                if ( ! ${norun} ) then
+                    eval setenv FILE_CONF ${ZEBU_SYSTEM_ROOT}/${ZEBU_DEVICE}/config/zse_configuration.tcl
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+
+            if ( ! ${nobuild} ) then
+                echo "# zCui -c -n -u project.utf"
+                if ( ! ${norun} ) then
+                    eval zCui -c -n -u project.utf
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs -l ./logs/compile.log ${vcs_quiet} -Mdir=./output/csrc ${vcs_incdir_options} ${vcs_cencrypt_options} ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog +define+COEMU +define+ZEBUMODE -L${ZEBU_IP_ROOT}/lib -lZebuXtor -lZebuXtorUVM ${zebu_ip_libs} ${ZEBU_IP_ROOT}/vlog/svt_dpi.sv -CFLAGS -I${ZEBU_IP_ROOT}/include -CFLAGS -I${ZEBU_ROOT}/include ${tbench_dir}/hw_platform.cpp -CFLAGS -DZEBUWORK=zcui.work/zebu.work -L${ZEBU_ROOT}/lib -lZebu -lHWAccessCommon -lZebuDB -lzRtl -lzRtlRt -lZebuRDB_ro -ntb_opts check=all -ntb_opts sv_dwfork ${sim_build_options} ${vcs_build_options} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_waves_options} ${vcs_pa_options} ${vcs_lca_option} +define+SVT_UVM_TECHNOLOGY +incdir+${ZEBU_IP_ROOT}/vlog   +define+SYNOPSYS_SV  ${vcslibs} +incdir+${tbench_dir}/{.,../../env,../env,env,dut,hdl_interconnect,lib,tests}  -o ./output/simvcssvlog -f top_files -f hdl_files"
+                if ( ! ${norun} ) then
+                    eval vcs -l ./logs/compile.log ${vcs_quiet} -Mdir=./output/csrc ${vcs_incdir_options} ${vcs_cencrypt_options} ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog +define+COEMU +define+ZEBUMODE -L${ZEBU_IP_ROOT}/lib -lZebuXtor -lZebuXtorUVM ${zebu_ip_libs} ${ZEBU_IP_ROOT}/vlog/svt_dpi.sv -CFLAGS -I${ZEBU_IP_ROOT}/include -CFLAGS -I${ZEBU_ROOT}/include ${tbench_dir}/hw_platform.cpp -CFLAGS -DZEBUWORK=zcui.work/zebu.work -L${ZEBU_ROOT}/lib -lZebu -lHWAccessCommon -lZebuDB -lzRtl -lzRtlRt -lZebuRDB_ro -ntb_opts check=all -ntb_opts sv_dwfork ${sim_build_options} ${vcs_build_options} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_waves_options} ${vcs_pa_options} ${vcs_lca_option} +define+SVT_UVM_TECHNOLOGY +incdir+${ZEBU_IP_ROOT}/vlog   +define+SYNOPSYS_SV  ${vcslibs} +incdir+${tbench_dir}/{.,../../env,../env,env,dut,hdl_interconnect,lib,tests}  -o ./output/simvcssvlog -f top_files -f hdl_files
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${buildonly} ) then
+
+                echo "# ./output/simvcssvlog ${sim_run_debug} ${vcs_run_seed} ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}"
+                if ( ! ${norun} ) then
+                    eval ./output/simvcssvlog ${sim_run_debug} ${vcs_run_seed} ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}
+                endif
+
+                if ( ${status} ) then
+                    exit( 10 )
+                endif
+
+                sleep 2
+
+                if ( -f "${tbench_dir}/postscript" && ! ${norun} ) then
+                    source ${tbench_dir}/postscript
+                    if ( $status ) then
+                        echo "The script 'postscript' completed with a non-zero status"
+                        exit(1)
+                    endif
+                endif
+
+                if ( "${pa}" == "fsdb" ) then 
+                    ${VERDI_HOME}/bin/verdi -workMode protocolDebug -ssf test_top.fsdb
+                else if ( "${pa}" != "" ) then 
+                    ${DESIGNWARE_HOME}/bin/pa -dir . -ts
+                endif
+
+            endif
+
+        end
+
+        breaksw
+
+    case "vcspcvlog-svlog":
+
+        set path = ( ${VCS_HOME}/bin $path )
+
+
+        if ( ! -f "${tbench_dir}/pc.optcfg" ) then
+            echo "Simulator vcspcvlog-svlog is not supported by this example"
+            exit(0)
+        endif
+
+        if ( ! -f "${tbench_dir}/top.sv" ) then
+            echo "Simulator vcspcvlog-svlog is not supported by this example"
+            exit(0)
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/prescript.incdir" ) then
+            set prescript_file = "${tbench_dir}/prescript.incdir"
+        else
+            set prescript_file = "${tbench_dir}/prescript"
+        endif
+
+        if ( -f ${prescript_file} && ! ${norun} ) then
+            source ${prescript_file}
+            set ret_status = $status
+            if ( $ret_status ) then
+                if ( $ret_status == -1 ) then
+                    echo "Simulator vcspcvlog-svlog is not supported by this example"
+                    exit(0)
+                else
+                    echo "The script 'prescript' completed with an error status"
+                    exit(1)
+                endif
+            endif
+        endif
+
+        if ( -f "${tbench_dir}/sim_build_options" ) then
+            set sim_build_options = `/usr/bin/head -1 ${tbench_dir}/sim_build_options`
+            set sim_build_options = `echo $sim_build_options | /bin/sed -e 's,-ntb_opts uvm,,' -e 's,-CFLAGS -DVCS,,' -e 's,+incdir+$UVM_HOME/src,,' -e 's,$UVM_HOME/src/dpi/uvm_dpi.cc,,'`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/vcs_build_options.incdir" ) then
+            set vcs_build_options_file = "${tbench_dir}/vcs_build_options.incdir"
+        else
+            set vcs_build_options_file = "${tbench_dir}/vcs_build_options"
+        endif
+
+        if ( -f ${vcs_build_options_file} ) then
+            set vcs_build_options = `/usr/bin/head -1 ${vcs_build_options_file}`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/ncv_build_options.incdir" ) then
+            set ncv_build_options_file = "${tbench_dir}/ncv_build_options.incdir"
+        else
+            set ncv_build_options_file = "${tbench_dir}/ncv_build_options"
+        endif
+
+        if ( -f ${ncv_build_options_file} ) then
+            set ncv_build_options = `/usr/bin/head -1 ${ncv_build_options_file}`
+        endif
+
+        if ( ${incdir} && -f "${tbench_dir}/mti_build_options.incdir" ) then
+            set mti_build_options_file = "${tbench_dir}/mti_build_options.incdir"
+        else
+            set mti_build_options_file = "${tbench_dir}/mti_build_options"
+        endif
+
+        if ( -f ${mti_build_options_file} ) then
+            set mti_build_options = `/usr/bin/head -1 ${mti_build_options_file}`
+        endif
+
+        if ( -f "${tbench_dir}/sim_elab_options" ) then
+            set sim_elab_options = `/usr/bin/head -1 ${tbench_dir}/sim_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/vcs_elab_options" ) then
+            set vcs_elab_options = `/usr/bin/head -1 ${tbench_dir}/vcs_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_elab_options" ) then
+            set ncv_elab_options = `/usr/bin/head -1 ${tbench_dir}/ncv_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_elab_options" ) then
+            set mti_elab_options = `/usr/bin/head -1 ${tbench_dir}/mti_elab_options`
+        endif
+
+        if ( -f "${tbench_dir}/sim_run_options" ) then
+            set sim_run_options = "${sim_run_options} `/usr/bin/head -1 ${tbench_dir}/sim_run_options`"
+        endif
+
+        if ( -f "${tbench_dir}/vcs_run_options" ) then
+            set vcs_run_options = `/usr/bin/head -1 ${tbench_dir}/vcs_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/ncv_run_options" ) then
+            set ncv_run_options = `/usr/bin/head -1 ${tbench_dir}/ncv_run_options`
+        endif
+
+        if ( -f "${tbench_dir}/mti_run_options" ) then
+            set mti_run_options = `/usr/bin/head -1 ${tbench_dir}/mti_run_options`
+        endif
+
+        foreach scenario ( $scenario_list )
+
+            cat << ! > top_files
+${tbench_dir}/top.sv
+!
+
+            cat << ! > hdl_files
+!
+
+            set program_name = `/bin/egrep '^\s*program\s*\w*\s*' ${tbench_dir}/tests/ts.${scenario}.sv | /bin/sed -e 's/program//' -e 's/automatic//' -e 's/\w*//' | /usr/bin/cut -d "(" -f1`
+
+            if ( ! ${nobuild} ) then
+                echo "# mkdir -p output logs coverage"
+                if ( ! ${norun} ) then
+                    eval mkdir -p output logs coverage
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${nobuild} ) then
+                echo "# vcs -l ./logs/compile.log ${vcs_quiet} -Mdir=./output/csrc ${vcs_incdir_options} ${vcs_cencrypt_options} ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_waves_options} ${vcs_pa_options} ${vcs_lca_option} +define+SVT_UVM_TECHNOLOGY   +define+SYNOPSYS_SV  ${vcslibs} +incdir+${tbench_dir}/{.,../../env,../env,env,dut,hdl_interconnect,lib,tests} -partcomp -fastpartcomp=j4 +optconfigfile+${tbench_dir}/pc.optcfg -lca -o ./output/simvcspcsvlog -f top_files -f hdl_files"
+                if ( ! ${norun} ) then
+                    eval vcs -l ./logs/compile.log ${vcs_quiet} -Mdir=./output/csrc ${vcs_incdir_options} ${vcs_cencrypt_options} ${vcsuvmflags} ${vcsovmflags} ${vcs_bitmode} ${vcsflags} ${aux_vcsflags} -sverilog ${sim_build_options} ${vcs_build_options} ${sim_elab_options} ${vcs_elab_options} ${vcs_waves_defines} ${vcs_pa_defines} ${vcs_waves_options} ${vcs_pa_options} ${vcs_lca_option} +define+SVT_UVM_TECHNOLOGY   +define+SYNOPSYS_SV  ${vcslibs} +incdir+${tbench_dir}/{.,../../env,../env,env,dut,hdl_interconnect,lib,tests} -partcomp -fastpartcomp=j4 +optconfigfile+${tbench_dir}/pc.optcfg -lca -o ./output/simvcspcsvlog -f top_files -f hdl_files
+                    if ( ${status} ) then
+                        exit( 9 )
+                    endif
+                endif
+            endif
+
+            if ( ! ${buildonly} ) then
+
+                echo "# ./output/simvcspcsvlog ${sim_run_debug} ${vcs_run_seed} ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}"
+                if ( ! ${norun} ) then
+                    eval ./output/simvcspcsvlog ${sim_run_debug} ${vcs_run_seed} ${sim_run_options} ${vcs_run_options} -l ./logs/simulate__${scenario}.log run ${vcs_waves_cmd}
+                endif
+
+                if ( ${status} ) then
+                    exit( 10 )
+                endif
+
+                sleep 2
+
+                if ( -f "${tbench_dir}/postscript" && ! ${norun} ) then
+                    source ${tbench_dir}/postscript
+                    if ( $status ) then
+                        echo "The script 'postscript' completed with a non-zero status"
+                        exit(1)
+                    endif
+                endif
+
+                if ( "${pa}" == "fsdb" ) then 
+                    ${VERDI_HOME}/bin/verdi -workMode protocolDebug -ssf test_top.fsdb
+                else if ( "${pa}" != "" ) then 
+                    ${DESIGNWARE_HOME}/bin/pa -dir . -ts
+                endif
+
+            endif
+
+        end
+
+        breaksw
+
+    default:
+
+        echo "${name}: Unrecognized simulator, ${simulator}."
+        exit( 1 )
+
+endsw
+
+
+exit( 0 ) 
+

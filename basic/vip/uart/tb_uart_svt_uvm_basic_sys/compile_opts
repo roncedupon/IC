@@ -1,0 +1,10 @@
++incdir+$VIP2020_HOME/uart/src/sverilog/vcs \
++incdir+$VIP2020_HOME/uart/include/sverilog \
++incdir+$VIP2020_HOME/uart/src/verilog/vcs \
++incdir+$VIP2020_HOME/uart/include/verilog \
++incdir+$CUR_PROJ_HOME \
++incdir+$CUR_PROJ_HOME/env \
++incdir+$CUR_PROJ_HOME/hdl_interconnect \
++incdir+$CUR_PROJ_HOME/tests \
++define+UVM_PACKER_MAX_BYTES=8000 \
++define+SVT_UART -unit_timescale=100ps/100ps

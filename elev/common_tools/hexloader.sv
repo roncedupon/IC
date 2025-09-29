@@ -110,6 +110,11 @@ class common_tools extends uvm_component;
         end
     endtask
 
+    task mem_backdoor(bit[31:0]mem[]);
+        foreach(mem[i])begin
+            $display("mem_backdoor mem[%0d] is %x",i,mem[i]);
+        end
+    endtask
 endclass
 
 
@@ -118,6 +123,7 @@ module top;
     initial begin
         bit [31:0]mem[];
         bit [7:0]byte_stream[];
+        int mem_depth=0;
         common_tools tools;
         tools=new();
         tools.read_cpu_hex("/home/dy/IC/elev/common_tools/hex.dat",mem);
@@ -125,6 +131,9 @@ module top;
         foreach(mem[i])begin
             `uvm_info("TOP",$sformatf("mem[%2d] is %8x",i,mem[i]),UVM_LOW)
         end
+        mem_depth=mem.size();
+        tools.mem_backdoor(mem[0:$]);
+        
         tools.width_convert_32To8(mem,byte_stream);
     end
 endmodule
