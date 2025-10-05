@@ -1,0 +1,40 @@
+(DELAYFILE
+(SDFVERSION "3.0")
+(DESIGN "tb_top")
+(DATE "Sun Sep 7 11:11:11 2020")
+(TIMESCALE 1ns)
+  (CELL
+    (CELLTYPE "counter") //module 名字
+    (INSTANCE u_counter)         //例化名,如果是顶层设计模块，可忽略例化名字
+    (DELAY
+      (ABSOLUTE
+      (IOPATH  clk counter (0.500::0.751) (0.400::0.551))
+
+      //(INTERCONNECT u_and/Z u_dt/D (0.500::0.751) (0.400::0.551))
+      )
+    )
+  )
+//(CELL
+//  (CELLTYPE "and_gate")
+//  (INSTANCE u_and)
+//  (DELAY
+//    (ABSOLUTE
+//    (IOPATH A Z (1.5::1.8) (1.3::1.7))
+//    (IOPATH B Z (1.5::1.8) (1.3::1.7))
+//    )
+//  )
+//)
+//(CELL
+//  (CELLTYPE "d_gate")
+//  (INSTANCE u_dt)
+//  (DELAY
+//    (ABSOLUTE
+//    (COND D==1'b1 (IOPATH CP Q (1.3::2.3) (1.5::2.2)))
+//    (COND D==1'b0 (IOPATH CP Q (1.2::2.1) (1.4::2.0)))
+//    )
+//  )
+//  (TIMINGCHECK
+//  (SETUP D (posedge CP) (0.8::1))
+//  )
+//)
+)
