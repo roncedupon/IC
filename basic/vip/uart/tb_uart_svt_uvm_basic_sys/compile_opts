@@ -6,5 +6,5 @@
 +incdir+$CUR_PROJ_HOME/env \
 +incdir+$CUR_PROJ_HOME/hdl_interconnect \
 +incdir+$CUR_PROJ_HOME/tests \
-+define+UVM_PACKER_MAX_BYTES=8000 \
++define+UVM_PACKER_MAX_BYTES=8000 +define+WAVES_FSDB\
 +define+SVT_UART -unit_timescale=100ps/100ps

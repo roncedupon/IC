@@ -1,0 +1,5 @@
+tsmc13.v     - Does not support negative timing checks, but simulation run
+               times are shorter than with tsmc13_neg.v.
+
+tsmc13_neg.v - Supports negative timing checks, but simulation run times are
+               longer than with tsmc13.v.

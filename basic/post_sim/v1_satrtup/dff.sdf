@@ -1,0 +1,13 @@
+(DELAYFILE
+  (SDFVERSION "3.0")
+  (TIMESCALE 1ns)
+  (CELL
+    (CELLTYPE "dff")
+    (INSTANCE tb_top.dut)
+    (DELAY
+      (ABSOLUTE
+        (INTERCONNECT d q (1.0:1.5:2.0))
+      )
+    )
+  )
+)

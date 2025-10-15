@@ -1,0 +1,350 @@
+
+		Installing the Solaris SPARC JDK and JRE
+				1.2.2_07
+
+
+Introduction:
+
+   This release of the Solaris SPARC JDK and JRE 1.2 includes new Java
+   class libraries and Java virtual machine featuring an improved
+   Just-In-Time (JIT) compiler, fast synchronization and a generational
+   memory system that accelerates garbage collection. Improved
+   collection performance is achieved in part by requiring that native
+   methods be implemented using the Java Native Interface introduced in
+   JDK 1.1.  This system does not support the original native method
+   interface (NMI) in JDK 1.0.
+
+   SUN MICROSYSTEMS INC. IS WILLING TO LICENSE THE LICENSED SOFTWARE TO
+   YOU ONLY UPON THE CONDITION THAT YOU ACCEPT ALL OF THE TERMS CONTAINED
+   IN THE LICENSE AGREEMENT.
+
+   For more information, see "http://www.sun.com/solaris/java"
+
+Requirements:
+
+   Solaris 2.6 or Solaris 7 or Solaris 8 plus the required patches from
+   the table below.
+
+   The patches in the table can be obtained from your service provider
+   or downloaded from the Web.  To download the patches, start at
+   http://www.sun.com/solaris/java and follow the links to download the
+   JDK; the patches are available on the same page as the JDK.
+
+   The number in parenthesis in the Solaris Version column is the output
+   from the command 'uname -r' on that version of Solaris.  The two
+   digit number following the dash in each Patch Id is the revision of
+   that patch.  The table lists the minimum patch revisions required by
+   this release of the JDK and JRE; later revisions are acceptable.
+
+      Solaris
+      Version    Patch Id             Note  Description
+   ------------- --------- ---------  ----  ------------------------
+   2.6   (5.6)   107733-08 required          Linker Patch
+   2.6   (5.6)   105568-18 required          /usr/lib/libthread.so.1 patch
+   2.6   (5.6)   105210-32 required          libaio, libc & watchmalloc patch
+   2.6   (5.6)   106040-14 required          X Input & Output Method Patch
+   2.6   (5.6)   105633-48 required    (1)   OpenWindows 3.6: Xsun Patch
+   2.6   (5.6)   106409-01 required    (2)   Fixes the Chinese TrueType fonts
+   2.6   (5.6)   108091-03 required    (3)   SunOS 5.6: ssJDK1.2.1_03 fails with fatal error in ISO8859-01 Locales
+   2.6   (5.6)   105181-23 recommended       SunOS 5.6: Kernel update patch
+   2.6   (5.6)   105669-10 recommended       CDE 1.2: libDTSvc Patch (dtmail)
+   2.6   (5.6)   105284-37 recommended       Motif 1.2.7: Runtime library patch
+
+   7     (5.7)   107544-03 required    (4)   /usr/lib/fs/ufs/fsck patch
+   7     (5.7)   109104-04 required    (4)   /kernel/fs/sockfs patch
+   7     (5.7)   106541-12 required    (4)   Kernel update patch
+   7     (5.7)   106980-13 required          Libthread Patch
+   7     (5.7)   107636-05 required          X Input & Output Method Patch
+   7     (5.7)   107081-22 required          Motif 1.2.7 and 2.1.1: Runtime library patch for Solaris 7
+   7     (5.7)   108376-12 required    (1)   OpenWindows 3.6.1 Xsun Patch
+
+   8      NO PATCHES ARE REQUIRED/RECOMMENDED
+     
+   NOTES:
+      (1) - this patch is required in asian locales.
+      (2) - this patch is required to display Traditional Chinese characters
+            in Swing applications.
+      (3) - this patch (108091-03 or newer) is required for any locale which 
+            uses the ISO8859-1 or ISO8859-15 character encoding.
+      (4) - this patch is a pre-requisite for 106980-13
+
+      It is recommended that Libthread patch be applied last.
+
+   In addition to the patches listed here, you may also want to install
+   the latest patch cluster for your version of Solaris, which includes
+   additional recommended and security patches.  Solaris patch clusters
+   are available for download on the Web; follow the appropriate links
+   starting at http://sunsolve.sun.com.
+
+Patch Installation:
+
+   Use the command 'showrev -p' to list the patches installed on your
+   system.  If the required/recommended patches are not already
+   installed, follow the steps below to install the necessary patches.
+   Patch installation is simplest if the patch tar file is downloaded
+   into an empty current working directory with at least 110MB of free
+   space.
+
+   (1) Extract the patch tar file that matches your version of Solaris
+       (only one will apply to a given system):
+
+	  Solaris 2.6:    $ tar xvf 1.2.2_07_patches_sparc_5.6.tar
+
+	  Solaris 7:      $ tar xvf 1.2.2_07_patches_sparc_5.7.tar
+
+       This will create a number of patch archives with names like
+       <patch-id>.tar.Z.
+
+   (2) Uncompress and extract each of the patch archives that you wish to
+       install:
+
+          $ uncompress <patch-id>.tar.Z
+          $ tar xvf <patch-id>.tar
+
+       A directory with a name like <patch-id> will be created for each
+       patch.  General instructions for patch installation are included
+       in the Install.info file in the top-level directory of each
+       patch.  In addition, special installation instructions or
+       post-installation requirements (such as a system reboot) appear
+       in the README file included with each patch, along with a list of
+       bug ids fixed and files changed by that patch.
+
+   (3) Login to the system console as root.
+
+   (4) Place the system in single-user mode (this step is not required,
+       but is recommended for patch installation):
+
+          # shutdown
+
+   (5) Install the patches.  Most patches can be installed using the
+       commands below; however the Install.info and README files for
+       each patch should be consulted.  In the commands below, replace
+       <your_patch_directory> with the path to the directory where the
+       patches were extracted.
+
+	  # patchadd -M <your_patch_directory> <patch-id> <patch-id> ...
+
+   (6) Shutdown and reboot:
+
+	  # shutdown -i6
+
+
+FONT packages requirement:
+-------------------------
+   Different locales may require different character encodings.
+   You should check the table below to see what Solaris Font Packages
+   you may need on your system. The utility "pkginfo" can be used to
+   list the packages you have installed on your system.
+
+
+        Required Solaris Font Packages For Java 2 on Solaris
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ Java       Encoding	      Font	Locales supported by encoding
+Locale                       Packages
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+***ALL***   iso-8859-1       SUNWi1of    ***Required for all locales***
+                                         (and sufficient for most Western
+                                         European locales.)
+
+*_EURO	    iso-8859-15      SUNWi15rf   Euro currency locale variants
+
+cs,hu,pl    iso-8859-2       SUNWi2of    Czech Republic, Hungary, Poland, 
+                             SUNWi2rf    Slovakia, Albania, Bosnia, Croatia, 
+				         Romania, Slovenia
+
+lt,lv       iso-8859-4       SUNWi4of    Latvia, Lithuania (Solaris 2.6 and 7)
+                             SUNWi4rf
+
+lt,lv       iso-8859-13      SUNWi13rf   Latvia, Lithuania (Solaris 8)
+
+ru          iso-8859-5       SUNWi5of    Russia, Bulgaria, Macedonia, Serbia
+
+el          iso-8859-7       SUNWi7of    Greece
+                             SUNWi7rf
+
+tr          iso-8859-9       SUNWi9of    Turkey
+                             SUNWi9rf
+
+ja        jisx0201,jisx0208  SUNWjxcft   Japan
+
+ko           ksc5601         SUNWkcoft   Korea
+
+zh_CN        gb2312          SUNWcttf    China (PRC)
+
+zh_TW        cns11643        SUNWhttf    China (Taiwan)
+
+zh_TW_Big5     big5          SUNW5xttf   China (Taiwan) BIG5
+
+zh_GBK         gbk           SUNWgttf    China (GBK)
+
+
+
+JDK/JRE Installation:
+
+   The base JDK is available either as a set of Solaris packages or as a
+   self-extracting binary; the JRE is available as a self-extracting
+   binary.  Follow the instructions that match the form of the JDK/JRE
+   you wish to install.
+
+   Two steps are required to obtain a localized version of JDK
+   1.2.2_07.
+    - install the Solaris packages for the base JDK 1.2.2_07.
+    - install the Solaris packages for localization support.
+
+   Each of these steps is described below. The following
+   instructions assume that you have already downloaded the
+   bundles containing the packages.
+
+Installation of base JDK 1.2.2_07 - Solaris packages:
+
+   Installation is simplest if the JDK tar file is downloaded into an
+   empty current working directory.
+
+   (1) Extract the contents of the compressed tar file:
+
+	   $ zcat 1.2.2_07_jdk_sparc.tar.Z | tar -xf -
+
+       This will create a set of six files and four packages:
+
+	  README.sparc
+	  LICENSE.ps
+	  COPYRIGHT
+	  1.2.2_07_Developer-Guide.ps
+      1.2.2_07_Troubleshooting.ps
+	  1.2.2_07_Release-Notes.html
+	  SUNWj2rt
+	  SUNWj2dev
+	  SUNWj2man
+	  SUNWj2dem
+
+       README.sparc is this file; the LICENSE file is a copy of the
+       license agreement.
+
+   (2) Become root:
+
+           $ su
+
+   (3) Run the pkgadd command to install the packages:
+
+           # pkgadd -d . SUNWj2rt SUNWj2dev SUNWj2man SUNWj2dem
+
+       This will install the JDK into /usr/java1.2; see the pkgadd(1)
+       and admin(4) man pages for information on installing the JDK in
+       an alternate location.
+
+   (4) Delete the tar files and extracted directories.
+
+   (5) Exit the root shell.
+
+Installation of base JDK 1.2.2_07 - Self-extracting binary:
+
+   These instructions apply both to the JDK distributed as a
+   self-extracting binary and the JRE.  The example commands below use
+   the JDK file names; for the JRE simply replace "JDK" with "JRE" in
+   the directory and file names.
+
+   (1) Make sure that execute permissions are set on the self-extracting
+       binary:
+
+	 $ chmod +x Solaris_JDK_1.2.2_07_sparc.bin
+
+   (2) Change directory to the location where you would like the files
+       to be installed.
+
+   (3) Run the self-extracting binary.  The files will be installed in
+       a subdirectory called Solaris_JDK_1.2.2_07.  After
+       the installation completes, the subdirectory can be renamed as
+       needed.
+
+   Example:
+
+	$ chmod +x /tmp/Solaris_JDK_1.2.2_07_sparc.bin
+	$ cd /export
+	$ /tmp/Solaris_JDK_1.2.2_07_sparc.bin
+	Unpacking...
+	Checksumming...
+	Extracting...
+	Archive:  ./install.sfx.1665
+	   creating: Solaris_JDK_1.2.2_07/
+	   ...
+
+
+Installation of the packages for localization support:
+
+   (1) Become root.
+
+   (2) Uncompress and extract the bundle containing the localization
+       packages.
+
+          uncompress 1.2.2_07_locales_sparc.tar.Z
+          tar xvf 1.2.2_07_locales_sparc.tar
+
+       This will create nine directories, one for each of
+       nine supported locales (de, es, fr, it, ja, ko, sv, zh,
+       and zh_TW).
+
+   (3) Go to the directory corresponding to the locale support that
+       you wish to install. To install support for the de locale,
+       for example, change to the de directory.
+
+          cd de
+
+       This directory will contain localized release notes as well
+       as the package installer for the locale support.
+
+   (4) Use the pkgadd utility to install the locale-support package.
+       The package name will vary depending on the locale.  To install
+       the package for de locale support, for example, use this command:
+
+          pkgadd -d . SUNWdj2rt
+
+
+Using the Java Development Kit 1.2:
+
+   Before using the JDK or JRE, please verify that the patches required
+   for your version of Solaris are installed.  The required patches are
+   listed above in the Requirements section.
+
+   The easiest way to run JDK 1.2 is to update the PATH environment
+   variable in your shell by placing the path to the java executables at
+   the front, before /usr/bin.  For example, if the JDK is installed in
+   /usr/java1.2,
+
+       (csh)       setenv PATH "/usr/java1.2/bin:$PATH"
+
+       (sh or ksh) PATH="/usr/java1.2/bin:$PATH"
+
+   Alternatively, the executables may be run by specifying the full path
+   name, e.g., /usr/java1.2/bin/javac, /usr/java1.2/bin/java, etc.
+
+   See the section in the Release Notes titled "Running with Both JDK
+   1.2 and JDK 1.1" for more information regarding using both 1.2 and 1.1.
+   On Solaris 2.6 and 7, JDK 1.1 is the default JDK used by /usr/bin/java.
+   On Solaris 8, JDK 1.2 is the default JDK."
+
+   No other environment variables (such as JDK_HOME, JAVA_HOME or
+   CLASSPATH) are required to run the JDK.  However, existing settings
+   of these variables may result in improper operation and should be
+   checked for possible conflicts.
+
+Sending Feedback to Sun Microsystems:
+
+   Please send any comments, observations or problem reports to the
+   feedback mail address solaris-java-feedback@Eng.Sun.COM.  A response
+   is not guaranteed, but all submissions will be read.
+
+   Bugs should be reported to Sun Enterprise Services or your authorized
+   service provider in order to receive the appropriate attention.  We
+   cannot guarantee an investigation of bugs reported using the
+   solaris-java-feedback@Eng.Sun.COM alias; however, if you would like to
+   report a bug using this alias, please include:
+
+	- the JDK/JRE version (java -version)
+	- the Solaris version and hardware type (uname -a)
+	- the patches installed on the system (showrev -a)  
+	- all the information necessary to reproduce the problem
+
+Copyright 2000 Sun Microsystems, Inc. All rights reserved.
+Copyright 2000 Sun Microsystems, Inc. Tous droits réservés.

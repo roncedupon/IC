@@ -23,7 +23,7 @@ class vrun(toolbox):
         parser.add_argument("-simdir",metavar="",help="simulation dir",default=str(date.today()))
         parser.add_argument("-seed",metavar="",help="simulation dir",default=123)
         parser.add_argument("-top",metavar="",help="top name",default=None)
-        parser.add_argument("-uvm",action="store_true",help="UVM_FLAG",default=False)
+        parser.add_argument("-uvm",action="store_true",help="UVM_FLAG",default=True)
         parser.add_argument("-verdi",action="store_true",help="UVM_FLAG",default=False)
         parser.add_argument("-dir",type=str,help="dir for verdi or something",default=None)
 
@@ -33,12 +33,18 @@ class vrun(toolbox):
         parser.add_argument("-gen",action="store_true",help="generate uvm file flag",default=False)
         parser.add_argument("-extra",metavar="",nargs="+",help="generate uvm_component,[component,object]",default=[])
         
-        
+
         # parser.add_argument("-sim_opts",metavar="",help="filelist",default=False)
         args=parser.parse_args()
         # if len(args.t)==1:
         #     args.t=args.t[0]
-           
+        if args.dir is not None:
+            if os.path.isfile(args.dir):
+                args.dir=os.path.abspath(os.path.dirname(args.dir))
+                print("Specified dir is "+args.dir)
+            else:
+                args.dir=os.path.abspath(args.dir)
+                print("Specified dir is "+args.dir)
         return args
 #-------------------------------------------------------------------------------
     def __init__(self):
@@ -55,7 +61,7 @@ class vrun(toolbox):
         self.MAKEFILE_PATH=os.path.dirname(__file__)+"/makefile"
         self.VCS_COMPILE_OPTIONS=""
         
-    def launch_verdi(self):
+    def launch_verdi_old(self):
         font_cfg='-font "Courier 18"'
         VERDI_HOME=self.simdir+"/verdi"
         
@@ -63,14 +69,29 @@ class vrun(toolbox):
         os.chdir(VERDI_HOME)
         case_dir=self.args.top.split(".")[0] if self.args.top is not None else self.args.t
         print("VERDI WORK HOME is ",VERDI_HOME)
-        VERDI_CMD=f"verdi {font_cfg} -ssf ../{case_dir}/waves.fsdb  -dbdir ../{case_dir}/build/simv.daidir/"
+        VERDI_CMD=f"verdi -ssf ../{case_dir}/waves.fsdb  -dbdir ../{case_dir}/build/simv.daidir/ -rcFile {self.script_path}/novas.rc"
         if dir !=None:
             os.chdir(self.args.dir)
             fsdb_file_name="wave.fsdb" if os.path.exists("wave.fsdb") else os.path.basename(self.args.dir)+".fsdb"
-            VERDI_CMD=f"cd {self.args.dir}  && verdi -dbdir ./simv.daidir/ -ssf {fsdb_file_name}"
+            VERDI_CMD=f"cd {self.args.dir}  && verdi -dbdir ./simv.daidir/ -ssf {fsdb_file_name} -rcFile {self.script_path}/novas.rc"
         print(VERDI_CMD)
         os.system(VERDI_CMD+" &")
         exit()
+    def launch_verdi(self):
+        
+        os.chdir(self.args.dir)
+        print(os.getcwd())
+        fsdb_file_name="waves.fsdb" if os.path.exists("waves.fsdb") else os.path.basename(self.args.dir)+".fsdb"
+        if self.args.dir !=None:
+            verdi_cmd=f"cd {self.args.dir}/../ && verdi -dbdir {self.args.dir}/simv.daidir/ -ssf {self.args.dir}/{fsdb_file_name} "
+            if False:
+                print(verdi_cmd)
+            else:
+                os.system(verdi_cmd)
+        # else:
+        #     print(f"cd {BW01D_HOME}/soc_verif/sim/{simdir}/{testcase_name}{self.args.seed} && verdi -dbdir ./simv.daidir/ -ssf {fsdb_file_name}")
+        #     os.system(f"cd {BW01D_HOME}/soc_verif/sim/{simdir}/{testcase_name}{self.args.seed} && verdi -dbdir ./simv.                
+    
     def get_parent_dir(self,path="./"):
         return os.path.dirname(path)
     def exist_file(self,file_dir,file_name):
@@ -248,6 +269,7 @@ class vrun(toolbox):
         
         if self.args.verdi:
             self.launch_verdi()
+            exit()
         if self.args.gen:
             
             if "component" in self.args.extra:

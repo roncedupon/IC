@@ -1,0 +1,84 @@
+'\" t
+.\" @(#)rmiregistry.1 1.6 99/02/19 SMI;
+.\" Copyright 1999 Sun Microsystems, Inc. All rights reserved.
+.\" Copyright 1999 Sun Microsystems, Inc. Tous droits réservés.
+.\" 
+.TH rmiregistry 1 "18 Feb 1999"
+.SH NAME
+rmiregistry \- Java remote object registry
+.\" 
+.\"  This document was created by saving an HTML file as text
+.\"  from the JavaSoft web site:
+.\" 
+.\" http://java.sun.com/products/jdk/1.2/docs/tooldocs/tools.html
+.\" 
+.\"  and adding appropriate troff macros.  Because the JavaSoft web site 
+.\"  man pages can change without notice, it may be helpful to diff
+.\"  files to identify changes other than new functionality. 
+.\" 
+.SH SYNOPSIS
+.B rmiregistry 
+[
+.I port
+]
+.SH DESCRIPTION
+.IX "Java remote object registry" "" "Java remote object registry \(em \fLrmiregistry\fP"
+.IX "rmiregistry" "" "\fLrmiregistry\fP \(em Java remote object registry"
+The Java\(tm
+.B rmiregistry 
+command creates and starts a remote object
+registry on the specified port on the current host. 
+If port number
+is omitted, the registry is started on port 1099. 
+The 
+.B rmiregistry
+command produces no output and is typically run in the background.
+For example:
+.LP
+.B example% rmiregistry &
+.LP
+A remote object registry is a bootstrap naming service that is
+used by RMI servers on a host to bind remote objects to names.
+Clients can then look up remote objects and make remote method
+invocations.
+.LP
+The registry is typically used to locate the first remote object
+on which an application needs to invoke methods. That object in
+turn provides application-specific support for finding other
+objects.
+.LP
+The methods of the 
+.B java.rmi.registry.LocateRegistry 
+class are used
+to get a registry operating on a particular host or host and port.
+.LP
+The URL-based methods of the 
+.B java.rmi.Naming 
+class operate on a
+registry and can be used to look up a remote object, bind a simple
+(string) name to a remote object, rebind a new name to a remote
+object (overriding the old binding), unbind a remote object, and
+list the URLs bound in the registry.
+.SH ATTRIBUTES
+See
+.BR attributes (5)
+for a description of the following attributes:
+.sp
+.TS
+box;
+cbp-1 | cbp-1
+l | l .
+ATTRIBUTE TYPE	ATTRIBUTE VALUE
+=
+Availability	SUNWjvrt, SUNWjvdev
+.TE
+.SH SEE ALSO
+.BR attributes (5)
+.LP
+See (or search java.sun.com) for the following:
+.TP 10
+.B java.rmi.Naming @
+http://java.sun.com/products/jdk/1.2/docs/api/java/rmi/Naming.html#_top_
+.TP 10
+.B java.rmi.registry.LocateRegistry @
+http://java.sun.com/products/jdk/1.2/docs/api/java/rmi/registry/LocateRegistry.html#_top_

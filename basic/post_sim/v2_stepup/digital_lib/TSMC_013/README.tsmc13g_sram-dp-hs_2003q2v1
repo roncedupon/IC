@@ -1,0 +1,687 @@
+Artisan Components, Inc.
+
+TSMC CL013G (0.13um Logic Salicide) SRAM-DP-HS Release Notes
+--------------------------------------------------------------------------------
+2003q2v1 (04/16/2003)
+
+  Changes
+    o Fixed layout problem related to 3-bit wide instances; all other
+      configurations are unchanged.
+   
+  QA
+    o SRAM 8T CL013 2.66um by 2.16um (5.7456um^2) Cell
+        - Developed by Artisan.
+        - Conforms to standard logic layout rules.
+    o Design Rule Document
+        - T-013-LO-DR-001 Rev 1.5 01-AUG-2002
+    o GDS Layer Usage Description File
+        - T-013-LO-LE-001 Rev 1.1B, 07-FEB-01
+    o DRC Command File
+        - CALIBRE DRC COMMAND FILES --
+	  T-013-LO-DR-001-C1, Rev 1.5a 01-AUG-2002
+        - CALIBRE ANTENNA DRC COMMAND FILES --
+          CL13S_8M.ANT.15a.1,  01-AUG-2002
+        - HERCULES DRC COMMAND FILES --
+	  T-013-LO-DR-001-H1, Rev 1.5a 01-AUG-2002
+    o LVS Command File
+	- CALIBRE LVS COMMAND FILES --
+          T-013-LO-SP-002-C1, Rev 1.3C, 25-JUN-2002
+        - Calibre LVS W/L matching tolerance is 0%.
+	- HERCULES LVS COMMAND FILES --
+	  T-013-LO-SP-002-E1, Rev 1.3C, 25-JUN-2002
+    o Process Name
+        - 0.13um Logic 1P8M Salicide FSG IMD 1.2V/2.5V (CL013G)
+    o Process Spice Models
+        - T-013-LO-SP-004 V1.3P1 (1/11/02)
+    o Cadence NC-Verilog
+        - 3.1
+    o MTI/Mentor ModelSim VHDL
+        - 5.5
+    o Synopsys Design Compiler with Design Power
+        - 2000.11
+    o Synopsys PrimeTime
+        - 2001.06
+    o Cadence Pearl (TLF 4.1)
+        - 4.3-s086
+    o Cadence BuildGates/PKS with Low Power Synthesis (.lib)
+        - 4.0-s009
+    o Cadence Silicon Ensemble
+        - 5.3
+    o Adobe Acrobat Reader
+        - 4.0
+    o Mentor Graphics Calibre
+        - d.1
+    o Avant! Hspice
+        - H98.2 
+
+Comments
+
+  Front-end
+    o Spice Characterization
+        - Timing did not change, improved power modling.
+	
+    o Synopsys/Primetime/Pearl
+        - Unchanged from 2002q3v1 (09/30/2002)
+
+    o Antenna Modeling
+        - Unchanged from 2002q3v1 (09/30/2002)
+	
+  Back-end
+    o DRC 
+	- Unchanged from 2002q3v1 (09/30/2002)
+
+    o LVS/GDS2
+        - GDS2 view generator includes a macro boundary layer (gds2
+          layer 230:0).  This layer is a dummy marker layer used for
+          CAD purposes such as metal density checking or to exclude
+          dummy pattern filling. It covers the memory macro, but
+          excludes the ring area.
+        - GDS2 text layer 63:63 is allocated by TSMC for IP marking.
+        - Includes layer 50 for sram vt implant in the core area 
+        - Leaf cell port names have been changed to have port name
+          correspondence between the schematic and layout.
+        - Text have been stripped from leaf cells to avoid spurious
+          text causing problems with lvs and hierarchical lvs.
+        - Calibre LVS might report ERC pathcheck errors for some memory
+          instances.  Those errors are verified and can be ignored
+          An example error report is replicated below.
+          ra1shd_304x2m8 1000
+          ERC PATHCHK POWER && ! GROUND
+          1 1 0 Mar  8 16:23:28 2002
+          p 1 4
+          79955 20785
+          81145 20785
+          81145 20815
+          81230 20815
+          Please contact Artisan for more Information.
+          
+--------------------------------------------------------------------------------
+2002q3v1 (09/30/2002)
+
+  QA
+    o SRAM 8T CL013 2.66um by 2.16um (5.7456um^2) Cell
+        - Developed by Artisan.
+        - Conforms to standard logic layout rules.
+    o Design Rule Document
+        - T-013-LO-DR-001 Rev 1.5 01-AUG-2002
+    o GDS Layer Usage Description File
+        - T-013-LO-LE-001 Rev 1.1B, 07-FEB-01
+    o DRC Command File
+        - CALIBRE DRC COMMAND FILES --
+	  T-013-LO-DR-001-C1, Rev 1.5a 01-AUG-2002
+        - CALIBRE ANTENNA DRC COMMAND FILES --
+          CL13S_8M.ANT.15a.1,  01-AUG-2002
+        - HERCULES DRC COMMAND FILES --
+	  T-013-LO-DR-001-H1, Rev 1.5a 01-AUG-2002
+    o LVS Command File
+	- CALIBRE LVS COMMAND FILES --
+          T-013-LO-SP-002-C1, Rev 1.3C, 25-JUN-2002
+        - Calibre LVS W/L matching tolerance is 0%.
+	- HERCULES LVS COMMAND FILES --
+	  T-013-LO-SP-002-E1, Rev 1.3C, 25-JUN-2002
+    o Process Name
+        - 0.13um Logic 1P8M Salicide FSG IMD 1.2V/2.5V (CL013G)
+    o Process Spice Models
+        - T-013-LO-SP-004 V1.3P1 (1/11/02)
+    o Cadence NC-Verilog
+        - 3.1
+    o MTI/Mentor ModelSim VHDL
+        - 5.5
+    o Synopsys Design Compiler with Design Power
+        - 2000.11
+    o Synopsys PrimeTime
+        - 2001.06
+    o Cadence Pearl (TLF 4.1)
+        - 4.3-s086
+    o Cadence BuildGates/PKS with Low Power Synthesis (.lib)
+        - 4.0-s009
+    o Cadence Silicon Ensemble
+        - 5.3
+    o Adobe Acrobat Reader
+        - 4.0
+    o Mentor Graphics Calibre
+        - d.1
+    o Avant! Hspice
+        - H98.2 
+
+  Front-end
+    o Spice Characterization
+        - T-013-LO-SP-004 V1.3P1 (1/11/02)
+
+    o Synopsys/Primetime/Pearl
+        - Please note that SDF generated with tool versions above
+          also require postprocessing prior to back-annotation.
+          The following postprocessing scripts are available:
+              - Synopsys Design Compiler
+                aci/<product>/lib/sdf_postprocessors/dc_postprocessor.pl
+              - Synopsys Primetime
+                aci/<product>/lib/sdf_postprocessors/pt_postprocessor.pl
+              - Cadence Pearl
+                aci/<product>/lib/sdf_postprocessors/pearl_postprocessor.pl
+        - Please note that SDF generated with versions other than
+          those specified above may not annotate properly due to
+          various changes in the SDF output format.
+
+    o Antenna Modeling
+        - VCLEF view generator creates <instance_name>_ant.lef
+          and <instance_name>_ant.clf side files.
+        - A minimum gate area ((0.15+0.15)*0.13=0.039) is assumed
+          to be connected to each input pin to force the router to
+          connect to the input pin with an antenna clean wire.  Pin
+          connections internal to the memory have been verified to
+          be antenna clean.
+        - The technology header information is not automatically
+          appended by the generator. If needed, please append this
+          information from the standard cell release.
+        - SE currently does not support the new Antenna LEF/DEF
+          syntax.  This file should be read into Wroute (2.x.26)
+          standalone before routing and after placement is done.
+
+  Back-end
+    o DRC 
+	- Physical views updated to make compatible with DRC version
+          T-013-LO-DR-001 Rev 1.5
+	- M4 pin fixed to eliminate potential post-routing notches
+
+    o LVS/GDS2
+        - GDS2 view generator includes a macro boundary layer (gds2
+          layer 230:0).  This layer is a dummy marker layer used for
+          CAD purposes such as metal density checking or to exclude
+          dummy pattern filling. It covers the memory macro, but
+          excludes the ring area.
+        - GDS2 text layer 63:63 is allocated by TSMC for IP marking.
+        - Includes layer 50 for sram vt implant in the core area 
+        - Leaf cell port names have been changed to have port name
+          correspondence between the schematic and layout.
+        - Text have been stripped from leaf cells to avoid spurious
+          text causing problems with lvs and hierarchical lvs.
+          
+--------------------------------------------------------------------------------
+2002q3v0 (09/19/2002)
+
+  QA
+    o SRAM 8T CL013 2.66um by 2.16um (5.7456um^2) Cell
+        - Developed by Artisan.
+        - Conforms to standard logic layout rules.
+    o Design Rule Document
+        - T-013-LO-DR-001 Rev 1.5 01-AUG-2002
+    o GDS Layer Usage Description File
+        - T-013-LO-LE-001 Rev 1.1B, 07-FEB-01
+    o DRC Command File
+        - CALIBRE DRC COMMAND FILES --
+	  T-013-LO-DR-001-C1, Rev 1.5a 01-AUG-2002
+        - CALIBRE ANTENNA DRC COMMAND FILES --
+          CL13S_8M.ANT.15a.1,  01-AUG-2002
+        - HERCULES DRC COMMAND FILES --
+	  T-013-LO-DR-001-H1, Rev 1.5a 01-AUG-2002
+    o LVS Command File
+	- CALIBRE LVS COMMAND FILES --
+          T-013-LO-SP-002-C1, Rev 1.3C, 25-JUN-2002
+        - Calibre LVS W/L matching tolerance is 0%.
+	- HERCULES LVS COMMAND FILES --
+	  T-013-LO-SP-002-E1, Rev 1.3C, 25-JUN-2002
+    o Process Name
+        - 0.13um Logic 1P8M Salicide FSG IMD 1.2V/2.5V (CL013G)
+    o Process Spice Models
+        - T-013-LO-SP-004 V1.3P1 (1/11/02)
+    o Cadence NC-Verilog
+        - 3.1
+    o MTI/Mentor ModelSim VHDL
+        - 5.5
+    o Synopsys Design Compiler with Design Power
+        - 2000.11
+    o Synopsys PrimeTime
+        - 2001.06
+    o Cadence Pearl (TLF 4.1)
+        - 4.3-s086
+    o Cadence BuildGates/PKS with Low Power Synthesis (.lib)
+        - 4.0-s009
+    o Cadence Silicon Ensemble
+        - 5.3
+    o Adobe Acrobat Reader
+        - 4.0
+    o Mentor Graphics Calibre
+        - d.1
+    o Avant! Hspice
+        - H98.2 
+
+  Front-end
+    o Spice Characterization
+        - T-013-LO-SP-004 V1.3P1 (1/11/02)
+
+    o Synopsys/Primetime/Pearl
+        - Please note that SDF generated with tool versions above
+          also require postprocessing prior to back-annotation.
+          The following postprocessing scripts are available:
+              - Synopsys Design Compiler
+                aci/<product>/lib/sdf_postprocessors/dc_postprocessor.pl
+              - Synopsys Primetime
+                aci/<product>/lib/sdf_postprocessors/pt_postprocessor.pl
+              - Cadence Pearl
+                aci/<product>/lib/sdf_postprocessors/pearl_postprocessor.pl
+        - Please note that SDF generated with versions other than
+          those specified above may not annotate properly due to
+          various changes in the SDF output format.
+
+    o Antenna Modeling
+        - VCLEF view generator creates <instance_name>_ant.lef
+          and <instance_name>_ant.clf side files.
+        - A minimum gate area ((0.15+0.15)*0.13=0.039) is assumed
+          to be connected to each input pin to force the router to
+          connect to the input pin with an antenna clean wire.  Pin
+          connections internal to the memory have been verified to
+          be antenna clean.
+        - The technology header information is not automatically
+          appended by the generator. If needed, please append this
+          information from the standard cell release.
+        - SE currently does not support the new Antenna LEF/DEF
+          syntax.  This file should be read into Wroute (2.x.26)
+          standalone before routing and after placement is done.
+
+  Back-end
+    o DRC 
+	- Physical views updated to make compatible with DRC version
+          T-013-LO-DR-001 Rev 1.5
+	- M4 pin fixed to eliminate potential post-routing notches
+
+    o LVS/GDS2
+        - GDS2 view generator includes a macro boundary layer (gds2
+          layer 230:0).  This layer is a dummy marker layer used for
+          CAD purposes such as metal density checking or to exclude
+          dummy pattern filling. It covers the memory macro, but
+          excludes the ring area.
+        - GDS2 text layer 63:63 is allocated by TSMC for IP marking.
+        - Includes layer 50 for sram vt implant in the core area 
+
+--------------------------------------------------------------------------------
+2001q4v0 (12/20/2001)
+
+  QA
+    o SRAM 8T CL013 2.66um by 2.16um (5.7456um^2) Cell
+        - Developed by Artisan.
+        - Conforms to standard logic layout rules.
+    o Design Rule Document
+        - T-013-LO-DR-001 Rev 1.2,  30-NOV-01 
+    o GDS Layer Usage Description File
+        - T-013-LO-LE-001 Rev 1.1B, 07-FEB-01
+    o DRC Command File
+        - CALIBRE DRC COMMAND FILES --
+                CL13S_4M.12a VER 1.2a, 23-NOV-2001
+                CL13S_5M.12a VER 1.2a, 23-NOV-2001
+                CL13S_6M.12a VER 1.2a, 23-NOV-2001
+                CL13S_7M.12a VER 1.2a, 23-NOV-2001
+                CL13S_8M.12a VER 1.2a, 23-NOV-2001
+        - CALIBRE ANTENNA DRC COMMAND FILES --
+                   CL13S_8M.ANT.11a,  06-JULY-2001
+  
+    o LVS Command File
+        - TSMC 0.13UM CALIBRE ERC/LVS COMMAND FILE V0.3a, 14-DEC-00
+        - Calibre LVS W/L matching tolerance is 0%.
+    o Process Name
+        - 0.13um Logic 1P8M Salicide FSG IMD 1.2V/2.5V (CL013G)
+    o Process Spice Models
+        - T-013-LO-SP-004, Rev 1.0, 10-JAN-01
+    o Cadence NC-Verilog
+        - 3.1
+    o MTI/Mentor ModelSim VHDL
+        - 5.5
+    o Synopsys Design Compiler with Design Power
+        - 2000.11
+    o Synopsys PrimeTime
+        - 2001.06
+    o Cadence Pearl (TLF 4.1)
+        - 4.3-s086
+    o Cadence BuildGates/PKS with Low Power Synthesis (.lib)
+        - 4.0-s009
+    o Cadence Silicon Ensemble
+        - 5.3
+    o Adobe Acrobat Reader
+        - 4.0
+    o Mentor Graphics Calibre
+        - d.1
+    o Avant! Hspice
+        - H98.2
+
+
+  Front-end
+    o Spice Characterization
+      - Timing unchaged from previous release (ra2shd_2001q3v0) 
+         
+    o Synopsys/Primetime/Pearl
+        - Please note that SDF generated with tool versions above
+          also require postprocessing prior to back-annotation.
+          The following postprocessing scripts are available:
+              - Synopsys Design Compiler
+                aci/<product>/lib/sdf_postprocessors/dc_postprocessor.pl
+              - Synopsys Primetime
+                aci/<product>/lib/sdf_postprocessors/pt_postprocessor.pl
+              - Cadence Pearl
+                aci/<product>/lib/sdf_postprocessors/pearl_postprocessor.pl
+        - Please note that SDF generated with versions other than
+          those specified above may not annotate properly due to
+          various changes in the SDF output format.
+
+    o Antenna Modeling
+        - VCLEF view generator creates <instance_name>_ant.lef
+          and <instance_name>_ant.clf side files.
+        - A minimum gate area ((0.15+0.15)*0.13=0.039) is assumed
+          to be connected to each input pin to force the router to
+          connect to the input pin with an antenna clean wire.  Pin
+          connections internal to the memory have been verified to
+          be antenna clean.
+        - The technology header information is not automatically
+          appended by the generator. If needed, please append this
+          information from the standard cell release.
+        - SE currently does not support the new Antenna LEF/DEF
+          syntax.  This file should be read into Wroute (2.x.26)
+          standalone before routing and after placement is done.
+
+  Back-end
+
+     o DRC
+        - Physical views updated to make compatible with DRC version
+          T-013-LO-DR-001 Rev 1.2, 30-NOV-01
+ 
+    o LVS/GDS2
+        
+        - GDS2 view generator includes a macro boundary layer (gds2
+          layer 230:0).  This layer is a dummy marker layer used for
+          CAD purposes such as metal density checking or to exclude
+          dummy pattern filling. It covers the memory macro, but
+          excludes the ring area.
+        - GDS2 text layer 63:63 is allocated by TSMC for IP marking.
+
+
+
+--------------------------------------------------------------------------------
+2001q3v0 (9/28/2001)
+
+  QA
+    o SRAM 8T CL013 2.66um by 2.16um (5.7456um^2) Cell
+        - Developed by Artisan.
+        - Conforms to standard logic layout rules.
+    o Design Rule Document
+        - T-013-LO-DR-001 Rev 1.1, 27-JUL-01
+    o GDS Layer Usage Description File
+        - T-013-LO-LE-001 Rev 1.1B, 22-FEB-01
+    o DRC Command File
+        - CALIBRE DRC COMMAND FILES --
+		CL13S1.0V+1.2V+2.5V_4M.11a VER 1.1a, 28-JUN-01,
+		CL13S1.0V+1.2V+2.5V_5M.11a VER 1.1a, 28-JUN-01,
+		CL13S1.0V+1.2V+2.5V_6M.11a VER 1.1a, 28-JUN-01,
+		CL13S1.0V+1.2V+2.5V_7M.11a VER 1.1a, 28-JUN-01,
+		CL13S1.0V+1.2V+2.5V_8M.11a VER 1.1a, 28-JUN-01
+        - CALIBRE ANTENNA DRC COMMAND FILES --
+		CL13S_4M.ANT.10b VER 1.0b, 21-DEC-00,
+		CL13S_5M.ANT.10b VER 1.0b, 21-DEC-00,
+		CL13S_6M.ANT.10b VER 1.0b, 21-DEC-00,
+		CL13S_7M.ANT.10b VER 1.0b, 21-DEC-00,
+		CL13S_8M.ANT.10b VER 1.0b, 21-DEC-00
+    o LVS Command File
+        - TSMC 0.13UM CALIBRE ERC/LVS COMMAND FILE V0.3a, 14-DEC-00
+        - Calibre LVS W/L matching tolerance is 0%.
+    o Process Name
+        - 0.13um Logic 1P8M Salicide FSG IMD 1.2V/2.5V (CL013G)
+    o Process Spice Models
+        - T-013-LO-SP-004, Rev 1.0, 10-JAN-01
+    o Cadence NC-Verilog
+        - 3.1
+    o Synopsys VCS
+        - 5.1
+    o Model Technology VSim
+        - 5.4a
+    o Synopsys Design Compiler, Design Power
+        - 1999.10
+    o Synopsys PrimeTime
+        - 1999.10
+    o Cadence Pearl TLF 4.1
+        - 4.3-p025
+    o Avant! Star-DC
+        - 1998.2
+    o Avant! ApolloII
+        - 1999.4.3.3.1
+    o Cadence Silicon Ensemble
+        - 5.3
+    o Adobe Acrobat Reader
+        - 4.0
+    o Mentor Graphics Calibre
+        - c.4
+    o Avant! Hspice
+        - H98.2
+
+  Front-end
+    o Spice Characterization
+        - This is a release with physicals modified very slightly for DRC
+	  version 1.1a.  Characterization was not re-run, and remains the same
+	  as in the previous release (ra1shd_2001q1v0).
+        - Timing characterization based on T-013-LO-SP-004, Rev 1.0, 10-JAN-01
+          Spice models.
+
+    o Synopsys/Primetime/Pearl
+        - Please note that SDF generated with tool versions above
+          also require postprocessing prior to back-annotation.
+          The following postprocessing scripts are available:
+              - Synopsys Design Compiler
+                aci/<product>/lib/sdf_postprocessors/dc_postprocessor.pl
+              - Synopsys Primetime
+                aci/<product>/lib/sdf_postprocessors/pt_postprocessor.pl
+              - Cadence Pearl
+                aci/<product>/lib/sdf_postprocessors/pearl_postprocessor.pl
+        - Please note that SDF generated with versions other than
+          those specified above may not annotate properly due to
+          various changes in the SDF output format.
+
+    o Antenna Modeling
+        - VCLEF view generator creates <instance_name>_ant.lef
+          and <instance_name>_ant.clf side files.
+        - A minimum gate area ((0.15+0.15)*0.13=0.039) is assumed
+          to be connected to each input pin to force the router to
+          connect to the input pin with an antenna clean wire.  Pin
+          connections internal to the memory have been verified to
+          be antenna clean.
+        - The technology header information is not automatically
+          appended by the generator. If needed, please append this
+          information from the standard cell release.
+        - SE currently does not support the new Antenna LEF/DEF
+          syntax.  This file should be read into Wroute (2.x.26)
+          standalone before routing and after placement is done.
+
+  Back-end
+    o LVS/GDS2
+        - GDS2 view generator includes a macro boundary layer (gds2
+          layer 230:0).  This layer is a dummy marker layer used for
+          CAD purposes such as metal density checking or to exclude
+          dummy pattern filling. It covers the memory macro, but
+          excludes the ring area.
+        - GDS2 text layer 63:63 is allocated by TSMC for IP marking.
+
+    o Physical views match the CL013LV release (tsmc13lv_sram-dp-hs_2001q3v0)
+      except for via-programming in the self-timing path.
+
+--------------------------------------------------------------------------------
+2001q1v0 (04/09/2001)
+
+  WARNING: This product is characterized using T-013-LO-SP-004, Rev 1.0, 
+           01/10/01 spice models. The timing is expected to be more 
+           conservative than the next spice model release, Rev 1.1.
+           Users should exercise caution in hold time margins when using
+           this product. Please contact your TSMC account manager for more
+           details on the spice models.
+
+  QA
+    o SRAM 8T 2.66um by 2.16um (5.7456um^2) Cell
+        - Uses normal layout rules.
+    o Design Rule Document
+        - T-013-LO-DR-001 Rev 1.0, 12/05/00
+    o GDS Layer Usage Description File
+        - T-013-LO-LE-001, Rev 1.1B, 02/22/01
+    o DRC Command File
+        - T-013-LO-DR-001-C1, Rev 1.0B, 01/15/01
+          - CALIBRE DRC COMMAND FILE - CL13S1.0V+1.2V+2.5V_3M.10b (VER 1.0b,12-21-00)
+          - CALIBRE ANTENNA DRC COMMAND FILE -  CL13S_8M.ANT.10b   12-21-00
+    o LVS Command File
+        - T-013-LO-SP-001-C1, Rev 0.3A, 12/18/00
+          - TSMC 0.13UM CALIBRE ERC/LVS COMMAND FILE V0.3a, 2000/12/14
+          - Calibre LVS W/L matching tolerance is 0%.
+    o Process Name
+        - 0.13um LOGIC 1P8M SALICIDE 1.2V/2.5V FSG IMD (CL013G)
+    o Process Spice Models
+        - T-013-LO-SP-004, Rev 1.0, 01/10/01
+    o Cadence NC-Verilog
+        - 3.1
+    o Synopsys VCS
+        - 5.1
+    o Model Technology VSim
+        - 5.4a
+    o Synopsys Design Compiler, Design Power
+        - 1999.10
+    o Synopsys PrimeTime
+        - 1999.10
+    o Cadence Pearl TLF 4.1
+        - 4.3-p025
+    o Avant! Star-DC
+        - 1998.2
+    o Avant! ApolloII
+        - 1999.4.3.3.1
+    o Cadence Silicon Ensemble
+        - 5.3
+    o Adobe Acrobat Reader
+        - 4.0
+    o Mentor Graphics Calibre
+        - c.4
+    o Avant! Hspice
+        - H98.2
+
+  Front-end
+    o Spice Characterization
+        - Timing characterization based on T-013-LO-SP-004, Rev 1.0,
+          01/10/01 spice models.
+
+    o Synopsys/Primetime/Pearl
+        - Please note that SDF generated with tool versions above
+          also require postprocessing prior to back-annotation.
+          The following postprocessing scripts are available:
+              - Synopsys Design Compiler
+                aci/<product>/lib/sdf_postprocessors/dc_postprocessor.pl
+              - Synopsys Primetime
+                aci/<product>/lib/sdf_postprocessors/pt_postprocessor.pl
+              - Cadence Pearl
+                aci/<product>/lib/sdf_postprocessors/pearl_postprocessor.pl
+        - Please note that SDF generated with versions other than
+          those specified above may not annotate properly due to
+          various changes in the SDF output format.
+
+    o Antenna Modeling
+        - VCLEF view generator creates <instance_name>_ant.lef
+          and <instance_name>_ant.clf side files.
+        - A minimum gate area ((0.15+0.15)*0.13=0.039) is assumed
+          to be connected to each input pin to force the router to
+          connect to the input pin with an antenna clean wire.  Pin
+          connections internal to the memory have been verified to
+          be antenna clean.
+        - The technology header information is not automatically
+          appended by the generator. If needed, please append this
+          information from the standard cell release.
+        - SE currently does not support the new Antenna LEF/DEF
+          syntax.  This file should be read into Wroute (2.x.26)
+          standalone before routing and after placement is done.
+
+  Back-end
+    o LVS/GDS2
+        - Minor layout cleanup in bitcell array and sense amplifier.
+          Reoptimized self-timing path.
+
+        - LVS view generator creates <instance_name>.hcell which can
+          be used for Calibre hierarchal lvs.
+        - GDS2 view generator includes a macro boundary layer (gds2
+          layer 230:0).  This layer is a dummy marker layer used for
+          CAD purposes such as metal density checking or to exclude
+          dummy pattern filling. It covers the memory macro, but
+          excludes the ring area.
+        - GDS2 text layer 63:63 is allocated by TSMC for IP marking.
+
+--------------------------------------------------------------------------------
+2000q4v0 (03/15/2001)
+
+  QA
+    o SRAM 8T 2.66um by 2.16um (5.7456um^2) Cell
+        - Uses normal layout rules.
+    o Design Rule Document
+        - T-013-LO-DR-001 Rev 1.0, 12/05/00
+    o GDS Layer Usage Description File
+        - T-013-LO-LE-001, Rev 1.1B, 02/07/01
+    o DRC Command File
+        - T-013-LO-DR-001-C1, Rev 1.0B, 01/15/01
+    o LVS Command File
+        - T-013-LO-SP-001-C1, Rev 0.3A, 12/18/00
+    o Process Name
+        - TSMC 0.13um LOGIC 1P8M SALICIDE 1.2V/2.5V, 1.2V/3.3V
+    o Process Spice Models
+        - Estimated timing based on T-015-LO_SP-001, Rev 1.0, 05/19/00
+    o Verilog-XL
+        - 2.6.20
+    o Verilog VCS
+        - 5.1
+    o Model Tech VSim
+        - 5.2c
+    o Synopsys
+        - 1998.08
+    o PrimeTime
+        - 1998.08-PT2
+    o CDC (TLF 3.1)
+        - 5.3
+    o Star-DC
+        - 1997.4.0.5
+    o ApolloII
+        - 1999.4
+    o Silicon Ensemble
+        - 5.2-QSR2
+    o Acrobat Reader
+        - 4.0
+    o Calibre
+        - C.4
+    o Hspice
+        - H98.2
+
+  o Preliminary Release
+
+  Front-end
+    o Estimated Timing
+        - Estimated timing based on T-015-LO_SP-001, Rev 1.0,
+          05/19/00 spice models.
+
+    o Synopsys/Primetime
+        - Please note that SDF generated with versions other than
+          those specified above may not annotate properly due to
+          various changes in the SDF output format.
+
+    o Antenna Modeling
+        - BETA Release
+        - VCLEF view generator creates <instance_name>_ant.lef
+          and <instance_name>_ant.clf side files.
+        - A minimum gate area ((0.18+0.18)*0.15=0.054) is assumed
+          to be connected to each input pin to force the router to
+          connect to the input pin with an antenna clean wire.  Pin
+          connections internal to the memory have been verified to
+          be antenna clean.
+        - The technology header information is not automatically
+          appended by the generator. If needed, please append this
+          information from the standard cell release.
+        - SE currently does not support the new Antenna LEF/DEF
+          syntax.  This file should be read into Wroute (2.x.26)
+          standalone before routing and after placement is done.
+
+  Back-end
+    o LVS/GDS2
+        - LVS view generator creates <instance_name>.hcell which can
+          be used for Calibre hierarchal lvs.
+        - GDS2 view generator includes a macro boundary layer (gds2
+          layer 230:0).  This layer is a dummy marker layer used for
+          CAD purposes such as metal density checking or to exclude
+          dummy pattern filling. It covers the memory macro, but
+          excludes the ring area.
+        - GDS2 text layer 63:63 is allocated by TSMC for IP marking.
+        - GDS2 layer 6:0 is OD versus previous Artisan technologies
+          where PDIF and NDIF were on gds2 layers 7:0 and 8:0. 
+
+--------------------------------------------------------------------------------

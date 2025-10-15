@@ -1,0 +1,623 @@
+'\" t
+.\" @(#)java.1 1.17 99/10/11 SMI;
+.\" Copyright 1999 Sun Microsystems, Inc. All rights reserved.
+.\" Copyright 1999 Sun Microsystems, Inc. Tous droits réservés.
+.\" 
+.TH java 1 "11 Oct 1999"
+.SH NAME
+java \- Java interpreter
+.SH SYNOPSIS
+.B java 
+[ 
+.IB options 
+] 
+.I class 
+[ 
+.I argument ... 
+]
+.LP
+.B java 
+[ 
+.I options 
+] 
+.BI \-jar " file.jar"
+.if n .ti +5n
+[ 
+.I argument ... 
+]
+.LP
+.B oldjava 
+[ 
+.I options 
+] 
+.I class 
+[ 
+.I argument ... 
+]
+.SH  PARAMETERS
+Options may be in any order.
+For a discussion of
+parameters which apply to a specific option, see
+.B OPTIONS
+below.
+.TP 15
+.I options
+Command-line options.
+See
+.B OPTIONS
+below.
+.TP
+.I class
+Name of the class to be invoked.
+.TP
+.I file.jar
+Name of the jar 
+file to be invoked.
+Used only with the 
+.B \-jar
+option.
+.SH DESCRIPTION
+.IX "Java interpreter" "" "Java interpreter \(em \fLjava\fP"
+.IX "java" "" "\fLjava\fP \(em Java interpreter"
+The 
+.B java 
+utility launches a Java application.
+It does this by
+starting a Java runtime environment, loading a specified class,
+and invoking that class's 
+.B main 
+method.
+The method must have the following signature:
+.LP
+.ft 3
+.nf
+   public static void main(String args[])
+.fi
+.ft 1
+.LP
+The method must be declared 
+.B public 
+and 
+.BR static , 
+it must not
+return any value, and it must accept a 
+.B String 
+array as a parameter.
+By default, the first non-option argument is the name of the class
+to be invoked.
+A fully-qualified class name should be used.
+If the
+.B \-jar
+option is specified, the first non-option argument is the
+name of a JAR archive containing class and resource files for the
+application, with the startup class indicated by the Main-Class
+manifest header.
+.LP
+The Java runtime searches for the startup class, and other classes
+used, in three sets of locations: the bootstrap class path, the
+installed extensions, and the user class path.
+.LP
+Non-option arguments after the class name or JAR file name are
+passed to the main function.
+.LP
+.SS Java and Oldjava
+.IX "java" "Java and Oldjava" "\fLjava\fP \(em Java interpreter"
+.LP
+On Solaris systems, the java launcher tool comes in two
+variations: 
+.BR java , 
+which implements all 1.2 features; and
+.BR oldjava ,
+a limited-feature launcher tool, which supports programming
+techniques that are incompatible with some 1.2 features.
+These are the differences between
+.B java 
+and
+.BR oldjava :
+.TP 2
+\(bu
+The
+.B oldjava 
+launcher does not support the extension
+mechanism, though it can, of course, use extension packages
+as class and resource archives.
+.TP 2
+\(bu
+The
+.B oldjava 
+launcher uses the bootstrap class loader for all
+classes, while the 
+.B java 
+launcher uses the bootstrap class
+loader only for bootstrap classes.
+.TP 2
+\(bu
+With
+.BR java , 
+the 
+.B \-classpath
+and 
+.B \-cp
+options specify a search
+path for user classes, and cannot be used to specify
+locations for bootstrap classes.
+With
+.B oldjava 
+the 
+.B \-classpath
+and 
+.B \-cp
+options specify locations for all classes, including
+bootstrap classes.
+.RS 2
+.LP
+Note that
+.B java 
+and 
+.B oldjava 
+do not differ in their use of the
+.SB CLASSPATH 
+environment variable. Unless overridden by
+.B \-classpath
+or 
+.BR \-cp , 
+.SB CLASSPATH 
+always specifies the location of
+user classes, but says nothing about the bootstrap classes.
+.RE
+.TP 2
+\(bu
+The
+.B oldjava 
+launcher supports all the 1.2 security features.
+With
+.BR oldjava , 
+however, classes loaded from the class path
+will not have a protection domain and will therefore have all
+permissions, which is true only for bootstrap classes with the
+.B java 
+launcher.
+.LP
+This command using
+.B oldjava
+.LP
+   \f3example% oldjava \-classpath \fP\f2path\fP ...
+.fi
+.ft 1
+.LP
+is equivalent to this command using
+.B java
+.LP
+.nf
+   \f3example% java \-Xbootclasspath:\fP\f2path\fP\f3 \-Djava.ext.dirs=\fP ...
+.fi
+.ft 1
+.LP
+where in both cases
+.I path
+contains the file 
+.BR rt.jar . 
+(See the
+JDK File Structure
+document for a description of 
+.B rt.jar 
+and
+its location in the JDK software.)
+.LP
+.SS  The JIT
+.IX "java" "The JIT" "\fLjava\fP \(em Java interpreter"
+.LP
+The default behavior of the launcher is to execute bytecodes using
+a Just In Time compiler, or JIT. 
+When a class is loaded, the JIT
+translates the class bytecodes into native machine code.
+.LP
+If the JIT is disabled, bytecodes are executed directly by an
+interpreter. 
+There are two ways to disable the JIT:
+.TP 2
+\(bu
+Set the environment variable 
+.SB JAVA_COMPILER
+to
+.BR NONE , 
+using the
+.BR setenv (1)
+command.
+.LP
+.RS 2
+.ft 3
+.nf
+example% setenv JAVA_COMPILER NONE
+.fi
+.ft 1
+.RE
+.TP 2
+\(bu
+Use the
+.B \-D 
+command-line option to set 
+.BR java.compiler " to " NONE .
+.LP
+.RS 2
+.ft 3
+example% java \-Djava.compiler=NONE myapp
+.ft 1
+.RE
+.LP
+Using the command-line option overrides the setting of the
+.SB JAVA_COMPILER 
+environment variable.
+.SH OPTIONS
+The launcher has a set of standard options that are supported on
+the current runtime environment and will be supported in future
+releases.
+However, options below that are described as having been
+replaced by another one are obsolete and may be removed in
+a future release.
+An additional set of non-standard options are specific
+to the current virtual machine implementation and are subject to
+change in the future.
+Non-standard options begin with 
+.BR  \-X .
+.SS Standard Options
+.IX "java" "Standard Options" "\fLjava\fP \(em Java interpreter"
+.TP 20
+.BI \-classpath " classpath"
+.PD 0
+.TP
+.BI \-cp " classpath"
+.PD
+Specifies a list of directories, JAR archives, and ZIP archives
+to search for class files.
+Class path entries are separated
+by colons (:). Specifying
+.B \-classpath 
+or 
+.B \-cp 
+overrides any
+setting of the 
+.SB CLASSPATH 
+environment variable.
+.sp 1n
+Used with 
+.BR java , 
+the
+.B \-classpath 
+or 
+.B \-cp 
+options only specify the
+class path for user classes.
+Used with
+.BR oldjava ,
+.B \-classpath 
+or 
+.B \-cp 
+specify the class path for both user
+classes and bootstrap classes.
+.sp 1n
+If 
+.B \-classpath 
+and 
+.B \-cp 
+are not used and 
+.SB CLASSPATH 
+is not set,
+the user class path consists of the current directory (.).
+.TP
+.B \-debug
+This has been replaced by 
+.BR \-Xdebug .
+.TP
+.BI \-D property=value
+Sets a system property value.
+.TP
+.B \-jar
+Executes a program encapsulated in a JAR archive.
+The first
+argument is the name of a JAR file instead of a
+startup class name. 
+In order for this option to work, the manifest of the
+JAR file must contain a line of the form 
+\f3Main-Class:\f1\f2classname\f1. 
+Here, 
+.I classname 
+identifies the class having the
+.B public static void main(String[] args) 
+method that serves as
+your application's starting point.
+See the Jar tool reference
+page and the Jar trail of the Java Tutorial for information
+about working with Jar files and Jar-file manifests.
+When you use this option, the JAR file is the source of all
+user classes, and other user class path settings are ignored.
+.sp 1n
+The 
+.B oldjava 
+tool does not support the 
+.B \-jar
+option.
+.TP
+.B  \-noclassgc
+This has been replaced by 
+.BR \-Xnoclassgc .
+.TP
+.BI \-oss n
+This has been replaced by 
+.B \-Xoss
+.IR n .
+.TP
+.BI \-ms n
+This has been replaced by 
+.B \-Xms
+.IR n .
+.TP
+.BI \-mx n
+This has been replaced by 
+.B \-Xmx
+.IR n .
+.TP
+.BI \-ss n
+This has been replaced by 
+.B \-Xss
+.IR n .
+.TP
+.B \-t
+This has been replaced by 
+.BR \-Xt .
+.TP
+.B \-tm
+This has been replaced by 
+.BR \-Xtm .
+.TP
+.B \-verbose
+.PD 0
+.TP
+.BI \-verbose: class
+Displays information about each class loaded.
+.PD
+.TP
+.B \-verbosegc
+This has been replaced by 
+.BR \-verbose:gc .
+.TP
+.B \-verbose:gc
+Reports on each garbage collection event.
+.TP
+.B \-verbose:jni
+Reports information about use of native methods and other Java
+Native Interface activity.
+.TP
+.B \-version
+Displays version information and exit.
+.TP
+.B \-?
+.PD 0
+.TP
+.B \-help
+Displays usage information and exit.
+.PD
+.TP
+.B \-X
+Displays information about non-standard options and exit.
+.SS Non-Standard Options
+.IX "java" "Non-Standard Options" "\fLjava\fP \(em Java interpreter"
+.TP 20
+.BI \-Xbootclasspath: bootclasspath
+Specifies a colon-separated list of directories, JAR
+archives, and ZIP archives to search for boot class files.
+These are used in place of the boot class files included in
+the JDK 1.2 software.
+.TP
+.B \-Xdebug
+Starts with the debugger enabled.
+The Java interpreter prints out a password for the use of
+.BR jdb (1). 
+Refer to 
+.BR jdb (1)
+for more details and an example.
+Note: In this release, the compiler must have been disabled
+beforehand by specifying
+.B \-Djava.compiler=NONE
+before this option.
+This restriction may be lifted in a future release.
+.\" -- Not supported yet: --
+.\" .TP
+.\" .B \-Xcheck:jni
+.\" Perform additional check for Java Native Interface functions.
+.TP
+.B \-Xnoclassgc
+Disables class garbage collection
+.TP
+.BI \-Xms n
+Specifies the initial size of the memory allocation pool.
+This value must be greater than 1000.
+To modify the meaning of
+.IR n ,
+append either the letter 
+.B k 
+for kilobytes or the letter 
+.B m 
+for megabytes.
+The default value is 8m.
+.TP
+.BI \-Xmx n
+Specifies the maximum size of the memory allocation pool.
+This value must be greater than 1000.
+To modify the meaning of
+.IR n ,
+append either the letter 
+.B k 
+for kilobytes or the letter 
+.B m 
+for megabytes.
+The default value is 24m.
+.TP
+.BI \-Xoptimize
+(SPARC only) Experimental only.
+Spend more time optimizing methods in the JIT.
+This option will most likely benefit long running 
+CPU-bound applications and may or may not result in 
+increased performance of your application.
+.TP
+.BI \-Xoss n
+Each Java thread has two stacks: one for Java code and
+one for C code.
+The
+.B \-Xoss
+option sets the maximum stack
+size that can be used by Java code in a thread to
+.IR n .
+Every thread that is spawned during the execution of
+the program passed to
+.B java
+has
+.I n
+as its Java stack size.
+The default units for
+.I n
+are bytes and
+.I n
+must be greater than 1000 bytes.
+.sp 1n
+To modify the meaning of
+.IR n ,
+append either the letter 
+.B k 
+for kilobytes or the letter 
+.B m 
+for megabytes.
+The default stack size is 400 kilobytes
+(\f3\-Xoss400k\f1).
+.TP
+\f3\-Xrunhprof[:help][:\f2suboption\f3=\f2value\f1,...]
+Enables cpu, heap, or monitor profiling.
+This option is
+typically followed by a list of comma-separated
+.IR suboption = value
+pairs.
+Run the command
+.B java \-Xrunhprof:help 
+to obtain a list of suboptions and their
+default values.
+.\" .TP
+.\" -Xcheck:jni
+.\" Perform additional check for Java Native Interface functions.
+.\" .TP
+.\" -Xverify
+.\" -Xverify:all
+.\" Verify that all class files obey language constraints.
+.\" .TP
+.\" -Xverify:remote
+.\" Verify only remote class files. This is the default
+.\" verification level.
+.\" .TP
+.\" -Xverify:none
+.\" Disable class file verification.
+.TP
+.BI \-Xss n
+Each Java thread has two stacks: one for Java code and
+one for C code.
+The
+.B \-Xss
+option sets the maximum stack
+size that can be used by C code in a thread to
+.IR n .
+Every thread that is spawned during the execution of the
+program passed to
+.B java
+has
+.I n
+as its C stack size.
+The default units for
+.I n
+are bytes and
+.I n
+must be > 1000 bytes.
+.sp 1n
+To modify the meaning of
+.IR n ,
+append either the letter 
+.B k 
+for kilobytes or the letter 
+.B m 
+for megabytes.
+The default stack size is 128 kilobytes
+(\f3\-Xss128k\f1).
+.TP
+.B \-Xrs
+Reduces the use of operating system signals.
+.TP
+.B \-Xsqnopause
+Does not pause for user interaction on 
+.BR siqquit .
+.TP
+.B \-Xt
+Turns on instruction tracing.
+.TP
+.B \-Xtm
+Turns on method tracing.
+.SH ENVIRONMENT VARIABLES
+.TP 20
+.SB CLASSPATH
+Used to provide the system with a path to user-defined classes.
+Directories are separated by colons.
+For example:
+.RS 25
+.sp 1n
+.B .:/home/avh/classes:/usr/local/java/classes
+.RE 
+.br
+.ne 12
+.SH ATTRIBUTES
+See
+.BR attributes (5)
+for a description of the following attributes: 
+.SS  java
+.IX "java" "java" "\fLjava\fP \(em Java interpreter"
+.sp
+.TS
+box;
+cbp-1 | cbp-1
+l | l .
+ATTRIBUTE TYPE	ATTRIBUTE VALUE
+=
+Availability	SUNWjvrt, SUNWjvdev
+Interface Stability	See \f3NOTES\f1.
+.TE
+.SS  oldjava
+.IX "java" "oldjava" "\fLjava\fP \(em Java interpreter"
+.sp
+.TS
+box;
+cbp-1 | cbp-1
+l | l .
+ATTRIBUTE TYPE	ATTRIBUTE VALUE
+=
+Availability	SUNWjvdev
+Interface Stability	See \f3NOTES\f1.
+.TE
+.SH SEE ALSO
+.BR javac (1),
+.BR jdb (1),
+.BR javac (1),
+.BR jar (1),
+.BR set (1)
+.LP
+See (or search java.sun.com) for the following:
+.TP 10
+JDK File Structure @
+http://java.sun.com/products/jdk/1.2/docs/tooldocs/solaris/jdkfiles.html
+.TP
+Setting the Classpath @
+http://java.sun.com/products/jdk/1.2/docs/tooldocs/solaris/classpath.html
+.TP
+JAR Files @ 
+http://java.sun.com/docs/books/tutorial/jar/
+.SH NOTES
+All the
+.B \-X
+options are unstable.
+As noted in the
+.B OPTIONS
+section, some of the "standard" options are obsolete.

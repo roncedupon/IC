@@ -1,0 +1,256 @@
+                             CHANGES
+ 
+                    Java(tm) Runtime Environment
+                          JRE(tm) 1.1.5 
+
+-----------------------------------------------------------------------
+CONTENTS
+-----------------------------------------------------------------------
+This document describes the changes made between versions of the JRE. 
+The contents of this document are as follows:
+
+  - Changes from JRE 1.1.4 to JRE 1.1.5
+  - Changes from JRE 1.1.3 to JRE 1.1.4
+  - Changes from JRE 1.1.2 to JRE 1.1.3 
+  - Changes from JRE 1.1.1 to JRE 1.1.2
+
+=======================================================================
+CHANGES FROM JRE 1.1.4 TO JRE 1.1.5 
+=======================================================================
+
+JRE 1.1.5 and JDK 1.1.5 are bug-fix releases. See the JDK CHANGES file 
+at http://java.sun.com/products/jdk/1.1/CHANGES or in the JDK software 
+download bundle for summaries of significant bugs that are fixed in 
+this release of the Java platform.
+
+
+=======================================================================
+CHANGES FROM JRE 1.1.3 TO JRE 1.1.4 
+=======================================================================
+
+JRE 1.1.4 and JDK 1.1.4 are bug-fix releases. See the JDK CHANGES file 
+at http://java.sun.com/products/jdk/1.1/CHANGES for summaries of 
+significant bugs that are fixed in this release.
+
+In the JRE README file, the file content-types.properties has been 
+moved from the list of OPTIONAL files to the list of REQUIRED files 
+because it is required for java.net.
+
+
+=======================================================================
+CHANGES FROM JRE 1.1.2 TO JRE 1.1.3 
+=======================================================================
+
+JRE 1.1.3 and JDK 1.1.3 are bug-fix releases. The 1.1.3 release fixes a 
+localization bug that prevented characters in text areas of windows 
+from displaying properly in non-English language locales and 
+non-Western European locales. This problem did not exist in the 1.1.1 
+release.
+
+See the JDK CHANGES file at 
+http://java.sun.com/products/jdk/1.1/CHANGES
+for further information about other changes and bug fixes in the 1.1.3  
+release.
+
+=======================================================================
+CHANGES FROM JRE 1.1.1 TO JRE 1.1.2
+=======================================================================
+
+-----------------------------------------------------------------------
+End-User Installation Capability for the Win32 JRE
+-----------------------------------------------------------------------
+
+When the Win32 JRE 1.1.2 is downloaded, an InstallShield script is 
+invoked that automates the installation of the JRE. The feature was not 
+present in the 1.1.1 version of the JRE. With the InstallShield script, 
+JRE 1.1.2 is suitable for installation by end-users. Because of this 
+end-user installation capability of the Win 32 JRE 1.1.2, Java 
+application developers have the option of not bundling the JRE with 
+their software. Instead, they can direct end-users to download and 
+install the JRE themselves.
+
+An installer is not available for Solaris versions of the JRE. 
+Therefore it is recommended that Solaris application developers write 
+their own installers and bundle the JRE and installer with their 
+software.
+
+
+-----------------------------------------------------------------------
+Win32 JRE Available with or without Internationalization Files
+-----------------------------------------------------------------------
+
+JRE 1.1.2 for Win32 is available for download in two versions, one 
+containing internationalization files and the other without. The 
+version of the JRE with the internationalization files is more than 
+twice the size of the version without the internationalization files. 
+The smaller version is made available for those end users who have no 
+need for internationalization capability. The files not contained in 
+the smaller version of the Win32 JRE are those listed in the OPTIONAL 
+FILES section of the JRE README file.
+
+Solaris versions of JRE 1.1.2 include internationalization files. 
+
+
+-----------------------------------------------------------------------
+New jre Tool
+-----------------------------------------------------------------------
+
+This section provides a summary of the new jre tool for both Win32 and 
+Solaris. The jre tool replaces the java tool in JRE 1.1.2. The jre tool 
+is similar to the java tool, but offers only those options that are 
+appropriate for a runtime-only system. It also provides the -cp and 
+-nojit options that are not part of the java tool. More detailed 
+documentation for the jre tool can be found on the JavaSoft web site 
+at:
+
+For Solaris - 
+http://java.sun.com/products/jdk/1.1/docs/tooldocs/solaris/jre.html
+
+For Windows - 
+http://java.sun.com/products/jdk/1.1/docs/tooldocs/win32/jre.html
+
+Source code for the jre tool can be found in the Windows JDK 1.1.2 
+directory tree in the jdk1.1.2\demo\jre\win32 folder. For the 
+Solaris JDK 1.1.2, source code for the jre tool can be found in 
+the jdk1.1.2/demo/jre/solaris directory.
+
+The jre tool invokes the Java Runtime interpreter for executing Java 
+applications. The tool is available in the Win32, Solaris-Sparc, and 
+Solaris x86 downloads of JRE 1.1.2. The syntax for the jre command is:
+
+	jre [ options ] classname <args>
+
+The classname argument is the name of the class file to be 
+executed. Any arguments to be passed to the class must be placed 
+after the classname on the command line.
+
+An alternative version of the tool, jrew, is available for Win32. The 
+jrew command is identical to jre, except that a console window is not 
+invoked. The syntax of the jrew command is 
+
+	jrew [ options ] classname <args>
+
+On Windows platforms, the jre tool will ignore the CLASSPATH 
+environment variable. For both Windows and Solaris platforms, the 
+-cp option is recommended to specify an application's class path.
+
+Options for the jre and the jrew commands are as follows:
+
+   -classpath path	Specifies the path that jre uses to 
+   			look up classes. Overrides the default 
+   			classpath.  
+
+   -cp path		Prepends the specified path to the default 
+   			classpath that jre uses to look up classes. 
+
+   -help		Print a usage message.
+
+   -mx x		Sets the maximum size of the memory allocation 
+   			pool (the garbage collected heap) to x. The 
+   			default is 16 megabytes of memory. x must be
+			greater than or equal to 1000 bytes.
+
+   -ms x		Sets the startup size of the memory allocation 
+   			pool (the garbage collected heap) to x. The 
+   			default is 1 megabyte of memory. x must be
+			greater than 1000 bytes.
+
+   -noasyncgc		Turns off asynchronous garbage collection. When 
+   			activated, no garbage collection takes place 
+   			unless it is explicitly called or the program 
+			runs out of memory.
+
+   -noclassgc		Turns off garbage collection of Java classes. 
+   			By default, the Java interpreter reclaims space 
+   			for unused Java classes during garbage collection.
+
+   -nojit		Specifies that any JIT compiler should be 
+			ignored. The default Java interpreter is invoked.
+
+   -ss x		The -ss option sets the maximum stack size that 
+   			can be used by C code in a thread to x. The 
+			default units for x are bytes. The value of x 
+			must be greater than or equal to 1000 bytes.
+
+   -oss x		The -oss option sets the maximum stack size 
+			that can be used by Java code in a thread to x. 
+			The default units for x are bytes. The value of 
+			x must be greater than or equal to 1000 bytes.
+
+   -v, -verbose		Causes jre to print a message to stdout each 
+			time a class file is loaded.
+
+   -verify		Performs byte-code verification on the class 
+			file. Beware, however, that java -verify does 
+			not perform a full verification in all 
+			situations. Any code path that is not actually 
+			executed by the interpreter is not verified. 
+			Therefore, java -verify cannot be relied upon to 
+			certify class files unless all code paths in 
+			the class file are actually run.
+
+   -verifyremote	Runs the verifier on all code that is loaded 
+			into the system via a classloader. verifyremote 
+			is the default for the interpreter.
+
+   -noverify		Turns verification off.
+
+   -verbosegc		Causes the garbage collector to print out 
+			messages whenever it frees memory.
+   
+   -DpropName=value	Defines a property value. propName is the name 
+			of the property whose value you want to change 
+			and value is the value to change it to. For 
+			example, the command 
+			java -Dawt.button.color=green ...
+			sets the value of the property awt.button.color 
+			to "green".
+
+
+-----------------------------------------------------------------------
+Early-Access Release of the JRE for Solaris-x86
+-----------------------------------------------------------------------
+
+An early-access release of JRE 1.1.2 for Solaris x86 is available for 
+download.  An FCS version of the JRE for Solaris x86 will be made 
+available in the future.
+
+BECAUSE THE JRE 1.1.2 FOR SOLARIS x86 IS AN EARLY-ACCESS RELEASE ONLY,
+IT SHOULD NOT BE USED FOR MISSION-CRITICAL APPLICATIONS.
+
+
+-----------------------------------------------------------------------
+JNI Invocation API Changes
+-----------------------------------------------------------------------
+
+To better support the JRE, the Invocation API is extended in JDK 1.1.2 
+in a few minor ways. The changes do not break any existing code. The 
+JNI Native Method Interface has not been changed. 
+
+1. The reserved0 field in the JDK1_1InitArgs structure has been
+renamed to "version." The JDK1_1InitArgs structure holds the
+initialization arguments to JNI_CreateJavaVM. Callers of 
+JNI_CreateJavaVM must set the version field to 0x00010001. 
+JNI_GetDefaultJavaVMInitArgs has been changed to return a "jint" 
+indicating whether the requested version is supported.
+
+2. The reserved1 field in the JDK1_1InitArgs structure has been
+renamed to "properties." This is a NULL-terminated array of 
+strings. Each string has the format:
+
+			name=value
+
+indicating a system property. (This facility corresponds to the -D
+option in the java command line.)
+ 
+3. In JDK 1.1.1, the thread calling DestroyJavaVM must be the only
+user thread in the VM. JDK 1.1.2 has lifted this restriction. If
+DestroyJavaVM is called when there is more than one user thread,
+the VM waits until the current thread is the only user thread, and
+then tries to destroy itself.
+
+
+-----------------------------------------------------------------------
+Copyright © 1997 Sun Microsystems, Inc.
+901 San Antonio Road, Palo Alto, CA 94303-4900 USA
+All rights reserved.

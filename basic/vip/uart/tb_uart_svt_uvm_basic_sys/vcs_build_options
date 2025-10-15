@@ -1,1 +1,0 @@
-+define+SVT_UART  +define+UVM_PACKER_MAX_BYTES=8000 -unit_timescale=100ps/100ps

@@ -1,0 +1,58 @@
+
+echo "********************************************************"
+echo "****    Start load .synopsys_dc.setup    ***************"
+echo "********************************************************"
+
+set SYN_ROOT_PATH   /mnt/hgfs/LINUX_EDA_Share/DC_Projects/fsm
+set RTL_PATH        $SYN_ROOT_PATH/rtl
+set CONFIG_PATH     $SYN_ROOT_PATH/config
+set SCRIPT_PATH     $SYN_ROOT_PATH/script
+set MAPPED_PATH     $SYN_ROOT_PATH/mapped
+set REPORT_PATH     $SYN_ROOT_PATH/report
+set UNMAPPED_PATH   $SYN_ROOT_PATH/unmapped
+
+#define work directory
+set WORK_PATH   $SYN_ROOT_PATH/work
+set DC_PATH     eda/synopsys/syn/2012.06
+define_design_lib work -path $WORK_PATH
+
+set SYMBOL_PATH /mnt/hgfs/LINUX_EDA_Share/DC_Projects/digital_lib/TSMC_013/synopsys
+set LIB_PATH    /mnt/hgfs/LINUX_EDA_Share/DC_Projects/digital_lib/TSMC_013/synopsys
+
+set_app_var search_path [list . $search_path $LIB_PATH \
+                                $SYMBOL_PATH $RTL_PATH \
+                                $SCRIPT_PATH           \
+                                ${DC_PATH}/libraries/syn]
+
+#This variables are automatically set if you perform ultra command.
+#Specify for use during optimization.
+#You do not need to do anything to access the standard  library.
+#DC is setup to use this library by default
+
+set_app_var target_library    [list slow.db             ]
+set_app_var link_library      [list * ${target_library} ]
+#set_app_var symbol_library   [list               .sdb  ]
+
+#source the naming rules
+
+echo "***************************************************************"
+echo "*********   End of load  .synopsys_dc.setup   *****************"
+echo "***************************************************************"
+
+echo "***************************************************************"
+echo "*********  Start source hs_name_rules.v       *****************"
+echo "***************************************************************"
+
+#source -v -e ./hs_name_rules.tcl
+source ../script/test.tcl
+
+
+
+
+
+
+
+
+
+
+

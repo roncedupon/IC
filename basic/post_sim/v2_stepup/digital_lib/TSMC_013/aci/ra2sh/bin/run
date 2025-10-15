@@ -1,0 +1,19 @@
+#!/bin/bash
+
+BASE_DIR=`pwd`/..
+CLASSPATH=$BASE_DIR/lib/gui.zip:$BASE_DIR/lib/swingall.jar:$JRE_HOME/lib/rt.jar:$JRE_HOME/lib/i18n.jar:$JRE_HOME/lib/classes.zip:$CLASSPATH
+export CLASSPATH
+
+JAVA_HOME=
+export JAVA_HOME
+
+LANG=C
+LC_ALL=C
+export LANG
+export LC_ALL
+
+LD_LIBRARY_PATH=
+export LD_LIBRARY_PATH
+
+java Main
+

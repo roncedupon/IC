@@ -1,0 +1,98 @@
+#!/bin/ksh -p
+
+#
+# @(#)java_wrapper.sh	1.51 99/05/21
+#
+# Copyright 1999 Sun Microsystems, Inc. All rights reserved.
+# Copyright 1999 Sun Microsystems, Inc. Tous droits réservés.
+# 901 San Antonio Road, Palo Alto, California, 94303, U.S.A.
+# 
+#
+# This software is the confidential and proprietary information
+# of Sun Microsystems, Inc. ("Confidential Information").  You
+# shall not disclose such Confidential Information and shall use
+# it only in accordance with the terms of the license agreement
+# you entered into with Sun.
+#
+
+#===================================================================
+# THIS SCRIPT AND JAVA WILL NOT RUN UNDER SUNOS4.X, AKA SOLARIS 1.X.  
+#===================================================================
+
+PRG=`whence $0` >/dev/null 2>&1
+progname=`/usr/bin/basename $0`
+proc=`/usr/bin/uname -p`
+
+# Resolve symlinks, so that the pathname computations below find the
+# directory structure they expect.
+while [[ -h "$PRG" ]]; do
+	# Get the target of the symlink.  N.B.:  We assume that neither the
+	# link's value nor the pathname leading to it contains "-> ".
+	ls=`/usr/bin/ls -ld "$PRG"`
+	link=`/usr/bin/expr "$ls" : '^.*-> \(.*\)$'`
+	# If the link is absolute, use it as is; otherwise, substitute it
+	# into the leafname part of $PRG.
+	if /usr/bin/expr "$link" : '^/' > /dev/null; then
+		prg="$link"
+	else
+		prg="`/usr/bin/dirname $PRG`/$link"
+	fi
+	PRG=`whence "$prg"` >/dev/null 2>&1
+done
+
+APPHOME=`/usr/bin/dirname "$PRG"`/..
+JREHOME=$APPHOME/jre
+
+# Where is JRE?
+unset jre
+if [[ -f "${JREHOME}/lib/${proc}/libjava.so" ]]; then
+    jre="${JREHOME}"
+fi
+if [[ -f "${APPHOME}/lib/${proc}/libjava.so" ]]; then
+    jre="${APPHOME}"
+fi
+if [[ "x${jre}" = "x" ]]; then
+    echo "Error: can't find libjava.so."
+    exit 1
+fi
+
+# Select vm type
+ttype=native_threads
+vmtype=exact
+DEFAULT_THREADS_FLAG=native
+
+case "$1" in
+  -hotspot)  vmtype=hotspot; shift 1;;
+  -native)   shift 1;;
+  -classic)  echo >&2 "Warning: Classic VM support not available"; shift 1;;
+  -green)    echo >&2 "Warning: Green threads support not available"; shift 1;;
+  *)         if [[ ${THREADS_FLAG:-${DEFAULT_THREADS_FLAG}} != native ]]
+	     then 
+		 echo >&2 "Warning: Green threads support not available"
+	     fi;;	 
+esac
+
+# Set shared library path.
+libpath_end="${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+if [[ "$vmtype" = "exact" ]]; then
+  LD_LIBRARY_PATH="${jre}/lib/${proc}${libpath_end}"
+else
+  LD_LIBRARY_PATH="${jre}/lib/${proc}/${ttype}:${jre}/lib/${proc}/${vmtype}:${jre}/lib/${proc}${libpath_end}"
+    fi
+export LD_LIBRARY_PATH
+
+# prepend XFILESEARCHPATH with awt Motif default locale resource files.
+XFILESEARCHPATH="${jre}/lib/locale/%L/%T/%N%S:$XFILESEARCHPATH"
+export XFILESEARCHPATH
+
+prog="$APPHOME/bin/${proc}/${ttype}/${progname}"
+
+# Run.
+if [[ -x "$prog" ]]
+then
+     # Calling: exec $DEBUG_PROG "$prog" "$@"
+     exec $DEBUG_PROG "$prog" "$@"
+else
+    echo >&2 "$progname was not found in ${prog}"
+    exit 1
+fi

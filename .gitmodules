@@ -1,0 +1,3 @@
+[submodule "ibex_submodule"]
+	path = ibex_submodule
+	url = git@gitee.com:gitee_dy/soc.git

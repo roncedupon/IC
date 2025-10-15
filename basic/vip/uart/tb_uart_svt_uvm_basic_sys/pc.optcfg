@@ -1,3 +1,0 @@
-partition package uvm_pkg;
-partition package svt_uvm_pkg;
-partition package svt_uart_uvm_pkg;

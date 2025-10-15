@@ -80,7 +80,8 @@ $(FSDB_CMD) \
 $(FILE_LISTS_OPTIONS)\
 $(VCS_COMPILE_OPTIONS)\
 $(DUMP_ARRAY_CMD)\
-+lint=TFIPC-L\
++lint=TFIPC-L \
++sdfverbose -diag=sdf:verbose -diag=sdf \
 ${COVERAGE_CMD}
 
 

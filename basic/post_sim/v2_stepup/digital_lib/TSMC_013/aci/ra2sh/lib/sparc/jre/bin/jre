@@ -1,0 +1,32 @@
+#!/bin/ksh -p
+
+export THREADS_TYPE=${THREADS_FLAG:-green}_threads
+
+PROG=$(/usr/ucb/basename $0)
+ARCH=$(/usr/bin/uname -p)
+
+case $1 in
+-native)
+    THREADS_TYPE=native_threads
+    shift
+    ;;
+-green)
+    THREADS_TYPE=green_threads
+    shift
+    ;;
+esac
+
+if [ -z "$JAVA_HOME" ]
+then
+    export JAVA_HOME=$(dirname $(whence -p $0))/..
+fi
+
+if [ -z "$CLASSPATH" ]
+then
+    export CLASSPATH=$JAVA_HOME/lib/rt.jar:$JAVA_HOME/lib/i18n.jar
+    CLASSPATH=$JAVA_HOME/classes:$JAVA_HOME/lib/classes.zip:$CLASSPATH
+fi
+
+export LD_LIBRARY_PATH=$JAVA_HOME/lib/$ARCH/$THREADS_TYPE:$LD_LIBRARY_PATH
+
+exec $JAVA_HOME/bin/$ARCH/$THREADS_TYPE/$PROG "$@"

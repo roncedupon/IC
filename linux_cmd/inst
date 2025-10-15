@@ -1,0 +1,3 @@
+seq 1 50000000 | awk '{ print >> "log.txt"; if (NR % 10000 == 0) { close("log.txt"); system("tail -n 100000 log.txt > log.txt.tmp && mv log.txt.tmp log.txt") } }' > /dev/null 2>&1
+wc -l log.txt    # 应该是 100000
+tail -n 5 log.txt  # 应该接近 500000 的末尾行

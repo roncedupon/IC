@@ -1,0 +1,54 @@
+/* setup the Setup...Defaults menu */
+designer = "NISung"
+company = "TSMC"
+search_path = { } 
+hdlin_translate_off_skip_text = TRUE
+link_library= { }
+target_library= { }
+symbol_library= { }
+default_schematic_options = "-size infinite"
+
+/* Site Specific Variables */
+synthetic_library = {}
+command_log_file = "./command.log"
+view_command_log_file = "./view_command.log"
+plot_command = "lpr -Plw"
+text_print_command = "lpr -Plw"
+
+/* enable Text Viewer feature */
+hdlin_source_to_gates_mode = "high"
+
+/* Synopsys to Compass EDIF interface */
+edifin_ground_name = "VSS"
+edifin_ground_net_name = "VSS"
+edifin_ground_net_property_name = "global"
+edifin_ground_net_property_value = "VSS"
+edifin_ground_pin_name = "VSS"
+edifin_ground_port_name = "VSS"
+edifin_netlist_only = "true"
+edifin_power_name = "VDD"
+edifin_power_net_name = "VDD"
+edifin_power_net_property_name = "global"
+edifin_power_net_property_value = "VDD"
+edifin_power_pin_name = "VDD"
+edifin_power_port_name = "VDD"
+edifin_power_and_ground_representation = "net"
+edifout_ground_name = "VSS"
+edifout_ground_net_name = "VSS"
+edifout_ground_net_property_name = "global"
+edifout_ground_net_property_value = "VSS"
+edifout_ground_pin_name = "VSS"
+edifout_ground_port_name = "VSS"
+edifout_netlist_only = "true"
+edifout_no_array = "true"
+edifout_power_name = "VDD"
+edifout_power_net_name = "VDD"
+edifout_power_net_property_name = "global"
+edifout_power_net_property_value = "VDD"
+edifout_power_pin_name = "VDD"
+edifout_power_port_name = "VDD"
+edifout_power_and_ground_representation = "net"
+write_name_nets_same_as_ports = "true"
+compile_fix_multiple_port_nets = "true"
+verilogout_no_tri = "true"
+include TSMC_naming_rule.script
