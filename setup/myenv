@@ -4,7 +4,7 @@
 export SOFTWARE_INSTALLED_HOME=/mnt/disk_0/softwares
 export IC_HOME=/mnt/disk_0/IC
 export SOC_HOME=/mnt/disk_0/soc
-alias vrun="python $IC_HOME/makefile/vrun/vrun.py"
+alias vrun="python3 $IC_HOME/makefile/vrun/vrun.py"
 
 
 #-------------------------------------------------------------------------------------------------
