@@ -2,8 +2,7 @@
 #-------------------------------------------------------------------------------------------------
 #我自己的IC开发环境
 export SOFTWARE_INSTALLED_HOME=/mnt/disk_0/softwares
-#export IC_HOME=/home/dy/IC
-export VIP_HOME=$SOFTWARE_INSTALLED_HOME/vips/vip2018/amba_svt
+
 
 
 #====================================================
@@ -16,8 +15,10 @@ export VCS_HOME=$Install_Home/vcs/T-2022.06-SP2
 export VERDI_HOME=$Install_Home/verdi/T-2022.06
 export LD_LIBRARY_PATH=$VERDI_HOME/platform/LINUXAMD64/lib:$LD_LIBRARY_PATH
 export SCL_HOME=$Install_Home/scl/2023.09
+
 #VIP的HOME路径
-export DESIGNWARE_HOME=$SOFTWARE_INSTALLED_HOME/vips/designware2018
+export VIP_HOME=$SOFTWARE_INSTALLED_HOME/vips
+export DESIGNWARE_HOME=$VIP_HOME/designware
 export INCLUDE_HOME=$DESIGNWARE_HOME/vip/svt/amba_svt/latest/sverilog/include
 export VSCODE_SETTING=/home/dy/.vscode-server/data/Machine/settings.json
 #dve

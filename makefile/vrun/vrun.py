@@ -59,7 +59,7 @@ class vrun(toolbox):
         self.JSON_TESTNAME_KEY="testname"
 
         self.MAKEFILE_PATH=os.path.dirname(__file__)+"/makefile"
-        self.VCS_COMPILE_OPTIONS=""
+        self.VCS_COMPILE_OPTIONS=f" +incdir+{self.CUR_PROJ_HOME} "
         
     def launch_verdi_old(self):
         font_cfg='-font "Courier 18"'
