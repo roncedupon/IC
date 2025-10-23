@@ -1,0 +1,97 @@
+//=======================================================================
+// COPYRIGHT (C) 2009-2016 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+// This include file is intended to be included in hdl subenv model wrappers to 
+// implement command wrapping.  This is really code to be included in class 
+// definitions.  Therefore, guarding the file is inappropriate.
+
+// =============================================================================
+// HDL TASK EXPORTS: This file 'exports' the model methods which will be
+// available to an HDL testbench, as tasks called on an instance of the model
+// (which is encapsulated in a shell file). These tasks are declared in the
+// interface of the shell file (it is the shell module that is instantiated as
+// a VIP model component in the HDL testbench). Except for the initialization
+// usage of set_data_prop(), these tasks simply call their counterparts in the
+// internal model instance.
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname operational
+ * Command Support:
+ * Used to start a subenv based model.
+ */
+task start();
+  begin
+    svt_subenv subenv;
+    // Watch out for xactor cmd providers
+    if ($cast(subenv, model)) begin
+      subenv.start();
+    end else begin
+      `vmm_error(model.log, "start() - Command not supported by this model");
+    end
+  end
+endtask
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname operational
+ * Command Support:
+ * Used to start a subenv based model.
+ */
+task stop();
+  begin
+    svt_subenv subenv;
+    // Watch out for xactor cmd providers
+    if ($cast(subenv, model)) begin
+      subenv.stop();
+    end else begin
+      `vmm_error(model.log, "stop() - Command not supported by this model");
+    end
+  end
+endtask
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname operational
+ * Command Support:
+ * Used to reset a subenv based model.
+ */
+task reset(int restart_type);
+  begin
+    svt_subenv subenv;
+    // Watch out for xactor cmd providers
+    if ($cast(subenv, model)) begin
+`ifdef SVT_PRE_VMM_11
+      `vmm_error(model.log, "reset() - Command only supported by this model when used with VMM 1.1");
+`else
+      vmm_env::restart_e vmm_restart_type;
+      if ($cast(vmm_restart_type, restart_type)) begin
+        subenv.reset(vmm_restart_type);
+      end else begin
+        string msg;
+        $sformat(msg, "reset() - Invalid restart_type value (%0d) specified -- unable to execute reset", restart_type);
+        `vmm_error(subenv.log, msg);
+      end
+`endif
+    end else begin
+      `vmm_error(model.log, "reset() - Command not supported by this model");
+    end 
+  end
+endtask
+
+`include `SVT_SOURCE_MAP_LIB_INCLUDE_SVI(R-2020.12,svt_common_export)
+
+//------------------------------------------------------------------------------
+
+//==============================================================================

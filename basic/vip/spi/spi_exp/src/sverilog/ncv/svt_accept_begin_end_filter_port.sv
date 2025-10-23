@@ -1,0 +1,110 @@
+//=======================================================================
+// COPYRIGHT (C) 2009-2017 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+`ifndef GUARD_SVT_ACCEPT_BEGIN_END_FILTER_PORT_SV
+`define GUARD_SVT_ACCEPT_BEGIN_END_FILTER_PORT_SV
+
+/** @cond PRIVATE */
+//svt_vcs_lic_vip_protect
+//pragma protect begin_protected
+//pragma protect key_keyowner=Cadence Design Systems.
+//pragma protect key_keyname=CDS_KEY
+//pragma protect key_method=RC5
+//pragma protect key_block
+bEQUDjNHlWAfyyLXj94lzzAiI9qUpmsAdX3suZvqQbZfCk3ldQRZ/ywVFd69CqSz
+eNRIRETDatp1cqohool5urBsRIFPY+XTviUl1LE77TZXwU9tkp1YgEIJaUWb0vM8
+UVVbLf7qNteo7h+w3jUmokse3dlW5GLzlHQnL0QZhkX9uPyPBfJRuA==
+//pragma protect end_key_block
+//pragma protect digest_block
+U6HKhbWTF5/lsXmgVUR3ir6JYL4=
+//pragma protect end_digest_block
+//pragma protect data_block
+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
+//pragma protect end_data_block
+//pragma protect digest_block
+y8/IDIPi2j2FKaZo+OsyQ1eraYM=
+//pragma protect end_digest_block
+//pragma protect end_protected
+/** @endcond */
+
+`endif // GUARD_SVT_ACCEPT_BEGIN_END_FILTER_PORT_SV

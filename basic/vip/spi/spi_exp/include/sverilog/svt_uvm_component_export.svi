@@ -1,0 +1,79 @@
+//=======================================================================
+// COPYRIGHT (C) 2011-2016 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+// This include file is intended to be included in hdl UVM model wrappers
+// to implement command wrapping.  This file should be used by either svt_env
+// or svt_agent extensions.  This is really code to be included in class 
+// definitions.  Therefore, guarding the file is inappropriate.
+
+// =============================================================================
+// HDL TASK EXPORTS: This file 'exports' the model methods which will be
+// available to an HDL testbench, as tasks called on an instance of the model
+// (which is encapsulated in a shell file). These tasks are declared in the
+// interface of the shell file (it is the shell module that is instantiated as
+// a VIP model component in the HDL testbench). Except for the initialization
+// usage of set_data_prop(), these tasks simply call their counterparts in the
+// internal model instance.
+//
+`include `SVT_SOURCE_MAP_LIB_INCLUDE_SVI(R-2020.12,svt_common_export)
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname modelcontrol
+ * Command Support:
+ * Used to start a svt_env or svt_agent based model.
+ */
+task start();
+  begin
+    svt_env env;
+    svt_agent agent;
+    // Watch out for xactor cmd providers
+    if ($cast(env, model)) begin
+      env.start_env();
+    end
+    else if ($cast(agent, model)) begin
+      agent.start_agent();
+    end
+    else begin
+      `uvm_error("start", "Command not supported by this model");
+    end
+  end
+endtask
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname modelcontrol
+ * Command Support:
+ * Used to start a svt_env or svt_agent based model.
+ */
+task stop();
+  begin
+    svt_env env;
+    svt_agent agent;
+    // Watch out for xactor cmd providers
+    if ($cast(env, model)) begin
+      env.stop_env();
+    end
+    else if ($cast(agent, model)) begin
+      agent.stop_agent();
+    end
+    else begin
+      `uvm_error("stop", "Command not supported by this model");
+    end
+  end
+endtask
+
+//------------------------------------------------------------------------------
+
+//==============================================================================

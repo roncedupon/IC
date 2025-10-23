@@ -1,0 +1,27 @@
+//=======================================================================
+// COPYRIGHT (C) 2013-2016 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+`ifndef GUARD_SVT_SVC_SOURCE_VMM_SVI
+`define GUARD_SVT_SVC_SOURCE_VMM_SVI
+
+`ifndef GUARD_SVT_SVC_VMM_PKG
+`include "svt_source.vmm.svi"
+`endif
+
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_message_manager)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_svc_message_manager)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_svc_err_check_stats)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_svc_err_check)
+
+`endif // GUARD_SVT_SVC_SOURCE_VMM_SVI

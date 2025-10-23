@@ -1,0 +1,2280 @@
+//=======================================================================
+// COPYRIGHT (C) 2010-2015 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+// -------------------------------------------------------------------------
+// Workarounds for limitations in the VMM shorthand macro implementations,
+// and for a few bug fixes.
+// -------------------------------------------------------------------------
+
+`ifndef GUARD_SVT_VMM_UTIL_SVI
+`define GUARD_SVT_VMM_UTIL_SVI
+
+// -------------------------------------------------------------------------
+// The VMM automation macro for strings has a bug, so it is re-defined here
+// NOTE: Original code copied over from vcs_2013.06 version.
+// -------------------------------------------------------------------------
+`ifdef vmm_data_member_string
+ `undef vmm_data_member_string
+`endif
+`define vmm_data_member_string(_name, _do) \
+  \
+      case (do_what & _do) \
+        DO_PRINT: begin \
+          $sformat(this.__vmm_image, `"%s\n%s``_name=```%s'`", this.__vmm_image, this.__vmm_prefix, this._name); \
+        end \
+        DO_COPY: begin \
+           __vmm_rhs._name = this._name; \
+        end \
+        DO_COMPARE: begin \
+           if (__vmm_rhs._name != this._name) begin \
+             $sformat(this.__vmm_image, `"this._name (``%s') !== to._name (``%s')`", \
+                       this._name, __vmm_rhs._name); \
+              this.__vmm_status = 0; \
+              return; \
+           end \
+        end \
+        DO_PACK: begin \
+     int start; \
+     int count; \
+     start = this.__vmm_offset; \
+     count = (this._name.len()); \
+     this.__vmm_maxbits = 0; \
+           `vmm_data_member_scalar_packint(pack,count,this.__vmm_offset,0) \
+           `vmm_data_member_update_offset(this.__vmm_offset,4) \
+     /* ORIGINAL: */ \
+     /* this.__vmm_maxbits = this._name; */ \
+`ifdef SVT_MULTI_SIM_CAST_STRING_TO_PACKED_ARRAY \
+     $swrite(this.__vmm_maxbits, "%s", this._name); \
+`else \
+     this.__vmm_maxbits = this._name; \
+`endif \
+     `vmm_data_member_scalar_pack(pack,this.__vmm_maxbits,count,this.__vmm_offset) \
+           `vmm_data_member_update_offset(this.__vmm_offset,count) \
+     this.__vmm_len = this.__vmm_offset; \
+      end \
+        DO_UNPACK: begin \
+     int count; \
+     int start; \
+     int size; \
+     this.__vmm_maxbits = 0; \
+     start = this.__vmm_offset; \
+           `vmm_data_member_scalar_unpackint(unpack,count,this.__vmm_offset,0) \
+           `vmm_data_member_update_offset(this.__vmm_offset,4) \
+           `vmm_data_member_scalar_unpack(unpack,this.__vmm_maxbits,count,this.__vmm_offset) \
+     /* ORIGINAL: */ \
+           /* this._name = this.__vmm_maxbits; */ \
+`ifdef SVT_MULTI_SIM_ASSIGN_PACKED_ARRAY_TO_STRING \
+           this._name = $sformatf("%0s", this.__vmm_maxbits); \
+`else \
+     this._name = string'(this.__vmm_maxbits); \
+`endif \
+           `vmm_data_member_update_offset(this.__vmm_offset,count) \
+      end \
+      endcase
+
+
+// -------------------------------------------------------------------------
+// Either VCS 2012.09 or this VMM macros has a bug. Either way, redefining
+// this macros here to get past the issue.
+// NOTE: Original code copied over from vcs_2012.09-Beta3 version.
+// -------------------------------------------------------------------------
+`ifdef vmm_data_member_enum_set_name
+ `undef vmm_data_member_enum_set_name
+`endif
+`define vmm_data_member_enum_set_name(__name,__stemp,__index) \
+ \
+    if ( __stemp == __name.name()) begin \
+                   __name = __name; \
+                   __index =0; \
+          end \
+    else begin \
+              /* stevenm 8/2/2012 -- Added the following to the official VMM version insure we start on a valid enum. */ \
+              __name = __name.first(); \
+              while ( __stemp != __name.name()) begin \
+                   __name = __name.next(); \
+                   if ( __index > __name.num() ) \
+                       break; \
+                   __index++; \
+               end \
+           end
+
+// -------------------------------------------------------------------------
+// The VMM automation macro for handles has a bug, so it is re-defined here
+// -------------------------------------------------------------------------
+`ifdef vmm_data_member_handle
+ `undef vmm_data_member_handle
+`endif
+`define vmm_data_member_handle(_name, _do) \
+  \
+      case (do_what & _do) \
+        DO_PRINT: begin \
+           string _prefix = this.__vmm_prefix; \
+           $sformat(this.__vmm_image, `"%s\n%s``_name is %s`", this.__vmm_image, this.__vmm_prefix, \
+              (this._name == null) ? `"null`" : `"<ref>`"); \
+           this.__vmm_prefix = _prefix; \
+        end \
+        DO_COPY: begin \
+           __vmm_rhs._name = this._name; \
+        end \
+        DO_COMPARE: begin \
+           string diff; \
+           if (this._name != __vmm_rhs._name) begin \
+               this.__vmm_image = `"this._name !== to._name`"; \
+               this.__vmm_status = 0; \
+               return; \
+           end \
+        end \
+        DO_PACK: begin \
+        end \
+        DO_UNPACK: begin \
+           this._name = null; \
+        end \
+      endcase
+
+
+// -------------------------------------------------------------------------
+// The VMM automation macro for vmm_data fields doesn't deal with null
+// instances, so it is re-defined here
+// -------------------------------------------------------------------------
+`ifdef vmm_data_member_vmm_data
+ `undef vmm_data_member_vmm_data
+`endif
+`define vmm_data_member_vmm_data(_name, _do, _how) \
+ \
+      case (do_what & _do) \
+        DO_PRINT: begin \
+          if ( _name == null ) begin \
+            $sformat(this.__vmm_image, `"%s\n%s%s: (null)`", this.__vmm_image, \
+            this.__vmm_prefix, `"_name`"); \
+          end \
+          else begin \
+            string _prefix = this.__vmm_prefix; \
+            $sformat(this.__vmm_image, `"%s\n%s`", this.__vmm_image, this._name.psdisplay({this.__vmm_prefix, `"_name: `"})); \
+            this.__vmm_prefix = _prefix; \
+          end \
+        end \
+        DO_COPY: begin \
+           if (_name == null) begin \
+                __vmm_rhs._name = this._name; \
+           end \
+           else begin \
+              case (_how & HOW_TO_COPY) \
+             DO_REFCOPY: begin \
+                    __vmm_rhs._name = this._name; \
+             end \
+             DO_DEEPCOPY: begin \
+            $cast(__vmm_rhs._name, this._name.copy()); \
+                 end \
+          endcase \
+           end \
+        end \
+        DO_COMPARE: begin \
+           if (_name == null || __vmm_rhs._name == null) begin \
+              if (this._name != __vmm_rhs._name) begin \
+                 this.__vmm_image = `"this._name !== to._name !== NULL`"; \
+                 this.__vmm_status = 0; \
+                 return; \
+              end \
+           end \
+           else begin \
+              case (_how & HOW_TO_COMPARE) \
+            DO_REFCOMPARE: begin \
+                   if (this._name != __vmm_rhs._name) begin \
+                      $sformat(this.__vmm_image, `"this._name !== to._name`"); \
+                      this.__vmm_status = 0; \
+                      return; \
+                   end \
+            end \
+            DO_DEEPCOMPARE: begin \
+               string diff; \
+                   if (!this._name.compare(__vmm_rhs._name, diff)) begin \
+                      $sformat(this.__vmm_image, `"this._name !== to._name: %s `", diff); \
+                      this.__vmm_status = 0; \
+                      return; \
+                   end \
+            end \
+          endcase \
+           end \
+        end \
+        /* DO_PACK and DO_UNPACK have been modified from the official VMM 1.2 version */ \
+        /* to support packing and unpacking of null objects. */ \
+        DO_PACK: begin \
+           int count = 1; \
+           int exists = (_name == null) ? 0 : 1; \
+           `vmm_data_member_scalar_pack(pack,exists,count,this.__vmm_offset) \
+           `vmm_data_member_update_offset(this.__vmm_offset,count) \
+           if (exists) begin \
+              /* __vmm_offset is a static data member, potentially modified by the contained byte_pack */ \
+              /* Save away the current value and restore it after the byte_pack */ \
+              int saved_offset = this.__vmm_offset; \
+              count = this._name.byte_pack(pack, this.__vmm_offset, this.__vmm_kind); \
+              this.__vmm_offset = saved_offset; \
+              `vmm_data_member_update_offset(this.__vmm_offset,count) \
+            end \
+        end \
+        DO_UNPACK: begin \
+           int count = 1; \
+           int exists = 0; \
+           `vmm_data_member_scalar_unpack(unpack,exists,count,this.__vmm_offset) \
+           `vmm_data_member_update_offset(this.__vmm_offset,count) \
+           if (exists) begin \
+              /* __vmm_offset is a static data member, potentially modified by the contained byte_unpack */ \
+              /* Save away the current value and restore it after the byte_unpack */ \
+              int saved_offset = this.__vmm_offset; \
+              this._name = new(); \
+              count = this._name.byte_unpack(unpack, this.__vmm_offset, this.__vmm_len, this.__vmm_kind); \
+              this.__vmm_offset = saved_offset; \
+              `vmm_data_member_update_offset(this.__vmm_offset,count) \
+           end else begin \
+             this._name = null; \
+           end \
+        end \
+      endcase
+
+
+// -------------------------------------------------------------------------
+// The VMM automation macro for vmm_data array fields doesn't deal with null
+// instances, so it is re-defined here
+// -------------------------------------------------------------------------
+`ifdef vmm_data_member_vmm_data_array
+ `undef vmm_data_member_vmm_data_array
+`endif
+`define vmm_data_member_vmm_data_array(_name, _do, _how) \
+ \
+      case (do_what & _do) \
+        DO_PRINT: begin \
+           int size =0; \
+           string _prefix = this.__vmm_prefix; \
+           /* This macro is only for fixed length array. Fixed length arrays does not support .size(), so enabling $size() and disabling .size() */ \
+           size = $size(this._name);  \
+           /* size = this._name.size(); */ \
+           for (int i = 0; i < size; i++) begin \
+               string pf; \
+               string _image = this.__vmm_image; \
+               $sformat(pf, `"%s   _name[%0d]: `", _prefix, i); \
+               $sformat(this.__vmm_image, "%s\n%s", _image, this._name[i].psdisplay(pf)); \
+               if (i == 2 && size > 5 ) begin \
+                   this.__vmm_image = {this.__vmm_image, "\n", _prefix, "..."}; \
+                   i = size -3; \
+               end \
+           end \
+           this.__vmm_prefix = _prefix; \
+        end \
+        DO_COPY: begin \
+           case (_how & HOW_TO_COPY) \
+             DO_REFCOPY: begin \
+                __vmm_rhs._name =  this._name; \
+                /* This macro is only for fixed length array. Fixed length arrays does not support .size(), so enabling $size() and disabling .size() */ \
+                /* for (int i=0; i<this._name.size(); ++i) begin */ \
+                for (int i=0; i<$size(this._name); ++i) begin \
+                   __vmm_rhs._name[i] = this._name[i]; \
+                end \
+             end \
+             DO_DEEPCOPY: begin \
+                __vmm_rhs._name = this._name; \
+                /* This macro is only for fixed length array. Fixed length arrays does not support .size(), so enabling $size() and disabling .size() */ \
+                /* for (int i=0; i<this._name.size(); ++i) begin */ \
+                for (int i=0; i<$size(this._name); ++i) begin \
+                   $cast(__vmm_rhs._name[i], this._name[i].copy()); \
+                end \
+             end \
+           endcase \
+        end \
+        DO_COMPARE: begin \
+           string diff; \
+           /* This macro is only for fixed length array. Fixed length arrays does not support .size(), so enabling $size() and disabling .size() */ \
+           /* if (this._name.size() != __vmm_rhs._name.size()) begin */ \
+           if ($size(this._name) != $size(__vmm_rhs._name)) begin \
+             string arr_size_str = $sformatf("%s.size()", `SVT_DATA_UTIL_ARG_TO_STRING(_name)); \
+             $sformat( \
+               this.__vmm_image, \
+               `"\n DIFF <obj>.%0s = %0d / <arg>.%0s = %0d`", \
+               /* arr_size_str, this._name.size(), arr_size_str, __vmm_rhs._name.size()); */ \
+               arr_size_str, $size(this._name), arr_size_str, $size(__vmm_rhs._name)); \
+             this.__vmm_status = 0; \
+           end \
+           case (_how & HOW_TO_COMPARE) \
+             DO_REFCOMPARE: begin \
+                /* This macro is only for fixed length array. Fixed length arrays does not support .size(), so enabling $size() and disabling .size() */ \
+                /* for (int i=0; i<this._name.size(); ++i) begin */ \
+                for (int i=0; i<$size(this._name) && i<$size(__vmm_rhs._name); ++i) begin \
+                   if (this._name[i] != __vmm_rhs._name[i]) begin \
+                      $sformat(this.__vmm_image, `"this._name[%0d] !== to._name[%0d]`", i, i); \
+                      this.__vmm_status = 0; \
+                      return; \
+                   end \
+                end \
+             end \
+             DO_DEEPCOMPARE: begin \
+                /* This macro is only for fixed length array. Fixed length arrays does not support .size(), so enabling $size() and disabling .size() */ \
+                /* for (int i=0; i<this._name.size(); ++i) begin */ \
+                for (int i=0; i<$size(this._name) && i<$size(__vmm_rhs._name); ++i) begin \
+                   if (!this._name[i].compare(__vmm_rhs._name[i],diff)) begin \
+                      $sformat(this.__vmm_image, `"this._name[%0d] !== to._name[%0d]: %s`", i, i, diff); \
+                      this.__vmm_status = 0; \
+                      return; \
+                   end \
+                end \
+             end \
+           endcase \
+        end \
+        DO_PACK: begin \
+           int start; \
+           int count; \
+           int exists; \
+           bit [31:0] size=0; \
+           start = this.__vmm_offset; \
+           `vmm_data_member_update_offset(this.__vmm_offset,4) \
+           this.__vmm_maxbits = 0; \
+           /* This macro is only for fixed length array. Fixed length arrays does not support .size(), so enabling $size() and disabling .size() */ \
+           /* for (int j=0; j<this._name.size(); ++j) begin */ \
+           for (int j=0; j<$size(this._name); ++j) begin \
+              count = 1; \
+              exists = (this._name[j] == null) ? 0 : 1; \
+              `vmm_data_member_scalar_pack(pack,exists,count,this.__vmm_offset) \
+              `vmm_data_member_update_offset(this.__vmm_offset,count) \
+              if (exists) begin \
+                 /* __vmm_offset is a static data member, potentially modified by the contained byte_pack */ \
+                 /* Save away the current value and restore it after the byte_pack */ \
+                 int saved_offset = this.__vmm_offset; \
+                 count = this._name[j].byte_pack(pack, this.__vmm_offset, this.__vmm_kind); \
+                 this.__vmm_offset = saved_offset; \
+                 `vmm_data_member_update_offset(this.__vmm_offset,count) \
+              end \
+              size++; \
+           end \
+           `vmm_data_member_scalar_packint(pack,size,start,0) \
+           this.__vmm_len = this.__vmm_offset; \
+        end \
+        DO_UNPACK: begin \
+           int count; \
+           int exists; \
+           int start; \
+           int index; \
+           string stemp; \
+           bit [31:0] size = 0; \
+           start = this.__vmm_offset; \
+           `vmm_data_member_scalar_unpackint(unpack,size,start,0) \
+           `vmm_data_member_update_offset(this.__vmm_offset,4) \
+           this.__vmm_maxbits =0; \
+           /* Watch out for the case where there is a mismatch between */ \
+           /* the array size and the unpack size. We cannot resize down */ \
+           /* but we want to at least generate an error message. */ \
+           /* This macro is only for fixed length array. Fixed length arrays does not support .size(), so enabling $size() and disabling .size() */ \
+           /* if (size < this._name.size()) begin */ \
+           if (size < $size(this._name)) begin \
+             if (this.log.start_msg(vmm_log::FAILURE_TYP, vmm_log::ERROR_SEV)) begin \
+               void'(this.log.text($sformatf("byte_unpack() - Mismatch between number of elements being unpacked (%0d) and destination array size (%0d). Unable to resize.", size, /*this._name.size()*/ $size(this._name)))); \
+               this.log.end_msg(); \
+             end \
+           end \
+           for (int j=0; j < size; j++) begin \
+              count = 1; \
+              `vmm_data_member_scalar_unpack(unpack,exists,count,this.__vmm_offset) \
+              `vmm_data_member_update_offset(this.__vmm_offset,count) \
+              if (exists) begin \
+                 /* __vmm_offset is a static data member, potentially modified by the contained byte_unpack */ \
+                 /* Save away the current value and restore it after the byte_unpack */ \
+                 int saved_offset = this.__vmm_offset; \
+                 this._name[j] = new(); \
+                 count = this._name[j].byte_unpack(unpack, this.__vmm_offset, this.__vmm_len, this.__vmm_kind); \
+                 this.__vmm_offset = saved_offset; \
+                 `vmm_data_member_update_offset(this.__vmm_offset,count) \
+              end else begin \
+                 this._name[j] = null; \
+              end \
+           end \
+        end \
+      endcase
+
+
+// -------------------------------------------------------------------------
+// The VMM automation macro for fixed scalar arrays has a bug, so it is 
+// re-defined here
+// -------------------------------------------------------------------------
+`ifdef vmm_data_member_vmm_data_aa_scalar
+ `undef vmm_data_member_vmm_data_aa_scalar
+`endif
+`define vmm_data_member_vmm_data_aa_scalar(_name, _do, _how) \
+ \
+      case (do_what & _do) \
+        DO_PRINT: begin \
+       int _count = 0; \
+           string _prefix = this.__vmm_prefix; \
+           foreach (this._name[i]) begin \
+               if (_count <= 2 || _count >= this._name.num()-2) begin \
+                  string pf; \
+                  $sformat(pf, `"%s``_name[%0d]`", _prefix, i); \
+                  $sformat(this.__vmm_image, `"%s\n%s`", this.__vmm_image, this._name[i].psdisplay(pf)); \
+                  if (_count== 2 && this._name.num() > 5) begin \
+                       this.__vmm_image = {this.__vmm_image, `"\n`", _prefix, `"...`"}; \
+                  end \
+               _count++; \
+               end \
+           end \
+           this.__vmm_prefix = _prefix; \
+        end \
+        DO_COPY: begin \
+           case (_how & HOW_TO_COPY) \
+         DO_REFCOPY: begin \
+        __vmm_rhs._name.delete(); \
+        foreach (this._name[i]) begin \
+               __vmm_rhs._name[i] = this._name[i]; \
+        end \
+         end \
+         DO_DEEPCOPY: begin \
+        __vmm_rhs._name.delete(); \
+        foreach(this._name[i]) begin \
+               $cast(__vmm_rhs._name[i], this._name[i].copy()); \
+        end \
+         end \
+       endcase \
+        end \
+        DO_COMPARE: begin \
+       string diff; \
+           if (__vmm_rhs._name.num() !== this._name.num()) begin \
+              $sformat(this.__vmm_image, `"this._name.num() (%0d) !== to._name.num() (%0d)`", \
+                       this._name.num(), __vmm_rhs._name.num()); \
+              this.__vmm_status = 0; \
+              return; \
+           end \
+           case (_how & HOW_TO_COMPARE) \
+         DO_REFCOMPARE: begin \
+        foreach (this._name[i]) begin \
+               if (!__vmm_rhs._name.exists(i)) begin \
+              $sformat(this.__vmm_image, `"this._name[%0d] exists but to._name[%0d] does not`", i, i); \
+              this.__vmm_status = 0; \
+              return; \
+               end \
+                   if (this._name[i] != __vmm_rhs._name[i]) begin \
+                      $sformat(this.__vmm_image, `"this._name[%0d] !== to._name[%0d]`", i, i); \
+                      this.__vmm_status = 0; \
+                      return; \
+                   end \
+          end \
+         end \
+         DO_DEEPCOMPARE: begin \
+        foreach(this._name[i]) begin \
+          $display("%s",__vmm_rhs.psdisplay("to::")); \
+               if (!__vmm_rhs._name.exists(i)) begin \
+              $sformat(this.__vmm_image, `"this._name[%0d] exists but to._name[%0d] does not`", i, i); \
+              this.__vmm_status = 0; \
+              return; \
+               end \
+                   if (!this._name[i].compare(__vmm_rhs._name[i], diff)) begin \
+                      $sformat(this.__vmm_image, `"this._name[%0d] !== to._name[%0d]: %s`", i, i, diff); \
+                      this.__vmm_status = 0; \
+                      return; \
+                   end \
+        end \
+         end \
+       endcase \
+        end \
+       DO_PACK: begin \
+       int start; \
+       int count; \
+       int index; \
+       string stemp; \
+           bit [31:0] size=0; \
+           start = this.__vmm_offset; \
+       this.__vmm_maxbits = 0; \
+       size = this._name.num(); \
+       `vmm_data_member_scalar_packint(pack,size,start,0) \
+           `vmm_data_member_update_offset(this.__vmm_offset,4) \
+           foreach (this._name[j]) begin \
+              int saved_offset = 0; \
+              this.__vmm_maxbits = 0; \
+              index = j; \
+              `vmm_data_member_scalar_packint(pack,index,this.__vmm_offset,0) \
+              `vmm_data_member_update_offset(this.__vmm_offset,4) \
+              /* __vmm_offset is a static data member, potentially modified by the contained byte_pack */ \
+              /* Save away the current value and restore it after the byte_pack */ \
+              saved_offset = this.__vmm_offset; \
+              count = this._name[j].byte_pack(pack, this.__vmm_offset, this.__vmm_kind); \
+              this.__vmm_offset = saved_offset; \
+              `vmm_data_member_update_offset(this.__vmm_offset,count) \
+       end \
+       this.__vmm_len = this.__vmm_offset; \
+        end \
+        DO_UNPACK: begin \
+           int count; \
+           int start; \
+           int index=0; \
+           string  stemp; \
+           bit [31:0] size = 0; \
+           start = this.__vmm_offset; \
+           `vmm_data_member_scalar_unpackint(unpack,size,start,0) \
+           `vmm_data_member_update_offset(this.__vmm_offset,4) \
+           this.__vmm_maxbits =0; \
+           for (int j=0; j < size; j++) begin \
+              int saved_offset = 0; \
+              this.__vmm_maxbits =0; \
+              `vmm_data_member_scalar_unpackint(unpack,index,this.__vmm_offset,0) \
+              `vmm_data_member_update_offset(this.__vmm_offset,4) \
+              this._name[index] = new(); \
+              /* __vmm_offset is a static data member, potentially modified by the contained byte_unpack */ \
+              /* Save away the current value and restore it after the byte_unpack */ \
+              saved_offset = this.__vmm_offset; \
+              count = this._name[index].byte_unpack(unpack, this.__vmm_offset, this.__vmm_len, this.__vmm_kind); \
+              this.__vmm_offset = saved_offset; \
+              `vmm_data_member_update_offset(this.__vmm_offset,count) \
+           end \
+        end \
+      endcase
+
+// -------------------------------------------------------------------------
+// VMM automation macros for scalar_da cannot be used with reals (i.e., they
+// can't be used with '===' and '!==' operators) so this alternative macro
+// has been created
+// -------------------------------------------------------------------------
+`define vmm_data_member_real_da(_name, _do) \
+ \
+      case (do_what & _do) \
+        DO_PRINT: begin \
+           $sformat(this.__vmm_image, `"%s\n%s``_name[%0d]=`", this.__vmm_image, this.__vmm_prefix, this._name.size()); \
+           for (int i = 0; i < this._name.size(); i++) begin \
+              $sformat(this.__vmm_image, `"%s 'h%0h`", this.__vmm_image, this._name[i]); \
+              if (i == 2 && this._name.size() > 5) begin \
+                 this.__vmm_image = {this.__vmm_image, `" ...`"}; \
+                 i = this._name.size() - 3; \
+              end \
+           end \
+        end \
+        DO_COPY: begin \
+       __vmm_rhs._name = new [this._name.size()];   \
+       foreach(this._name[i]) __vmm_rhs._name[i]=this._name[i]; \
+        end \
+        DO_COMPARE: begin \
+           if (__vmm_rhs._name.size() != this._name.size()) begin \
+              $sformat(this.__vmm_image, `"this._name.size() (%0d) != to._name.size() (%0d)`", \
+                       this._name.size(), __vmm_rhs._name.size()); \
+              this.__vmm_status = 0; \
+              return; \
+           end \
+           foreach (this._name[i]) begin \
+              if (__vmm_rhs._name[i] != this._name[i]) begin \
+                 $sformat(this.__vmm_image, `"this._name[%0d] (%0f) != to._name[%0d] (%0f)`", \
+                          i, this._name[i], i, __vmm_rhs._name[i]); \
+                 this.__vmm_status = 0; \
+                 return; \
+              end \
+           end \
+        end \
+        DO_PACK: begin \
+       int start; \
+       int count = 8; \
+       int index; \
+       bit [31:0] size=0; \
+       start = this.__vmm_offset; \
+       size = this._name.size(); \
+           `vmm_data_member_update_offset(this.__vmm_offset,8) \
+       foreach (this._name[j]) begin \
+              this.__vmm_maxbits = $realtobits(this._name[j]); \
+              `vmm_data_member_scalar_pack(pack,this.__vmm_maxbits,count,this.__vmm_offset) \
+              `vmm_data_member_update_offset(this.__vmm_offset,count) \
+       end \
+       this.__vmm_len = this.__vmm_offset; \
+           `vmm_data_member_scalar_packint(pack,size,start,0) \
+           `vmm_data_member_scalar_packint(pack,count,(start+4),0) \
+        end \
+        DO_UNPACK: begin \
+       int start; \
+       int count = 8; \
+       int index; \
+       bit [31:0] size = 0; \
+           `vmm_data_member_scalar_unpackint(unpack,size,this.__vmm_offset,0) \
+           `vmm_data_member_update_offset(this.__vmm_offset,4) \
+           `vmm_data_member_scalar_unpackint(unpack,count,this.__vmm_offset,0) \
+           `vmm_data_member_update_offset(this.__vmm_offset,4) \
+       this._name  = new [size]; \
+       for (int j=0; j < size; j++) begin \
+          `vmm_data_member_scalar_unpack(unpack,this.__vmm_maxbits,count,this.__vmm_offset) \
+          this._name[j] = $bitstoreal(this.__vmm_maxbits); \
+              `vmm_data_member_update_offset(this.__vmm_offset,count) \
+           end \
+        end \
+      endcase
+
+// -------------------------------------------------------------------------
+// VMM automation macros for scalar_da cannot be used with reals (i.e., they
+// can't be used with '===' and '!==' operators) so this alternative macro
+// has been created
+// -------------------------------------------------------------------------
+`define vmm_data_member_real_array(_name, _do) \
+ \
+      case (do_what & _do) \
+        DO_PRINT: begin \
+           int size =0; \
+           size = $size(this._name);  \
+           $sformat(this.__vmm_image, `"%s\n%s``_name[%0d]=`", this.__vmm_image, this.__vmm_prefix, size); \
+           for (int i = 0; i < size; i++) begin \
+              $sformat(this.__vmm_image, `"%s 'h%0h`", this.__vmm_image, this._name[i]); \
+              if (i == 2 && size > 5) begin \
+                 this.__vmm_image = {this.__vmm_image, `" ...`"}; \
+                 i = size - 3; \
+              end \
+           end \
+        end \
+        DO_COPY: begin \
+          /*__vmm_rhs._name = new [this._name.size()];*/   \
+          foreach(this._name[i]) __vmm_rhs._name[i]=this._name[i]; \
+        end \
+        DO_COMPARE: begin \
+           if ($size(__vmm_rhs._name) != $size(this._name)) begin \
+              $sformat(this.__vmm_image, `"this._name.size() (%0d) != to._name.size() (%0d)`", \
+                       $size(this._name), $size(__vmm_rhs._name)); \
+              this.__vmm_status = 0; \
+              return; \
+           end \
+           foreach (this._name[i]) begin \
+              if (__vmm_rhs._name[i] != this._name[i]) begin \
+                 $sformat(this.__vmm_image, `"this._name[%0d] (%0f) != to._name[%0d] (%0f)`", \
+                          i, this._name[i], i, __vmm_rhs._name[i]); \
+                 this.__vmm_status = 0; \
+                 return; \
+              end \
+           end \
+        end \
+        DO_PACK: begin \
+          int start; \
+          int count = 8; \
+          int index; \
+          bit [31:0] size=0; \
+          start = this.__vmm_offset; \
+          size = $size(this._name); \
+            `vmm_data_member_update_offset(this.__vmm_offset,8) \
+            foreach (this._name[j]) begin \
+              this.__vmm_maxbits = $realtobits(this._name[j]); \
+              `vmm_data_member_scalar_pack(pack,this.__vmm_maxbits,count,this.__vmm_offset) \
+              `vmm_data_member_update_offset(this.__vmm_offset,count) \
+            end \
+            this.__vmm_len = this.__vmm_offset; \
+            `vmm_data_member_scalar_packint(pack,size,start,0) \
+            `vmm_data_member_scalar_packint(pack,count,(start+4),0) \
+          end \
+        DO_UNPACK: begin \
+          int start; \
+          int count = 8; \
+          int index; \
+          bit [31:0] size = 0; \
+          `vmm_data_member_scalar_unpackint(unpack,size,this.__vmm_offset,0) \
+          `vmm_data_member_update_offset(this.__vmm_offset,4) \
+          `vmm_data_member_scalar_unpackint(unpack,count,this.__vmm_offset,0) \
+          `vmm_data_member_update_offset(this.__vmm_offset,4) \
+          /* this._name  = new [size]; */ \
+          for (int j=0; j < size; j++) begin \
+            `vmm_data_member_scalar_unpack(unpack,this.__vmm_maxbits,count,this.__vmm_offset) \
+            this._name[j] = $bitstoreal(this.__vmm_maxbits); \
+              `vmm_data_member_update_offset(this.__vmm_offset,count) \
+          end \
+        end \
+      endcase
+
+// -------------------------------------------------------------------------
+// VMM automation macros do not yet support queue properties, so they are
+// defined here
+// -------------------------------------------------------------------------
+`define vmm_data_member_handle_q(_name, _do) \
+ \
+      case (do_what & _do) \
+        DO_PRINT: begin \
+           $sformat(this.__vmm_image, `"%s\n%s``_name[%0d]=`", this.__vmm_image, this.__vmm_prefix, this._name.size()); \
+           for (int i = 0; i < this._name.size(); i++) begin \
+              $sformat(this.__vmm_image, `"%s %s`", this.__vmm_image, \
+                       (this._name[i] == null) ? `"null`" : `"<ref>`"); \
+              if (i == 2 && this._name.size() > 5) begin \
+                 this.__vmm_image = {this.__vmm_image, `" ...`"}; \
+                 i = this._name.size() - 3; \
+              end \
+           end \
+        end \
+        DO_COPY: begin \
+          __vmm_rhs._name = this._name; \
+        end \
+        DO_COMPARE: begin \
+           if (__vmm_rhs._name.size() !== this._name.size()) begin \
+              $sformat(this.__vmm_image, `"this._name.size() (%0d) !== to._name.size() (%0d)`", \
+                       this._name.size(), __vmm_rhs._name.size()); \
+              this.__vmm_status = 0; \
+              return; \
+           end \
+           foreach (this._name[i]) begin \
+              if (this._name[i] != __vmm_rhs._name[i]) begin \
+                 $sformat(this.__vmm_image, `"this._name[%0d] !== to._name[%0d]`", i, i); \
+                 this.__vmm_status = 0; \
+                 return; \
+              end \
+           end \
+        end \
+        DO_PACK: begin \
+        end \
+        DO_UNPACK: begin \
+           foreach (this._name[i]) begin \
+              this._name[i] = null; \
+           end \
+        end \
+      endcase
+
+// -------------------------------------------------------------------------
+// VMM automation macros do not yet support real properties, so they are
+// defined here
+// -------------------------------------------------------------------------
+`define vmm_data_member_real(_name, _do) \
+  \
+      case (do_what & _do) \
+        DO_PRINT: begin \
+           $sformat(this.__vmm_image, `"%s\n%s``_name=%0f`", this.__vmm_image, this.__vmm_prefix, this._name); \
+        end \
+        DO_COPY: begin \
+           __vmm_rhs._name = this._name; \
+        end \
+        DO_COMPARE: begin \
+           if (__vmm_rhs._name != this._name) begin \
+              $sformat(this.__vmm_image, `"this._name (%0f) != to._name (%0f)`", \
+                       this._name, __vmm_rhs._name); \
+              this.__vmm_status = 0; \
+              return; \
+           end \
+        end \
+        DO_PACK: begin \
+           int count = 8; \
+           this.__vmm_maxbits =  $realtobits(this._name); \
+           `vmm_data_member_scalar_pack(pack,this.__vmm_maxbits,count,this.__vmm_offset) \
+           `vmm_data_member_update_offset(this.__vmm_offset,count) \
+        end \
+        DO_UNPACK: begin \
+           int count = 8; \
+           int start; \
+           start = this.__vmm_offset; \
+           `vmm_data_member_scalar_unpack(unpack,this.__vmm_maxbits,count,this.__vmm_offset) \
+           this._name = $bitstoreal(this.__vmm_maxbits); \
+           `vmm_data_member_update_offset(this.__vmm_offset,count) \
+        end \
+      endcase
+
+
+// Questa 6.5c did not support $cast of a bitvector to an enum.  To resolve this, the
+// bitvector value is first assigned to an int and then that is used to $cast to the enum.
+// defined here
+`ifdef vmm_data_member_enum
+ `undef vmm_data_member_enum
+`endif
+`define vmm_data_member_enum(_name, _do) \
+\
+    case (do_what & _do) \
+       DO_PRINT: begin \
+          $sformat(this.__vmm_image, `"%s\n%s   _name=%s`", this.__vmm_image, this.__vmm_prefix, this._name.name()); \
+       end \
+       DO_COPY: begin \
+          __vmm_rhs._name = this._name; \
+       end \
+        DO_COMPARE: begin \
+           if (__vmm_rhs._name !== this._name) begin \
+              $sformat(this.__vmm_image, `"this._name (%s) !== to._name (%s)`", \
+                       this._name.name(), __vmm_rhs._name.name()); \
+              this.__vmm_status = 0; \
+              return; \
+           end \
+        end \
+        DO_PACK: begin \
+           int start; \
+           int count; \
+           start = this.__vmm_offset; \
+       count = 4; \
+       this.__vmm_maxbits = this._name; \
+       `vmm_data_member_scalar_pack(pack,this.__vmm_maxbits,count,this.__vmm_offset) \
+           `vmm_data_member_update_offset(this.__vmm_offset,count) \
+       this.__vmm_len = this.__vmm_offset; \
+        end \
+        DO_UNPACK: begin \
+           int count; \
+           int start; \
+           int enumvalue; \
+           start = this.__vmm_offset; \
+       count = 4; \
+       `vmm_data_member_scalar_unpack(unpack,this.__vmm_maxbits,count,this.__vmm_offset) \
+       enumvalue = this.__vmm_maxbits; \
+       $cast(this._name,enumvalue); \
+           `vmm_data_member_update_offset(this.__vmm_offset,count) \
+        end \
+      endcase
+
+// -------------------------------------------------------------------------
+// The vmm_data_methods macro has been duplicated here as svt_data_methods and the
+// vmm_data_member_end macro has been redefined to call it to work around the
+// following limitations of the standard VMM shorthand macros:
+//  * The VMM shorhand macros do not allow base classes which implement do_*() methods
+//    to be extended by classes which use the shorthand macros.
+//  * There is no control over the display format when using the VMM shorthand macros.
+//  * The VMM shorthand macros do not provide a way to do anything AFTER the shorthand
+//    processing has been completed. The 'svt_post_do_all_do_*' methods will be created
+//    as necessary to provide for this.
+// -------------------------------------------------------------------------
+`define svt_vmm_data_member_end(_class) \
+   endfunction \
+ \
+   `ifndef vmm_data_new_used \
+      static `VMM_LOG log = new(`"_class`", `"class`"); \
+ \
+      function new(vmm_log log = null); \
+         super.new((log == null) ? this.log : log); \
+      endfunction \
+   `endif \
+   `undef vmm_data_new_used \
+   `svt_vmm_data_methods(_class)
+
+`define svt_vmm_data_methods(_class) \
+ \
+   local virtual function string this_class_name(); \
+      return `"_class`"; \
+   endfunction \
+ \
+   local virtual function vmm_log get_vmm_log(); \
+      return this.log; \
+   endfunction \
+ \
+   virtual function vmm_data allocate(); \
+      _class i; \
+      this.__vmm_done_user = 1; \
+      if ($cast(i,this.do_allocate())) begin \
+        if (this.__vmm_done_user) return i; \
+      end else begin \
+         `vmm_fatal(this.log, `"Cannot cast result of do_allocate to _class`"); \
+         return null; \
+      end \
+\
+      i = new; \
+      return i; \
+   endfunction \
+ \
+   virtual function bit is_valid(bit silent = 1, \
+                                 int kind   = -1); \
+      this.__vmm_done_user = 1; \
+      is_valid = this.do_is_valid(silent, kind); \
+      if (this.__vmm_done_user) return is_valid; \
+ \
+      return 1; \
+   endfunction \
+ \
+   virtual function string psdisplay(string prefix = `"`"); \
+     string disp; \
+     disp = svt_shorthand_psdisplay(prefix); \
+     disp = $sformatf("%s%s", disp, svt_shorthand_psdisplay_hook(prefix)); \
+     return disp; \
+   endfunction \
+ \
+   virtual function vmm_data copy(vmm_data to = null); \
+      _class cpy; \
+ \
+      this.__vmm_done_user = 1; \
+      copy = this.do_copy(to); \
+      if (this.__vmm_done_user) return copy; \
+ \
+      if (to == null) begin \
+        if (!$cast(cpy, allocate())) begin \
+          `vmm_fatal(this.log, `"Cannot allocate to non-_class instance`"); \
+        end \
+      end \
+      else if (!$cast(cpy, to)) begin \
+         `vmm_fatal(this.log, `"Cannot copy to non-_class instance`"); \
+         return null; \
+      end \
+ \
+      super.copy_data(cpy); \
+      this.__vmm_rhs = cpy; \
+      this.do_all(DO_COPY, __vmm_bytes, __vmm_bytes); \
+ \
+      /* Call the svt_post_do_all_do_copy method. */ \
+      this.svt_post_do_all_do_copy(cpy); \
+ \
+      return cpy; \
+   endfunction \
+ \
+   virtual function bit compare(       vmm_data to, \
+                                output string   diff, \
+                                input  int      kind = -1); \
+      _class cp; \
+      svt_data svt_this; \
+ \
+      /* Initialize the return */ \
+      compare = 1; \
+ \
+      if (to == null) begin \
+        diff = `"'to' is NULL`"; \
+        return 0; \
+      end \
+ \
+      if (!$cast(svt_this, this)) begin \
+        `svt_fatal("compare", "Failed attempting to cast vmm_data instance to svt_data instance. Unable to continue."); \
+      end else if (!svt_this.get_do_compare_done()) begin \
+        this.__vmm_done_user = 1; \
+        compare = this.do_compare(to, diff, kind); \
+        if (this.__vmm_done_user) begin \
+          /* Clear the do_compare_done flag so we can compare again */ \
+          do_compare_done = 0; \
+          return compare; \
+        end \
+      end \
+ \
+      if (!$cast(cp, to)) begin \
+        diff = `"'to' is not a _class instance`"; \
+        /* Clear the do_compare_done flag so we can compare again */ \
+        do_compare_done = 0; \
+        return 0; \
+      end \
+ \
+      this.__vmm_rhs = cp; \
+      this.__vmm_kind = kind; \
+      this.do_all(DO_COMPARE, __vmm_bytes, __vmm_bytes); \
+      diff = { diff, this.__vmm_image }; \
+ \
+      compare &= this.__vmm_status; \
+ \
+      /* Clear the do_compare_done flag so we can compare again */ \
+      do_compare_done = 0; \
+ \
+   endfunction \
+ \
+   virtual function int unsigned byte_pack(ref   logic [7:0]  bytes[], \
+                                           input int unsigned offset = 0, \
+                                           input int          kind   = -1); \
+      svt_data svt_this; \
+ \
+      int min_size; \
+ \
+      if (!$cast(svt_this, this)) begin \
+        `svt_fatal("byte_pack", "Failed attempting to cast vmm_data instance to svt_data instance. Unable to continue."); \
+      end else if (!svt_this.get_do_pack_done()) begin \
+        this.__vmm_done_user = 1; \
+        byte_pack = this.do_byte_pack(bytes, offset, kind); \
+        if (this.__vmm_done_user) return byte_pack; \
+      end \
+ \
+      min_size = offset + this.__vmm_byte_size(kind); \
+      if (bytes.size() < min_size) bytes = new [min_size] (bytes); \
+      this.__vmm_offset = byte_pack + offset; \
+      this.__vmm_kind   = kind; \
+      this.do_all(DO_PACK, bytes, __vmm_bytes); \
+ \
+      return this.__vmm_offset - offset; \
+   endfunction \
+ \
+   virtual function int unsigned byte_unpack(const ref logic [7:0] bytes[], \
+                                             input int unsigned    offset = 0, \
+                                             input int             len    = -1, \
+                                             input int             kind   = -1); \
+      svt_data svt_this; \
+ \
+      if (!$cast(svt_this, this)) begin \
+        `svt_fatal("byte_unpack", "Failed attempting to cast vmm_data instance to svt_data instance. Unable to continue."); \
+      end else if (!svt_this.get_do_pack_done()) begin \
+        this.__vmm_done_user = 1; \
+        byte_unpack = this.do_byte_unpack(bytes, offset, len, kind); \
+        if (this.__vmm_done_user) return byte_unpack; \
+      end \
+ \
+      this.__vmm_offset = byte_unpack + offset; \
+      this.__vmm_len = len; \
+      this.__vmm_kind   = kind; \
+      this.do_all(DO_UNPACK, __vmm_bytes, bytes); \
+ \
+      /* Call the svt_post_do_all_do_byte_unpack method. */ \
+      this.svt_post_do_all_do_byte_unpack(); \
+ \
+      return this.__vmm_offset - offset; \
+   endfunction
+
+// We don't want to define the log automatically because we define our own
+// log instance in svt_data.  Also, when there are multiple extensions from
+// vmm_data, then the log intance that is defined in the last extension hides
+// all of the other logs.
+`define svt_vmm_data_new(_class) \
+  `define vmm_data_new_used 1
+
+
+// -------------------------------------------------------------------------
+// The VMM message macros have all been redefined to work around a bug that
+// occures if the psdisplay() string of a class is passed in as the argument
+// of a call to one of the message macros.
+// -------------------------------------------------------------------------
+`undef vmm_warning
+`undef vmm_error
+`undef vmm_fatal
+`undef vmm_trace
+`undef vmm_debug
+`undef vmm_verbose
+`undef vmm_note
+`undef vmm_report
+`undef vmm_command
+`undef vmm_protocol
+`undef vmm_transaction
+`undef vmm_cycle
+`undef vmm_user
+
+`ifdef VMM_LOG_FORMAT_FILE_LINE
+
+`define svt_warning_file_line(log, msg, fname, lineno)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::WARNING_SEV) begin \
+    if (log.start_msg(vmm_log::FAILURE_TYP, vmm_log::WARNING_SEV, fname, lineno)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::FAILURE_TYP, vmm_log::WARNING_SEV, fname, lineno)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while(0)
+
+`define vmm_warning(log, msg) \
+  `svt_warning_file_line(log, msg, `__FILE__, `__LINE__)
+
+`define svt_error_file_line(log, msg, fname, lineno)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::ERROR_SEV) begin \
+    if (log.start_msg(vmm_log::FAILURE_TYP, vmm_log::ERROR_SEV, fname, lineno)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::FAILURE_TYP, vmm_log::ERROR_SEV, fname, lineno)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_error(log, msg) \
+  `svt_error_file_line(log, msg, `__FILE__, `__LINE__)
+
+`define svt_fatal_file_line(log, msg, fname, lineno)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::FATAL_SEV) begin \
+    if (log.start_msg(vmm_log::FAILURE_TYP, vmm_log::FATAL_SEV, fname, lineno)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::FAILURE_TYP, vmm_log::FATAL_SEV, fname, lineno)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_fatal(log, msg) \
+  `svt_fatal_file_line(log, msg, `__FILE__, `__LINE__)
+
+`define svt_trace_file_line(log, msg, fname, lineno)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::TRACE_SEV) begin \
+    if (log.start_msg(vmm_log::DEBUG_TYP, vmm_log::TRACE_SEV, fname, lineno)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::DEBUG_TYP, vmm_log::TRACE_SEV, fname, lineno)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_trace(log, msg) \
+  `svt_trace_file_line(log, msg, `__FILE__, `__LINE__)
+
+`define svt_debug_file_line(log, msg, fname, lineno)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::DEBUG_SEV) begin \
+    if (log.start_msg(vmm_log::DEBUG_TYP, vmm_log::DEBUG_SEV, fname, lineno)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::DEBUG_TYP, vmm_log::DEBUG_SEV, fname, lineno)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_debug(log, msg) \
+  `svt_debug_file_line(log, msg, `__FILE__, `__LINE__)
+
+`define svt_verbose_file_line(log, msg, fname, lineno)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::VERBOSE_SEV) begin \
+    if (log.start_msg(vmm_log::DEBUG_TYP, vmm_log::VERBOSE_SEV, fname, lineno)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::DEBUG_TYP, vmm_log::VERBOSE_SEV, fname, lineno)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_verbose(log, msg) \
+  `svt_verbose_file_line(log, msg, `__FILE__, `__LINE__)
+
+`define svt_note_file_line(log, msg, fname, lineno)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::NORMAL_SEV) begin \
+    if (log.start_msg(vmm_log::NOTE_TYP, , fname, lineno)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::NOTE_TYP, , fname, lineno)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_note(log, msg) \
+  `svt_note_file_line(log, msg, `__FILE__, `__LINE__)
+
+`define svt_report_file_line(log, msg, fname, lineno)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::DEBUG_SEV) begin \
+    if (log.start_msg(vmm_log::REPORT_TYP, , fname, lineno)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::REPORT_TYP, , fname, lineno)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_report(log, msg) \
+  `svt_report_file_line(log, msg, `__FILE__, `__LINE__)
+
+`define svt_command_file_line(log, msg, fname, lineno)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::TRACE_SEV) begin \
+    if (log.start_msg(vmm_log::COMMAND_TYP, , fname, lineno)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::COMMAND_TYP, , fname, lineno)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_command(log, msg) \
+  `svt_command_file_line(log, msg, `__FILE__, `__LINE__)
+
+`define svt_protocol_file_line(log, msg, fname, lineno)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::DEBUG_SEV) begin \
+    if (log.start_msg(vmm_log::PROTOCOL_TYP, , fname, lineno)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::PROTOCOL_TYP, , fname, lineno)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_protocol(log, msg) \
+  `svt_protocol_file_line(log, msg, `__FILE__, `__LINE__)
+
+`define svt_transaction_file_line(log, msg, fname, lineno)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::TRACE_SEV) begin \
+    if (log.start_msg(vmm_log::TRANSACTION_TYP, , fname, lineno)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::TRANSACTION_TYP, , fname, lineno)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_transaction(log, msg) \
+  `svt_transaction_file_line(log, msg, `__FILE__, `__LINE__)
+
+`define svt_cycle_file_line(log, msg, fname, lineno)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::VERBOSE_SEV) begin \
+    if (log.start_msg(vmm_log::CYCLE_TYP, , fname, lineno)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::CYCLE_TYP, , fname, lineno)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_cycle(log, msg) \
+  `svt_cycle_file_line(log, msg, `__FILE__, `__LINE__)
+
+// User types always pre-format the string
+`define svt_user_file_line(n, log, msg, fname, lineno)  \
+do begin \
+  /* synopsys translate_off */ \
+  string _msg; \
+  _msg = msg; \
+  if (log.start_msg(vmm_log::USER_TYP_``n, , fname, lineno)) begin \
+    void'(log.text(_msg)); \
+    log.end_msg(); \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_user(log, msg) \
+  `svt_user_file_line(log, msg, `__FILE__, `__LINE__)
+
+`else
+
+`define vmm_warning(log, msg)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::WARNING_SEV) begin \
+    if (log.start_msg(vmm_log::FAILURE_TYP, vmm_log::WARNING_SEV)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::FAILURE_TYP, vmm_log::WARNING_SEV)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while(0)
+
+`define vmm_error(log, msg)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::ERROR_SEV) begin \
+    if (log.start_msg(vmm_log::FAILURE_TYP, vmm_log::ERROR_SEV)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::FAILURE_TYP, vmm_log::ERROR_SEV)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_fatal(log, msg)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::FATAL_SEV) begin \
+    if (log.start_msg(vmm_log::FAILURE_TYP, vmm_log::FATAL_SEV)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::FAILURE_TYP, vmm_log::FATAL_SEV)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_trace(log, msg)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::TRACE_SEV) begin \
+    if (log.start_msg(vmm_log::DEBUG_TYP, vmm_log::TRACE_SEV)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::DEBUG_TYP, vmm_log::TRACE_SEV)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_debug(log, msg)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::DEBUG_SEV) begin \
+    if (log.start_msg(vmm_log::DEBUG_TYP, vmm_log::DEBUG_SEV)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::DEBUG_TYP, vmm_log::DEBUG_SEV)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_verbose(log, msg)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::VERBOSE_SEV) begin \
+    if (log.start_msg(vmm_log::DEBUG_TYP, vmm_log::VERBOSE_SEV)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::DEBUG_TYP, vmm_log::VERBOSE_SEV)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_note(log, msg)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::NORMAL_SEV) begin \
+    if (log.start_msg(vmm_log::NOTE_TYP)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::NOTE_TYP)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_report(log, msg)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::DEBUG_SEV) begin \
+    if (log.start_msg(vmm_log::REPORT_TYP)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::REPORT_TYP)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_command(log, msg)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::TRACE_SEV) begin \
+    if (log.start_msg(vmm_log::COMMAND_TYP)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::COMMAND_TYP)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_protocol(log, msg)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::DEBUG_SEV) begin \
+    if (log.start_msg(vmm_log::PROTOCOL_TYP)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::PROTOCOL_TYP)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_transaction(log, msg)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::TRACE_SEV) begin \
+    if (log.start_msg(vmm_log::TRANSACTION_TYP)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::TRANSACTION_TYP)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`define vmm_cycle(log, msg)  \
+do begin \
+  /* synopsys translate_off */ \
+  if (log.get_verbosity() < vmm_log::VERBOSE_SEV) begin \
+    if (log.start_msg(vmm_log::CYCLE_TYP)) begin \
+      void'(log.text(msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else if (log.get_instance() != "svt_silent_mode") begin \
+    string _msg; \
+    _msg = msg; \
+    if (log.start_msg(vmm_log::CYCLE_TYP)) begin \
+      void'(log.text(_msg)); \
+      log.end_msg(); \
+    end \
+  end \
+  else begin \
+    /* In silent mode, so skipping the display */ \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+// User types always pre-format the string
+`define vmm_user(n, log, msg)  \
+do begin \
+  /* synopsys translate_off */ \
+  string _msg; \
+  _msg = msg; \
+  if (log.start_msg(vmm_log::USER_TYP_``n)) begin \
+    void'(log.text(_msg)); \
+    log.end_msg(); \
+  end \
+  /* synopsys translate_on */ \
+end \
+while (0)
+
+`endif // VMM_LOG_FORMAT_FILE_LINE
+
+`define SVT_FATAL_VERBOSITY   vmm_log::FATAL_SEV
+`define SVT_ERROR_VERBOSITY   vmm_log::ERROR_SEV
+`define SVT_WARNING_VERBOSITY vmm_log::WARNING_SEV
+`define SVT_NORMAL_VERBOSITY  vmm_log::NORMAL_SEV
+`define SVT_TRACE_VERBOSITY   vmm_log::TRACE_SEV
+`define SVT_DEBUG_VERBOSITY   vmm_log::DEBUG_SEV
+`define SVT_VERBOSE_VERBOSITY vmm_log::VERBOSE_SEV
+
+/**
+ * VMM_LOG_FORMAT_FILE_LINE must be set to cause VMM generated messages to go out with
+ * FILE/LINE information. The same holds for SVT and VIP messages going out in a VMM
+ * system which supports FILE/LINE messaging.
+ *
+ * Additionally, SVT_ENABLE_FILE_AND_LINE_DISPLAY must be set to cause SVT and VIP messages
+ * to go out with FILE/LINE information within a VMM system.
+ *
+ * So both of these defines must be set in order to enable FILE/LINE display in the SVT VIPs in VMM.
+ *
+ * Since the FILE/LINE support is only available in later versions of VMM we also have to look
+ * for the existence of the VMM macros before deciding if the VMM FILE/LINE support is available.
+ *
+ * Based on all of the above we must clear SVT_ENABLE_FILE_AND_LINE_DISPLAY if the VMM FILE/LINE
+ * macros are not available, either because VMM_LOG_FORMAT_FILE_LINE has not been specified or
+ * because we are using an older version of VMM.
+ */
+`ifdef SVT_ENABLE_FILE_AND_LINE_DISPLAY
+ `ifndef VMM_LOG_FORMAT_FILE_LINE
+  `undef SVT_ENABLE_FILE_AND_LINE_DISPLAY
+ `endif
+ `ifndef VMM_FATAL
+  `undef SVT_ENABLE_FILE_AND_LINE_DISPLAY
+ `endif
+`endif
+
+`ifdef SVT_DISABLE_ALL_MSG
+ `define svt_warning(id, msg) do begin end while (0)
+ `define svt_error(id, msg) do begin end while (0)
+ `define svt_fatal(id, msg) do begin end while (0)
+`else
+`define svt_warning(id, msg) \
+  `vmm_warning(log, $sformatf("%s() - %s", id, msg))
+
+`define svt_error(id, msg) \
+  `vmm_error(log, $sformatf("%s() - %s", id, msg))
+
+`define svt_fatal(id, msg) \
+  `vmm_fatal(log, $sformatf("%s() - %s", id, msg))
+`endif // !`ifdef SVT_DISABLE_ALL_MSG
+
+// VMM doesn't have a verbosity value corresponding to UVM/OVM_NONE, so insuppressible
+// messages cannot be generated.
+`define svt_insuppressible_note(id, msg) \
+  `svt_note(id, msg)
+
+`ifdef SVT_DISABLE_MSG
+ `define svt_note(id, msg) do begin end while (0)
+ `define svt_trace(id, msg) do begin end while (0)
+ `define svt_debug(id, msg) do begin end while (0)
+ `define svt_verbose(id, msg) do begin end while (0)
+`else
+`define svt_note(id, msg) \
+  `vmm_note(log, $sformatf("%s() - %s", id, msg))
+
+`define svt_trace(id, msg) \
+  `vmm_trace(log, $sformatf("%s() - %s", id, msg))
+
+`define svt_debug(id, msg) \
+  `vmm_debug(log, $sformatf("%s() - %s", id, msg))
+
+`define svt_verbose(id, msg) \
+  `vmm_verbose(log, $sformatf("%s() - %s", id, msg))
+`endif // !`ifdef SVT_DISABLE_MSG
+
+`ifdef SVT_DISABLE_ALL_MSG
+ `define svt_fatal_context(id, msg, clientfile, clientline) do begin end while (0)
+ `define svt_error_context(id, msg, clientfile, clientline) do begin end while (0)
+ `define svt_warning_context(id, msg, clientfile, clientline) do begin end while (0)
+`else
+`define svt_fatal_context(id, msg, clientfile, clientline) \
+`ifdef SVT_ENABLE_FILE_AND_LINE_DISPLAY \
+  do \
+    if ((clientfile != "") || (clientline != 0)) \
+      `svt_fatal_file_line(log, $sformatf("%s() - %s", id, msg), clientfile, clientline); \
+    else \
+      `svt_fatal(id, msg); \
+  while (0) \
+`else \
+  `svt_fatal(id, msg) \
+`endif
+
+`define svt_error_context(id, msg, clientfile, clientline) \
+`ifdef SVT_ENABLE_FILE_AND_LINE_DISPLAY \
+  do \
+    if ((clientfile != "") || (clientline != 0)) \
+      `svt_error_file_line(log, $sformatf("%s() - %s", id, msg), clientfile, clientline); \
+    else \
+      `svt_error(id, msg); \
+  while (0) \
+`else \
+  `svt_error(id, msg) \
+`endif
+
+`define svt_warning_context(id, msg, clientfile, clientline) \
+`ifdef SVT_ENABLE_FILE_AND_LINE_DISPLAY \
+  do \
+    if ((clientfile != "") || (clientline != 0)) \
+      `svt_warning_file_line(log, $sformatf("%s() - %s", id, msg), clientfile, clientline); \
+    else \
+      `svt_warning(id, msg); \
+  while (0) \
+`else \
+  `svt_warning(id, msg) \
+`endif
+`endif // !`ifdef SVT_DISABLE_ALL_MSG
+
+`ifdef SVT_DISABLE_MSG
+ `define svt_note_context(id, msg, clientfile, clientline) do begin end while (0)
+ `define svt_trace_context(id, msg, clientfile, clientline) do begin end while (0)
+ `define svt_debug_context(id, msg, clientfile, clientline) do begin end while (0)
+ `define svt_verbose_context(id, msg, clientfile, clientline) do begin end while (0)
+`else
+`define svt_note_context(id, msg, clientfile, clientline) \
+`ifdef SVT_ENABLE_FILE_AND_LINE_DISPLAY \
+  do \
+    if ((clientfile != "") || (clientline != 0)) \
+      `svt_note_file_line(log, $sformatf("%s() - %s", id, msg), clientfile, clientline); \
+    else \
+      `svt_note(id, msg); \
+  while (0) \
+`else \
+  `svt_note(id, msg) \
+`endif
+
+`define svt_trace_context(id, msg, clientfile, clientline) \
+`ifdef SVT_ENABLE_FILE_AND_LINE_DISPLAY \
+  do \
+    if ((clientfile != "") || (clientline != 0)) \
+      `svt_trace_file_line(log, $sformatf("%s() - %s", id, msg), clientfile, clientline); \
+    else \
+      `svt_trace(id, msg); \
+  while (0) \
+`else \
+  `svt_trace(id, msg) \
+`endif
+
+`define svt_debug_context(id, msg, clientfile, clientline) \
+`ifdef SVT_ENABLE_FILE_AND_LINE_DISPLAY \
+  do \
+    if ((clientfile != "") || (clientline != 0)) \
+      `svt_debug_file_line(log, $sformatf("%s() - %s", id, msg), clientfile, clientline); \
+    else \
+      `svt_debug(id, msg); \
+  while (0) \
+`else \
+  `svt_debug(id, msg) \
+`endif
+
+`define svt_verbose_context(id, msg, clientfile, clientline) \
+`ifdef SVT_ENABLE_FILE_AND_LINE_DISPLAY \
+  do \
+    if ((clientfile != "") || (clientline != 0)) \
+      `svt_verbose_file_line(log, $sformatf("%s() - %s", id, msg), clientfile, clientline); \
+    else \
+      `svt_verbose(id, msg); \
+  while (0) \
+`else \
+  `svt_verbose(id, msg) \
+`endif
+`endif // !`ifdef SVT_DISABLE_MSG
+
+// -------------------------------------------------------------------------
+// Define common callback macros
+// -------------------------------------------------------------------------
+
+// Add the callback infrastructure to non-vmm_xactor classes
+`define svt_callback_utils(T) \
+   protected T callbacks[$]; \
+ \
+function void prepend_callback(T cb); \
+   foreach (this.callbacks[i]) begin \
+      if (this.callbacks[i] == cb) begin \
+      `ifdef VMM_LOG_FORMAT_FILE_LINE \
+         if (log.start_msg(vmm_log::FAILURE_TYP, vmm_log::WARNING_SEV, `__FILE__, `__LINE__)) begin \
+      `else \
+         if (log.start_msg(vmm_log::FAILURE_TYP, vmm_log::WARNING_SEV)) begin \
+      `endif \
+            void'(log.text("Callback has already been registered")); \
+            log.end_msg(); \
+         end \
+         return; \
+      end \
+   end \
+ \
+   this.callbacks.push_front(cb); \
+endfunction: prepend_callback \
+ \
+function void append_callback(T cb); \
+   foreach (this.callbacks[i]) begin \
+      if (this.callbacks[i] == cb) begin \
+      `ifdef VMM_LOG_FORMAT_FILE_LINE \
+         if (log.start_msg(vmm_log::FAILURE_TYP, vmm_log::WARNING_SEV, `__FILE__, `__LINE__)) begin \
+      `else \
+          if (log.start_msg(vmm_log::FAILURE_TYP, vmm_log::WARNING_SEV)) begin \
+      `endif \
+            void'(log.text("Callback has already been registered")); \
+            log.end_msg(); \
+         end \
+         return; \
+      end \
+   end \
+ \
+   this.callbacks.push_back(cb); \
+endfunction: append_callback \
+ \
+function void unregister_callback(T cb); \
+   foreach (this.callbacks[i]) begin \
+      if (this.callbacks[i] == cb) begin \
+         this.callbacks.delete(i); \
+         return; \
+      end \
+   end \
+`ifdef VMM_LOG_FORMAT_FILE_LINE \
+   if (log.start_msg(vmm_log::FAILURE_TYP, vmm_log::WARNING_SEV, `__FILE__, `__LINE__)) begin \
+`else \
+   if (log.start_msg(vmm_log::FAILURE_TYP, vmm_log::WARNING_SEV)) begin \
+`endif \
+      void'(log.text("Callback was not registered")); \
+      log.end_msg(); \
+   end \
+endfunction: unregister_callback
+
+
+`define svt_vmm_do_callbacks(T,CB,METHOD) \
+  `vmm_callback(CB,METHOD);
+
+`define svt_do_callbacks(T,CB,METHOD) \
+  `svt_vmm_do_callbacks(T,CB,METHOD)
+
+`define svt_vmm_do_obj_callbacks(T,CB,OBJ,METHOD) \
+  foreach (OBJ.callbacks[i]) begin \
+    CB cb; \
+    if (!$cast(cb, OBJ.callbacks[i])) continue; \
+    cb.METHOD; \
+  end
+
+`define svt_do_obj_callbacks(T,CB,OBJ,METHOD) \
+  `svt_vmm_do_obj_callbacks(T,CB,OBJ,METHOD)
+
+// -------------------------------------------------------------------------
+// Define common methodology name macros
+// -------------------------------------------------------------------------
+`define SVT_DATA_METHODOLOGY_KEYWORD     vmm
+`define SVT_DATA_METHODOLOGY_KEYWORD_UC  VMM
+
+// -------------------------------------------------------------------------
+// Define a common macro to declare a base object type
+// -------------------------------------------------------------------------
+`define SVT_DATA_BASE_OBJECT_TYPE vmm_data
+
+// -------------------------------------------------------------------------
+// Define a wrapper for the common methods
+// -------------------------------------------------------------------------
+`define SVT_DATA_DISPLAY_KEYWORD display
+`define SVT_DATA_PSDISPLAY_KEYWORD psdisplay
+`define SVT_DATA_DISPLAY(prefix) display(prefix)
+`define SVT_DATA_PSDISPLAY(prefix) psdisplay(prefix)
+`define SVT_DATA_LOG_KEYWORD log
+`define SVT_DATA_COPY copy
+`define SVT_DATA_BYTE_PACK byte_pack
+`define SVT_DATA_BYTE_UNPACK byte_unpack
+`define SVT_DATA_GET_OBJECT_HIERNAME get_object_hiername
+`define SVT_DATA_GET_OBJECT_TYPENAME get_name
+
+// -------------------------------------------------------------------------
+// Mapping of the flags to the VMM automation macros to common SVT flags
+// -------------------------------------------------------------------------
+
+// Notes:
+//  1) The VMM automation macros do not currently support queues.  Therefore,
+//     all of the SVT automation macros will call the UVM automation macro, but
+//     the queue must be handled manually in VMM.
+
+// 1-to-1 mapping to UVM automation flags
+`define SVT_NOCOPY     (1<<1)
+`define SVT_NOCOMPARE  (1<<3)
+`define SVT_NOPRINT    (1<<5)
+// VMM doesn't support recording.  Just make the macro available.
+`define SVT_NORECORD   0
+`define SVT_NODEFPRINT (1<<16)
+`define SVT_NOPACK     (1<<9)
+`define SVT_PHYSICAL   (1<<13)
+`define SVT_ABSTRACT   (1<<14)
+`define SVT_READONLY   (1<<16)
+`define SVT_ALL_ON     'b000010101010101
+`define SVT_DEFAULT    'b000000101010101
+
+// In cases where we are overriding the underlying routines for VMM but not for
+// UVM/OVM, or for UVM/OVM but not for VMM, then the `SVT_VMM_<FEATURE> flags may be used
+`define SVT_UVM_NOCOPY 0
+`define SVT_VMM_NOCOPY `SVT_NOCOPY
+`define SVT_UVM_NOCOMPARE 0
+`define SVT_VMM_NOCOMPARE `SVT_NOCOMPARE
+`define SVT_UVM_NOPRINT 0
+`define SVT_VMM_NOPRINT `SVT_NOPRINT
+`define SVT_UVM_NODEFPRINT 0
+`define SVT_VMM_NODEFPRINT `SVT_NODEFPRINT
+`define SVT_UVM_NOPACK 0
+`define SVT_VMM_NOPACK `SVT_NOPACK
+
+`define SVT_BIN       'h1000000
+`define SVT_DEC       'h2000000
+`define SVT_UNSIGNED  'h3000000
+`define SVT_OCT       'h4000000
+`define SVT_HEX       'h5000000
+`define SVT_STRING    'h6000000
+`define SVT_TIME      'h7000000
+`define SVT_ENUM      'h8000000
+
+// Arguments that can be or'ed in to the FLAG.  Note that this only affects
+// UVM.  To affect VMM, the third argument on the object field macros must be
+// used.
+`define SVT_DEEP      'h400
+`define SVT_SHALLOW   'h800
+`define SVT_REFERENCE 'h1000
+
+// VMM do_how_e enumerations affect how vmm_data based objects are compared
+// and copied.  These arguments should be or'ed in to the third argument of
+// the object field macros.
+`define SVT_HOW_NOCOPY      'h001
+`define SVT_HOW_REFCOPY     'h002
+`define SVT_HOW_DEEPCOPY    'h004
+`define SVT_HOW_TO_COPY     'h007
+`define SVT_HOW_NOCOMPARE   'h008
+`define SVT_HOW_REFCOMPARE  'h010
+`define SVT_HOW_DEEPCOMPARE 'h020
+`define SVT_HOW_TO_COMPARE  'h038
+`define SVT_HOW_NONE        'h009
+`define SVT_HOW_REF         'h012
+`define SVT_HOW_DEEP        'h024
+
+// Conversion to VMM automation flags
+`define SVT_MAP_TO_VMM_AUTOMATION_FLAGS(value) \
+ (DO_ALL & \
+  (((value) & `SVT_NOPRINT) ? ~DO_PRINT : DO_ALL) & \
+  (((value) & `SVT_NOCOPY) ? ~DO_COPY : DO_ALL) & \
+  (((value) & `SVT_NOCOMPARE) ? ~DO_COMPARE : DO_ALL) & \
+  (((value) & `SVT_NOPACK) ? ~(DO_PACK|DO_UNPACK) : DO_ALL)) \
+
+
+// -------------------------------------------------------------------------
+// Mapping of the VMM automation macros to a common SVT macro
+// -------------------------------------------------------------------------
+
+`define svt_data_member_begin(class_type) \
+  `vmm_data_member_begin(class_type)
+ 
+`define svt_data_param_member_begin(class_type) \
+  `vmm_data_member_begin(class_type)
+ 
+/**
+ * Macro setup to match 'special capability' macros in UVM/OVM. Just
+ * provides basic parameterized class functionality in VMM.
+ */
+`define svt_data_param_member_w_type_name_begin(class_type,class_type_no_params) \
+  `svt_data_param_member_begin(class_type)
+ 
+`define svt_data_member_end(class_type) \
+  `svt_vmm_data_member_end(class_type)
+
+`define svt_field_real(ARG,FLAG) \
+ `vmm_data_member_real(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_int(ARG,FLAG) \
+ `vmm_data_member_scalar(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_enum(T,ARG,FLAG) \
+ `vmm_data_member_enum(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_object(ARG,FLAG,HOW) \
+ `vmm_data_member_vmm_data(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG),HOW)
+
+`define svt_field_event(ARG,FLAG) \
+ Not avaliable yet - please define a VMM automation macro for me
+
+`define svt_field_string(ARG,FLAG) \
+ `vmm_data_member_string(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_array_enum(T,ARG,FLAG) \
+ `vmm_data_member_enum_da(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_array_real(ARG,FLAG) \
+ `vmm_data_member_real_da(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_sarray_real(ARG,FLAG) \
+ `vmm_data_member_real_array(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_queue_real(ARG,FLAG) \
+ `vmm_data_member_real_array(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_array_int(ARG,FLAG) \
+ `vmm_data_member_scalar_da(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_sarray_int(ARG,FLAG) \
+ `vmm_data_member_scalar_array(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_sarray_enum(T,ARG,FLAG) \
+ `vmm_data_member_enum_array(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_array_object(ARG,FLAG,HOW) \
+ `vmm_data_member_vmm_data_array(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG),HOW)
+
+`define svt_field_sarray_object(ARG,FLAG,HOW) \
+ `vmm_data_member_vmm_data_array(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG),HOW)
+
+`define svt_field_array_string(ARG,FLAG) \
+ `vmm_data_member_string_da(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_sarray_string(ARG,FLAG) \
+ `vmm_data_member_string_array(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_queue_enum(T,ARG,FLAG) \
+ `vmm_data_member_enum_array(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_queue_int(ARG,FLAG) \
+ `vmm_data_member_scalar_array(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_queue_object(ARG,FLAG,HOW) \
+ `vmm_data_member_vmm_data_array(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG),HOW)
+
+`define svt_field_queue_string(ARG,FLAG) \
+ `vmm_data_member_string_array(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_queue_handle(ARG,FLAG) \
+ `vmm_data_member_handle_q(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_aa_int_string(ARG, FLAG) \
+  `vmm_data_member_scalar_aa_string(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_aa_string_string(ARG, FLAG) \
+ `vmm_data_member_string_aa_string(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_aa_object_string(ARG, FLAG, HOW) \
+ `vmm_data_member_vmm_data_aa_string(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG),HOW)
+
+`define svt_field_aa_int_int(ARG, FLAG) \
+ `vmm_data_member_scalar_aa_scalar(ARG, `SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_aa_int_int_unsigned(ARG, FLAG) \
+ `vmm_data_member_scalar_aa_scalar(ARG, `SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_aa_int_integer(ARG, FLAG) \
+ `vmm_data_member_scalar_aa_scalar(ARG, `SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_aa_int_integer_unsigned(ARG, FLAG) \
+ `vmm_data_member_scalar_aa_scalar(ARG, `SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_aa_int_byte(ARG, FLAG) \
+ `vmm_data_member_scalar_aa_scalar(ARG, `SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_aa_int_byte_unsigned(ARG, FLAG) \
+ `vmm_data_member_scalar_aa_scalar(ARG, `SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_aa_int_shortint(ARG, FLAG) \
+ `vmm_data_member_scalar_aa_scalar(ARG, `SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_aa_int_shortint_unsigned(ARG, FLAG) \
+ `vmm_data_member_scalar_aa_scalar(ARG, `SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_aa_int_longint(ARG, FLAG) \
+ `vmm_data_member_scalar_aa_scalar(ARG, `SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_aa_int_longint_unsigned(ARG, FLAG) \
+ `vmm_data_member_scalar_aa_scalar(ARG, `SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_aa_int_key(KEY, ARG, FLAG) \
+ `vmm_data_member_scalar_aa_scalar(ARG, `SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_aa_string_int(ARG, FLAG) \
+ `vmm_data_member_string_aa_scalar(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_aa_object_int(ARG, FLAG, HOW) \
+ `vmm_data_member_vmm_data_aa_scalar(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG),HOW)
+
+`define svt_field_handle(ARG,FLAG) \
+ `vmm_data_member_handle(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_handle_sarray(ARG,FLAG) \
+ `vmm_data_member_handle_array(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_handle_array(ARG,FLAG) \
+ `vmm_data_member_handle_da(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_handle_aa_int(ARG,FLAG) \
+ `vmm_data_member_handle_aa_scalar(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+`define svt_field_handle_aa_string(ARG,FLAG) \
+ `vmm_data_member_handle_aa_string(ARG,`SVT_MAP_TO_VMM_AUTOMATION_FLAGS(FLAG))
+
+// -------------------------------------------------------------------------
+// Common Event/Notify Macros
+// -------------------------------------------------------------------------
+
+/** Macro used to declare a notification event instance for the current methodology */
+`define svt_decl_event(evname) \
+  int evname;
+
+/** Macro used to create a notification event instance for the current methodology */
+`define svt_create_event(evname,evtype) \
+  evname = this.notify.configure(, vmm_notify::evtype);
+
+/** Macro used to create a notification event instance in the indicated pool for the current methodology */
+`define svt_create_pool_event(evpool,evname,evtype) \
+  evname = evpool.configure(, vmm_notify::evtype);
+
+/** Macro used to signal a notification event for the current methodology */
+`define svt_trigger_event(evowner,evname) \
+  evowner.notify.indicate(evowner.evname);
+
+/** Macro used to signal a notification event and corresponding data for the current methodology */
+`define svt_trigger_data_event(evowner,evname,evdata) \
+  evowner.notify.indicate(evowner.evname,evdata);
+
+/** Macro used to signal a notification event and corresponding data for the current methodology, but with a 'copy' of the original data */
+`define svt_trigger_copy_data_event(evowner,evname,evdata) \
+  evowner.notify.indicate(evowner.evname,evdata.copy());
+
+/** Macro used to check the is_on state for a notification event in the current methodology. */
+`define svt_event_is_on(evowner,evname) \
+  evowner.notify.is_on(evowner.evname)
+
+/** Macro used to wait for a notification event in the current methodology */
+`define svt_wait_event_trigger(evowner,evname) \
+  evowner.notify.wait_for(evowner.evname);
+
+/** Macro used to wait for a 'persistent' notification event in the current methodology */
+`define svt_wait_event_ptrigger(evowner,evname) \
+  evowner.notify.wait_for(evowner.evname);
+
+/** Macro used to wait for an 'on' notification event in the current methodology */
+`define svt_wait_event_on(evowner,evname) \
+  evowner.notify.wait_for(evowner.evname);
+
+/** Macro used to wait for an 'off' notification event in the current methodology */
+`define svt_wait_event_off(evowner,evname) \
+  evowner.notify.wait_for_off(evowner.evname);
+
+/** Macro used to use the notification event accessor function for the current methodology to retrieve the status for the notification event */
+`define svt_event_status(evowner,evname) \
+  evowner.notify.status(evowner.evname)
+
+/** Macro used to get the notification event status */
+`define svt_get_event_status(evowner,evname,evstatus) \
+  evstatus = `svt_event_status(evowner,evname);
+
+/** Macro used to reset a notification event in the current methodology */
+`define svt_reset_event(evowner,evname) \
+  evowner.notify.reset(evowner.evname);
+
+// -------------------------------------------------------------------------
+// Common Event/Notify Macros for working with named events
+// -------------------------------------------------------------------------
+
+/** Macro used to create a named notification event instance for the current methodology */
+`define svt_create_named_event(evowner,evname,evtype) \
+begin \
+  svt_notify _notify; \
+  void'($cast(_notify, evowner.notify)); \
+  evowner.evname = _notify.configure_named_notify(`SVT_DATA_UTIL_ARG_TO_STRING(evname), , vmm_notify::evtype); \
+end
+
+/** Macro used to signal a named notification event for the current methodology */
+`define svt_trigger_named_event(evowner,evname) \
+  evowner.notify.indicate(evowner.notify.get_notification_id(`SVT_DATA_UTIL_ARG_TO_STRING(evname)));
+
+/** Macro used to signal a named notification event and corresponding data for the current methodology */
+`define svt_trigger_named_data_event(evowner,evname,evdata) \
+  evowner.notify.indicate(evowner.notify.get_notification_id(`SVT_DATA_UTIL_ARG_TO_STRING(evname)),evdata);
+
+/** Macro used to signal a named notification event and corresponding data for the current methodology, but with a 'copy' of the original data */
+`define svt_trigger_named_copy_data_event(evowner,evname,evdata) \
+  evowner.notify.indicate(evowner.notify.get_notification_id(`SVT_DATA_UTIL_ARG_TO_STRING(evname)),evdata.copy());
+
+/** Macro used to check the is_on state for a named notification event in the current methodology. */
+`define svt_get_named_event_is_on(evowner,evname,ison) \
+  ison = evowner.notify.is_on(evowner.notify.get_notification_id(`SVT_DATA_UTIL_ARG_TO_STRING(evname)));
+
+/** Macro used to wait for a named notification event in the current methodology */
+`define svt_wait_named_event_trigger(evowner,evname) \
+  evowner.notify.wait_for(evowner.notify.get_notification_id(`SVT_DATA_UTIL_ARG_TO_STRING(evname)));
+
+/** Macro used to wait for an 'on' named notification event in the current methodology */
+`define svt_wait_named_event_on(evowner,evname) \
+  evowner.notify.wait_for(evowner.notify.get_notification_id(`SVT_DATA_UTIL_ARG_TO_STRING(evname)));
+
+/** Macro used to wait for an 'off' named notification event in the current methodology */
+`define svt_wait_named_event_off(evowner,evname) \
+  evowner.notify.wait_for_off(evowner.notify.get_notification_id(`SVT_DATA_UTIL_ARG_TO_STRING(evname)));
+
+/** Macro used to get the named notification event status */
+`define svt_get_named_event_status(evowner,evname,evstatus) \
+  evstatus = evowner.notify.status(evowner.notify.get_notification_id(`SVT_DATA_UTIL_ARG_TO_STRING(evname)));
+
+/** Macro used to reset a named notification event in the current methodology */
+`define svt_reset_named_event(evowner,evname) \
+  evowner.notify.reset(evowner.notify.get_notification_id(`SVT_DATA_UTIL_ARG_TO_STRING(evname)));
+
+`endif // GUARD_SVT_VMM_UTIL_SVI

@@ -1,0 +1,11 @@
+
+`ifndef GUARD_SVT_SPI_AGENT_SOURCE_OVM_SVI
+`define GUARD_SVT_SPI_AGENT_SOURCE_OVM_SVI
+
+`include `SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_source.ovm)
+
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_agent_svt,R-2020.12,svt_spi_mem_sequencer)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_agent_svt,R-2020.12,svt_spi_ram_sequence)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_agent_svt,R-2020.12,svt_spi_agent)
+
+`endif // GUARD_SVT_SPI_AGENT_SOURCE_OVM_SVI

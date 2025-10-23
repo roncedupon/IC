@@ -1,0 +1,32 @@
+
+`ifndef GUARD_SVT_SPI_TXRX_SOURCE_OVM_SVI
+`define GUARD_SVT_SPI_TXRX_SOURCE_OVM_SVI
+
+`include "svt_spi_source.ovm.svi"
+
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_baud_rate_generator)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_ecc_calculator)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_crc_calculator)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_flash_generic)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_prfl_2_0_flash_generic)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_rx_err_check)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_tx_err_check)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_err_check)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_cb_exec_common)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_monitor_cb_exec_common)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_spi_flash_cmd_processor) 
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_common)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_active_common)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx.ovm)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_callback)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_cb_exec)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_passive_common)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_monitor.ovm)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_monitor_callback)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_monitor_cb_exec)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_monitor_transaction_report_callback)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_monitor_xml_callback)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_monitor_def_flash_cov)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_monitor_def_cov_data_callback)
+`include `SVT_SOURCE_MAP_MODEL_MODULE(spi_svt,spi_txrx_svt,R-2020.12,svt_spi_txrx_monitor_def_cov_callback)
+`endif // GUARD_SVT_SPI_TXRX_SOURCE_OVM_SVI

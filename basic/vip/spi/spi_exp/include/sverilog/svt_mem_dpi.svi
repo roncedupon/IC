@@ -1,0 +1,83 @@
+//=======================================================================
+// COPYRIGHT (C) 2012 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+`ifndef GUARD_SVT_MEM_DPI_SVI
+`define GUARD_SVT_MEM_DPI_SVI
+
+`protect
+
+/** @cond PRIVATE */
+
+`ifdef SVT_MEM_DPI_EXCLUDE
+
+// TODO: This is a temporary work-around to prevent regression failures
+//       while the svt_mem DPI routines linking issues aren't resolved.
+
+const bit svt_mem_no_dpi = svt_mem_no_dpi_warning();
+function bit svt_mem_no_dpi_warning();
+  $write("\n************************************* WARNING ************************************\n");
+  $write("SVT Memory DPI Routines are disabled. Part catalog functionality will be affected.\n");
+  $write("************************************* WARNING ************************************\n\n");
+endfunction
+
+function string svt_mem_find_file(string fname,
+                                  string paths);
+  return "";
+endfunction
+
+function int svt_mem_file_finder_reset(string rootpath,
+                                       string pattern,
+                                       int vendor_n,
+                                       int part_n);
+  return 0;
+endfunction
+
+function int svt_mem_file_finder_next(output string fname,
+                                      output string vendor,
+                                      output string part);
+  return 0;
+endfunction
+
+`else
+
+/** Find the name file using the specified colon-separated search path lists */
+import "DPI-C" function string svt_mem_find_file(string fname,
+                                                 string paths);
+
+/** Reset the state of the file finder.
+ *
+ *  Will search the filesystem under the specified root for files whose
+ *  path relative to the specified too matches the specified POSIX regexp pattern.
+ */
+import "DPI-C" function int svt_mem_file_finder_reset(string rootpath,
+                                                      string pattern,
+                                                      int vendor_n,
+                                                      int part_n);
+
+/** Find the next file based on the current state of the file finder
+ *  and set the fname argument to the full pathname.
+ *  Also returns the vendor and part number subexpressions. 
+ *
+ *  Returns TRUE if a file was found.
+ */
+import "DPI-C" function int svt_mem_file_finder_next(output string fname,
+                                                     output string vendor,
+                                                     output string part);
+
+`endif
+
+/** @endcond */
+`endprotect
+
+`endif

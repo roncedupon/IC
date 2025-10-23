@@ -1,0 +1,1 @@
++UVM_TESTNAME=$scenario +UVM_MAX_QUIT_COUNT=10,1

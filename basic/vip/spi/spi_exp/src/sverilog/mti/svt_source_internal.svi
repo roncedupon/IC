@@ -1,0 +1,122 @@
+//=======================================================================
+// COPYRIGHT (C) 2007-2017 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+`ifndef GUARD_SVT_SOURCE_INTERNAL_SVI
+`define GUARD_SVT_SOURCE_INTERNAL_SVI
+
+//svt_vcs_lic_vip_protect
+`pragma protect begin_protected
+`pragma protect encrypt_agent = "Model Technology", encrypt_agent_info = "6.5b"
+`pragma protect data_method = "aes128-cbc"
+`pragma protect key_keyowner = "Mentor Graphics Corporation" , key_keyname = "MGC-VERIF-SIM-RSA-1" , key_method = "rsa"
+`pragma protect key_block encoding = (enctype = "base64")
+Wj2yPiZB4X6PrJn6wsN45FpgRZjA+N9bB+4sDiM6X2omcDyqt9760gRMPNIiS/Ph
+rez8kXMODRQ4NOdCjf7F6sBmjwTIPmpfKTbaUI4PEg2Xv2/gifF+p2EZhTcV24Ta
+81A1RtZSLkiT9O1hfuaO3g6V3NKRwTk/NezkyCSApOU=
+`pragma protect data_block encoding = ( enctype = "base64", bytes = 3534      )
+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
+`pragma protect end_protected
+
+//Added to fix DVT error reported from svt_Agent. Macro definition at #140 is
+//not visible in case of DVT. 
+`ifndef SVT_UVM_FGP_LOCK
+`define SVT_UVM_FGP_LOCK
+`endif
+
+`endif //GUARD_SVT_SOURCE_INTERNAL_SVI
+`pragma protect begin_protected
+`pragma protect encrypt_agent = "Model Technology", encrypt_agent_info = "6.5b"
+`pragma protect data_method = "aes128-cbc"
+`pragma protect key_keyowner = "Mentor Graphics Corporation" , key_keyname = "MGC-VERIF-SIM-RSA-1" , key_method = "rsa"
+`pragma protect key_block encoding = (enctype = "base64")
+RNyeLNFbcsUQImERbvp/Z8HT0aenHJo5X9wbvbF0ypwItmkT7f6P4LWEHMVYtO5T
+Q3Pihw702QhmqH+8f+sudtu/QXpwAWI5wwIF5MIDVVUZz5fvmMSKPisPYstL5ELF
+uPfS23TG/t6lIs/05EwKkxpnNLy0B0KZGEt5JlQAVRk=
+`pragma protect data_block encoding = ( enctype = "base64", bytes = 3617      )
+8E6Yna9zztajz8hTonUtNKCFnk5sJXexrCcXErTEb9nL79Lk2gG1ywYwENBb5YuO
+rE68C2upyD79Z9B3DtILBsQ2C0ubS9+mbSHEV/TggupJv/jyP8vFGJzjh/0E2bYZ
+`pragma protect end_protected

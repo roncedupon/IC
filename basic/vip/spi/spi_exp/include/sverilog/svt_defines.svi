@@ -1,0 +1,32 @@
+//=======================================================================
+//
+// COPYRIGHT (C) 2008-2016 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+`ifndef GUARD_SVT_DEFINES_SVI
+`define GUARD_SVT_DEFINES_SVI
+
+// This safety mechanism is retained for the design_dir based loading strategy 
+// but is not supported when the DESIGNWARE_HOME based loading strategy is 
+// being used.
+`ifndef DESIGNWARE_INCDIR
+  `ifndef GUARD_SVT_LOADER_UTIL_SVI
+    `include "svt_loader_util.svi"
+  `endif
+`endif
+
+`include `SVT_SOURCE_MAP_LIB_INCLUDE_SVI(R-2020.12,svt_common_defines)
+
+`include `SVT_SOURCE_MAP_LIB_SRC_SVI(R-2020.12,svt_if_util)
+
+`endif

@@ -1,1 +1,1 @@
-top.sv
+$CUR_PROJ_HOME/top.sv

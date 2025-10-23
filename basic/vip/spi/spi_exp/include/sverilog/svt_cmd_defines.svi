@@ -1,0 +1,75 @@
+//=======================================================================
+//
+// COPYRIGHT (C) 2005, 2006, 2007 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+`ifndef GUARD_SVT_CMD_DEFINES_SVI
+`define GUARD_SVT_CMD_DEFINES_SVI
+
+//  Values (constants) to be used as arguments for reset_xactor() command
+`define SVT_CMD_FIRM_RST      0
+`define SVT_CMD_SOFT_RST      1
+`define SVT_CMD_HARD_RST      2
+`define SVT_CMD_PROTOCOL_RST  3
+
+//  Values (constants) to be used as arguments for reset() command
+`define SVT_CMD_HARD          0
+`define SVT_CMD_SOFT          1
+`define SVT_CMD_FIRM          2
+
+//  Values (constants) for the different status values
+`define SVT_CMD_XACT_STATUS_INITIAL         0
+`define SVT_CMD_XACT_STATUS_RETRY           1
+`define SVT_CMD_XACT_STATUS_ACTIVE          2
+`define SVT_CMD_XACT_STATUS_PARTIAL_ACCEPT  3
+`define SVT_CMD_XACT_STATUS_ACCEPT          4
+`define SVT_CMD_XACT_STATUS_DISABLED        5
+`define SVT_CMD_XACT_STATUS_CANCELLED       6
+`define SVT_CMD_XACT_STATUS_ABORTED         7
+
+/**
+ * Null handle which can be used to indicate that a data search
+ * should take place at the top level object, and not a contained
+ * object
+ */
+`define SVT_CMD_NULL_HANDLE   -1
+
+/**
+ * Reset handle which can be used to indicate that a reset has
+ * taken place and that the testbench should update in accordance
+ * with this event.
+ */
+`define SVT_CMD_RESET_HANDLE   -2
+
+/**
+ * Values (constants) used as arguments for commands utilizing a severity argument
+ */
+`define SVT_CMD_FATAL_SEVERITY 1000
+`define SVT_CMD_ERROR_SEVERITY 1001
+`define SVT_CMD_WARNING_SEVERITY 1002
+`define SVT_CMD_NORMAL_SEVERITY 1003
+`define SVT_CMD_TRACE_SEVERITY 1004
+`define SVT_CMD_DEBUG_SEVERITY 1005
+`define SVT_CMD_VERBOSE_SEVERITY 1006
+`define SVT_CMD_CLEAR_SEVERITY 1007
+
+/**
+ * Values (constants) used as arguments for commands utilizing a verbosity argument
+ */
+`define SVT_CMD_NONE_VERBOSITY 1008
+`define SVT_CMD_NORMAL_VERBOSITY 1009
+`define SVT_CMD_TRACE_VERBOSITY 1010
+`define SVT_CMD_DEBUG_VERBOSITY 1011
+`define SVT_CMD_VERBOSE_VERBOSITY 1012
+
+`endif

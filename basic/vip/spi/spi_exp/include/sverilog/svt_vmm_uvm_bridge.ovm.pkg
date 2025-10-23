@@ -1,0 +1,31 @@
+//=======================================================================
+// COPYRIGHT (C) 2011-2016 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+`ifndef GUARD_SVT_VMM_UVM_BRIDGE_OVM_PKG
+`define GUARD_SVT_VMM_UVM_BRIDGE_OVM_PKG
+
+`ifdef DESIGNWARE_INCDIR
+  `include `SVT_SOURCE_MAP_LIB_INCLUDE_PKG(R-2020.12,svt.ovm)
+`else
+  `include "svt.ovm.pkg"
+`endif
+
+package svt_vmm_uvm_bridge_ovm_pkg;
+ import ovm_pkg::*;
+ import svt_ovm_pkg::*;
+
+ `include `SVT_SOURCE_MAP_LIB_INCLUDE_SVI(R-2020.12,svt_vmm_uvm_bridge_source.ovm)
+endpackage
+
+`endif // GUARD_SVT_VMM_UVM_BRIDGE_OVM_PKG

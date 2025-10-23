@@ -1,0 +1,144 @@
+//=======================================================================
+// COPYRIGHT (C) 2015-2016 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+`ifndef GUARD_SVT_IF_UTIL_SVI
+`define GUARD_SVT_IF_UTIL_SVI
+
+/**
+ * Calling this macro in an interface or module declares a variable and a method
+ * for controlling whether FSDB dumping is enabled. Modules should call this macro
+ * directly. Interfaces use will call this macro indirectly when they use
+ * call SVT_IF_UTIL_SUPPORT_SIGNAL_LOGGING.
+ */
+`define SVT_IF_UTIL_SUPPORT_SIGNAL_LOGGING_DECL \
+`ifdef SVT_FSDB_ENABLE \
+  bit enable_signal_log = 0; \
+ \
+  function void set_enable_signal_log(); \
+    enable_signal_log = 1; \
+  endfunction \
+`else \
+  function void set_enable_signal_log(); \
+    /** Provide a no-op that clients can call safely when FSDB not enabled. */ \
+  endfunction \
+`endif
+
+/**
+ * Utility macro used to setup an initial block to initiate FSDB signal logging once
+ * the client specified trigger has been fired. Acts as a no-op if FSDB support not
+ * enabled.
+ */
+`define SVT_IF_UTIL_WAIT_ENABLE_SIGNAL_LOG(triggerpath,depth) \
+`ifdef SVT_FSDB_ENABLE \
+  initial begin \
+`ifdef QUESTA \
+    /* On questa accessing the concatenated string directly results in an 'argument is invalid' message. */ \
+    /* So we put '{"+fsdbfile+",`SVT_DEBUG_OPTS_FSDB_FILE_NAME}' into a local 'fsdbfile_plus_filename' variable to avoid the error. */ \
+    static reg [80*8:1] fsdbfile_plus_filename = {"+fsdbfile+",`SVT_DEBUG_OPTS_FSDB_FILE_NAME}; \
+`endif \
+    wait(triggerpath``enable_signal_log == 1); \
+`ifdef SVT_IF_UTIL_DISABLE_DEFAULT_FSDB \
+    /* Use the 'no_default' switch, available with Verdi 2016.06, to */ \
+    /* identify that the DEBUG_OPTS FSDB file should not become the */ \
+    /* default for all signal storage. This reserves the file for our */ \
+    /* interface/module signal information, and ensures that the user */ \
+    /* signal information is excluded. */ \
+    $fsdbDumpfile(`SVT_DEBUG_OPTS_FSDB_FILE_NAME, "+no_default"); \
+`endif \
+`ifdef QUESTA \
+    $fsdbDumpvars(depth,$sformatf("%m"),"+all",fsdbfile_plus_filename); \
+`else \
+    $fsdbDumpvars(depth,$sformatf("%m"),"+all",{"+fsdbfile+",`SVT_DEBUG_OPTS_FSDB_FILE_NAME}); \
+`endif \
+  end \
+`endif
+
+/**
+ * Calling this macro in a module or interface adds an initial block that will
+ * enable fsdb dumping of the module or interface when the enable_signal_log
+ * variable in the object indicated by 'triggerpath' is set. Modules should call
+ * this macro directly, in concert with SVT_IF_UTIL_SUPPORT_SIGNAL_LOGGING_DECL.
+ * Interfaces use this macro indirectly when they call SVT_IF_UTIL_SUPPORT_SIGNAL_LOGGING.
+ *
+ * The client must set the enable_signal_log value in the object indicated by
+ * 'triggerpath' by calling the 'set_enable_signal_log' method on the object
+ * when it knows the module or interface dumping is desired.
+ * The 'depth' argument can be used to define the depth of dumping which is to
+ * be enabled. The expectation is that it will be '1' for all modules and for any
+ * interfaces without any hierarchy. Hierarchical interfaces should provide a
+ * value corresponding to the overall interface depth.
+ */
+`define SVT_IF_UTIL_SUPPORT_SIGNAL_LOGGING_IMPL(triggerpath,depth) \
+ \
+  /** Full path to this interface or module instance */ \
+  string full_name; \
+  initial full_name = $sformatf("%m"); \
+ \
+  /** Simple method for getting the full path for an interface or module. */ \
+  function string get_full_name(); \
+    get_full_name = full_name; \
+  endfunction \
+ \
+  `SVT_IF_UTIL_WAIT_ENABLE_SIGNAL_LOG(triggerpath,depth)
+
+/**
+ * NOTE: The following macro is the same as SVT_IF_UTIL_SUPPORT_SIGNAL_LOGGING_IMPL,
+ * but has been designed to be acceptable in a VLOG module where verilog2001 syntax
+ * is being enforced for all VLOG modules. Note that on Questa we actually just defer
+ * to the base SVT_IF_UTIL_SUPPORT_SIGNAL_LOGGING_IMPL macro.
+ *
+ * Calling this macro in a module adds an initial block that will enable fsdb dumping
+ * of the module or interface when the enable_signal_log variable in the object
+ * indicated by 'triggerpath' is set. Modules should call this macro directly, in
+ * concert with SVT_IF_UTIL_SUPPORT_SIGNAL_LOGGING_DECL.
+ *
+ * The client must set the enable_signal_log value in the object indicated by
+ * 'triggerpath' by calling the 'set_enable_signal_log' method on the object
+ * when it knows the module or interface dumping is desired.
+ *
+ * Note that unlike SVT_IF_UTIL_SUPPORT_SIGNAL_LOGGING_IMPL, since this macro is
+ * aimed at modules, it does not support a 'depth' option.
+ */
+`ifdef QUESTA
+`define SVT_IF_UTIL_SUPPORT_SIGNAL_LOGGING_VLOG_2001_IMPL(triggerpath) \
+  `SVT_IF_UTIL_SUPPORT_SIGNAL_LOGGING_IMPL(triggerpath,1)
+`else
+`define SVT_IF_UTIL_SUPPORT_SIGNAL_LOGGING_VLOG_2001_IMPL(triggerpath) \
+ \
+  /** Full path to this interface or module instance */ \
+  reg [80*8:1] full_name; \
+  initial full_name = $sformatf("%m"); \
+ \
+  /** Simple method for getting the full path for an interface or module. */ \
+  function reg [80*8:1] get_full_name(); \
+    get_full_name = full_name; \
+  endfunction \
+ \
+  `SVT_IF_UTIL_WAIT_ENABLE_SIGNAL_LOG(triggerpath,1)
+`endif
+
+/**
+ * Executing this macro in an interface provides an interface accessible
+ * method that can be used to enable fsdb dumping of the interface.
+ *
+ * The 'depth' argument can be used to define the depth of dumping which is to
+ * be enabled. The expectation is '1' for interfaces without any hierarchy.
+ * Hierarchical interfaces should provide a value corresponding to the overall
+ * interface depth.
+ */
+`define SVT_IF_UTIL_SUPPORT_SIGNAL_LOGGING(depth) \
+  `SVT_IF_UTIL_SUPPORT_SIGNAL_LOGGING_DECL \
+  `SVT_IF_UTIL_SUPPORT_SIGNAL_LOGGING_IMPL(,depth)
+
+`endif // GUARD_SVT_IF_UTIL_SVI

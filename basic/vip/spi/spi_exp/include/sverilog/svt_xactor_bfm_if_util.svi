@@ -1,0 +1,1434 @@
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+`ifndef GUARD_SVT_XACTOR_BFM_IF_UTIL_SVI
+`define GUARD_SVT_XACTOR_BFM_IF_UTIL_SVI
+
+`protect
+
+// Note: The VMT method stop() has not been exported because there are no VIPs using it.
+//       set_port() and get_port() have not been exported
+//       set_register() and get_register() have not been exported
+
+`define VMT_MESSAGE_MASK_WIDTH 32
+`define VMT_MESSAGE_FEATURE_WIDTH 32
+`define VMT_MODEL_VERSION_STRING_WIDTH (16*8)
+`define VMT_MESSAGE_LOG_STRING_WIDTH (256*8)
+`define VMT_WATCHPOINT_DATA_STRING_WIDTH (80*8)
+
+`ifdef NTB
+`define SVT_XACTOR_BFM_IF_UTIL_BIT_EXCHANGE_TYPE automatic reg
+`define SVT_XACTOR_BFM_IF_UTIL_BOOL_EXCHANGE_TYPE automatic integer
+`define SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE automatic integer
+`define SVT_XACTOR_BFM_IF_UTIL_WP_DATA_STRING_EXCHANGE_TYPE automatic reg [(`VMT_WATCHPOINT_DATA_STRING_WIDTH-1):0]
+`else
+`define SVT_XACTOR_BFM_IF_UTIL_BIT_EXCHANGE_TYPE automatic bit
+`define SVT_XACTOR_BFM_IF_UTIL_BOOL_EXCHANGE_TYPE automatic bit
+`define SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE automatic int
+`define SVT_XACTOR_BFM_IF_UTIL_WP_DATA_STRING_EXCHANGE_TYPE automatic string
+`endif
+
+`define SVT_XACTOR_BFM_CMD_IF_UTIL_EXPORTED_VMT_COMMAND_CALLS \
+`ifdef SVT_XACTOR_BFM_CMD_SET_MSG_LEVEL \
+  task enable_msg_type( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] types, int logId ); \
+    enable_msg_type_exp( streamId, types, logId ); \
+  endtask \
+  task disable_msg_type( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] types, int logId ); \
+    disable_msg_type_exp( streamId, types, logId ); \
+  endtask \
+  task enable_msg_id( int streamId, int id, int logId ); \
+    enable_msg_id_exp( streamId, id, logId ); \
+  endtask \
+  task disable_msg_id( int streamId, int id, int logId ); \
+    disable_msg_id_exp( streamId, id, logId ); \
+  endtask \
+  task enable_type_ctrl_msg_id( int streamId, int id, int logId ); \
+    enable_type_ctrl_msg_id_exp( streamId, id, logId ); \
+  endtask \
+  task enable_msg_log( int streamId, int logId ); \
+    enable_msg_log_exp( streamId, logId ); \
+  endtask \
+  task disable_msg_log( int streamId, int logId ); \
+    disable_msg_log_exp( streamId, logId ); \
+  endtask \
+  task automatic open_msg_log( int streamId, string  filename, int mode, ref int logId ); \
+    open_msg_log_exp( streamId, filename, mode, logId ); \
+  endtask \
+  task close_msg_log( int streamId, int logId ); \
+    close_msg_log_exp( streamId, logId ); \
+  endtask \
+  task enable_msg_feature( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] scope, bit [(`VMT_MESSAGE_FEATURE_WIDTH - 1):0] features, int logId ); \
+    enable_msg_feature_exp( streamId, scope,features, logId ); \
+  endtask \
+  task disable_msg_feature( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] scope, bit [(`VMT_MESSAGE_FEATURE_WIDTH - 1):0] features, int logId ); \
+    disable_msg_feature_exp( streamId, scope,features, logId ); \
+  endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_START \
+  task start(); \
+    start_exp(); \
+  endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_CREATE_WATCHPOINT \
+  task automatic create_watchpoint( int wp_type, int id, ref int watchpointHandle ); \
+    create_watchpoint_exp( wp_type, id, watchpointHandle ); \
+  endtask \
+  task automatic combine_watchpoints( int base1, int i_logic, int base2, ref int watchpointHandle ); \
+    combine_watchpoints_exp( base1, i_logic, base2, watchpointHandle ); \
+  endtask \
+  task automatic create_watchpoint_range( int wp_type, int id_low, int id_high, ref int watchpointHandle ); \
+    create_watchpoint_range_exp( wp_type, id_low, id_high, watchpointHandle ); \
+  endtask \
+  task destroy_watchpoint( int streamId, int wpHandl ); \
+    destroy_watchpoint_exp( streamId, wpHandl ); \
+  endtask \
+  task disable_watchpoint( int streamId, int wpHandl ); \
+    disable_watchpoint_exp( streamId, wpHandl ); \
+  endtask \
+  task enable_watchpoint( int streamId, int wpHandl ); \
+    enable_watchpoint_exp( streamId, wpHandl ); \
+  endtask \
+  task set_watchpoint_trigger( int streamId, int wpHandle, int i_parameter, int value ); \
+    set_watchpoint_trigger_exp( streamId, wpHandle, i_parameter, value ); \
+  endtask \
+  task automatic get_watchpoint_trigger( int streamId, int wpHandle, int i_parameter, ref int value ); \
+    get_watchpoint_trigger_exp( streamId, wpHandle, i_parameter, value ); \
+  endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_WATCH_FOR \
+  task automatic watch_for( int wpHandle, ref int objHandle ); \
+    watch_for_exp( wpHandle, objHandle ); \
+  endtask \
+  task automatic get_watchpoint_data_count(int dataHandle, ref int count ); \
+    get_watchpoint_data_count_exp(dataHandle, count ); \
+  endtask \
+  task automatic get_watchpoint_data_size(int dataHandle, int position, ref int dataSize ); \
+    get_watchpoint_data_size_exp(dataHandle, position, dataSize ); \
+  endtask \
+  task automatic get_watchpoint_data_type(int dataHandle, int position, ref int dataType ); \
+    get_watchpoint_data_type_exp(dataHandle, position, dataType ); \
+  endtask \
+  task automatic get_watchpoint_data_name(int dataHandle, int position, ref string name, ref int status ); \
+    get_watchpoint_data_name_exp(dataHandle, position, name, status ); \
+  endtask \
+  task automatic get_watchpoint_data_bit(int dataHandle, int position, ref bit value, ref int status ); \
+    get_watchpoint_data_bit_exp(dataHandle, position, value, status ); \
+  endtask \
+  task automatic get_watchpoint_data_int(int dataHandle, int position, ref int value, ref int status ); \
+    get_watchpoint_data_int_exp(dataHandle, position, value, status ); \
+  endtask \
+  task automatic get_watchpoint_data_string(int dataHandle, int position, int line, ref string value, ref int status ); \
+    get_watchpoint_data_string_exp(dataHandle, position, line, value, status ); \
+  endtask \
+  task automatic get_watchpoint_data_vec_2( int dataHandle, int position, int word, ref bit[(2 - 1):0] value, ref int status ); \
+    get_watchpoint_data_vec_2_exp( dataHandle, position, word, value, status ); \
+  endtask \
+  task automatic get_watchpoint_data_vec_4( int dataHandle, int position, int word, ref bit[(4 - 1):0] value, ref int status ); \
+    get_watchpoint_data_vec_4_exp( dataHandle, position, word, value, status ); \
+  endtask \
+  task automatic get_watchpoint_data_vec_8( int dataHandle, int position, int word, ref bit[(8 - 1):0] value, ref int status ); \
+    get_watchpoint_data_vec_8_exp( dataHandle, position, word, value, status ); \
+  endtask \
+  task automatic get_watchpoint_data_vec_16( int dataHandle, int position, int word, ref bit[(16 - 1):0] value, ref int status ); \
+    get_watchpoint_data_vec_16_exp( dataHandle, position, word, value, status ); \
+  endtask \
+  task automatic get_watchpoint_data_vec_32( int dataHandle, int position, int word, ref bit[(32 - 1):0] value, ref int status ); \
+    get_watchpoint_data_vec_32_exp( dataHandle, position, word, value, status ); \
+  endtask \
+  task automatic get_watchpoint_data_vec_64( int dataHandle, int position, int word, ref bit[(64 - 1):0] value, ref int status ); \
+    get_watchpoint_data_vec_64_exp( dataHandle, position, word, value, status ); \
+  endtask \
+  task automatic get_watchpoint_data_vec_128( int dataHandle, int position, int word, ref bit[(128 - 1):0] value, ref int status ); \
+    get_watchpoint_data_vec_128_exp( dataHandle, position, word, value, status ); \
+  endtask \
+  task automatic get_watchpoint_data_vec_256( int dataHandle, int position, int word, ref bit[(256 - 1):0] value, ref int status ); \
+    get_watchpoint_data_vec_256_exp( dataHandle, position, word, value, status ); \
+  endtask \
+  task automatic get_watchpoint_data_vec_512( int dataHandle, int position, int word, ref bit[(512 - 1):0] value, ref int status ); \
+    get_watchpoint_data_vec_512_exp( dataHandle, position, word, value, status ); \
+  endtask \
+  task automatic get_watchpoint_data_vec_1024( int dataHandle, int position, int word, ref bit[(1024 - 1):0] value, ref int status); \
+    get_watchpoint_data_vec_1024_exp( dataHandle, position, word, value, status ); \
+  endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_BLOCK_STREAM \
+  task automatic block_stream( int streamId, int timeOut, ref int cmd_status ); \
+    block_stream_exp( streamId, timeOut, cmd_status ); \
+  endtask \
+  task automatic sync_stream( int streamId, int timeOut, ref int cmd_status ); \
+    sync_stream_exp( streamId, timeOut, cmd_status ); \
+  endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_DELETE_HANDLE \
+  task delete_handle( int streamId, int handle ); \
+    delete_handle_exp( streamId, handle ); \
+  endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_SET_CONFIG_PARAM \
+  task set_config_param( int streamId, int _parameter, int value ); \
+    set_config_param_exp( streamId, _parameter, value ); \
+  endtask \
+  task set_config_param_bv( int streamId, int _parameter, bit[31:0] value ); \
+    set_config_param_exp( streamId, _parameter, value ); \
+  endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_GET_CONFIG_PARAM \
+  task automatic get_config_param( int streamId, int _parameter, ref int value ); \
+    get_config_param_exp( streamId, _parameter, value ); \
+  endtask \
+  task automatic get_config_param_bv( int streamId, int _parameter, ref bit[31:0] value ); \
+    int _value; \
+    _value = value; \
+    get_config_param_exp( streamId, _parameter, _value ); \
+    value = _value; \
+  endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_SET_PORT \
+  task set_port( int streamId, int portId, bit [(`SVT_XACTOR_BFM_CMD_SET_PORT-1):0] value, int numDelayClocks, int numDriveClocks ); \
+    set_port_exp( streamId, portId, value, numDelayClocks, numDriveClocks ); \
+  endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_GET_PORT \
+  task automatic get_port( int streamId, int portId, ref bit [(`SVT_XACTOR_BFM_CMD_GET_PORT-1):0] value ); \
+    get_port_exp( streamId, portId, value ); \
+  endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_START_STREAM \
+  task automatic start_stream( ref int newStreamId ); \
+    start_stream_exp( newStreamId ); \
+  endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_NEW_STREAM \
+  task automatic new_stream( int channelId, ref int newStreamId ); \
+    new_stream_exp( channelId, newStreamId ); \
+  endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_END_STREAM \
+  task end_stream( int streamId ); \
+    end_stream_exp( streamId ); \
+  endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_GET_VERSION \
+  task automatic get_version( ref bit[`VMT_MODEL_VERSION_STRING_WIDTH-1:0] version ); \
+    get_version_exp( version ); \
+  endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_RESET_MODEL \
+  task reset_model( bit[15:0] resetType ); \
+    reset_model_exp( resetType ); \
+  endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_OPEN_LOG \
+  task open_log( int logType, bit[`VMT_MESSAGE_LOG_STRING_WIDTH-1:0] filename, bit[`VMT_MESSAGE_LOG_STRING_WIDTH-1:0] mode ); \
+    open_log_exp( logType, filename, mode ); \
+  endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_CLOSE_LOG \
+  task close_log( int logType ); \
+    close_log_exp( logType ); \
+  endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_ENABLE_LOG \
+  task enable_log( int logType ); \
+    enable_log_exp( logType ); \
+  endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_DISABLE_LOG \
+  task disable_log( int logType ); \
+    disable_log_exp( logType ); \
+  endtask \
+`endif
+
+`define SVT_XACTOR_BFM_IF_UTIL_EXPORT_SET_MSG_LEVEL \
+  export task enable_msg_type_exp( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] types, int logId ), \
+  export task disable_msg_type_exp( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] types, int logId ), \
+  export task enable_msg_id_exp( int streamId, int id, int logId ), \
+  export task disable_msg_id_exp( int streamId, int id, int logId ), \
+  export task enable_type_ctrl_msg_id_exp( int streamId, int id, int logId ), \
+  export task enable_msg_log_exp( int streamId, int logId ), \
+  export task disable_msg_log_exp( int streamId, int logId ), \
+  export task open_msg_log_exp( int streamId, string  filename, int mode, ref int logId ), \
+  export task close_msg_log_exp( int streamId, int logId ), \
+  export task enable_msg_feature_exp( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] scope,  bit[(`VMT_MESSAGE_FEATURE_WIDTH - 1):0] features, int logId ), \
+  export task disable_msg_feature_exp( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] scope, bit[(`VMT_MESSAGE_FEATURE_WIDTH - 1):0] features, int logId )
+
+`define SVT_XACTOR_BFM_IF_UTIL_EXPORT_START \
+  export task start_exp()
+
+`define SVT_XACTOR_BFM_IF_UTIL_EXPORT_CREATE_WATCHPOINT \
+  export task create_watchpoint_exp( int wp_type, int id, ref int watchpointHandle ), \
+  export task combine_watchpoints_exp( int base1, int i_logic, int base2, ref int watchpointHandle ), \
+  export task create_watchpoint_range_exp( int wp_type, int id_low, int id_high, ref int watchpointHandle ), \
+  export task destroy_watchpoint_exp( int streamId, int wpHandl ), \
+  export task disable_watchpoint_exp( int streamId, int wpHandl ), \
+  export task enable_watchpoint_exp( int streamId, int wpHandl ), \
+  export task set_watchpoint_trigger_exp( int streamId, int wpHandle, int i_parameter, int value ), \
+  export task get_watchpoint_trigger_exp( int streamId, int wpHandle, int i_parameter, ref int value )
+
+`define  SVT_XACTOR_BFM_IF_UTIL_EXPORT_WATCH_FOR \
+  export task watch_for_exp( int wpHandle, ref int objHandle ), \
+  export task get_watchpoint_data_count_exp(int dataHandle, ref int count ), \
+  export task get_watchpoint_data_size_exp(int dataHandle, int position, ref int dataSize ), \
+  export task get_watchpoint_data_type_exp(int dataHandle, int position, ref int dataType ), \
+  export task get_watchpoint_data_name_exp(int dataHandle, int position, ref string name, ref int status ), \
+  export task get_watchpoint_data_bit_exp(int dataHandle, int position, ref bit value, ref int status ), \
+  export task get_watchpoint_data_int_exp(int dataHandle, int position, ref int value, ref int status ), \
+  export task get_watchpoint_data_string_exp(int dataHandle, int position, int line, ref string value, ref int status ), \
+  export task get_watchpoint_data_vec_2_exp( int dataHandle, int position, int word, ref bit[(2 - 1):0] value, ref int status ), \
+  export task get_watchpoint_data_vec_4_exp( int dataHandle, int position, int word, ref bit[(4 - 1):0] value, ref int status ), \
+  export task get_watchpoint_data_vec_8_exp( int dataHandle, int position, int word, ref bit[(8 - 1):0] value, ref int status ), \
+  export task get_watchpoint_data_vec_16_exp( int dataHandle, int position, int word, ref bit[(16 - 1):0] value, ref int status ), \
+  export task get_watchpoint_data_vec_32_exp( int dataHandle, int position, int word, ref bit[(32 - 1):0] value, ref int status ), \
+  export task get_watchpoint_data_vec_64_exp( int dataHandle, int position, int word, ref bit[(64 - 1):0] value, ref int status ), \
+  export task get_watchpoint_data_vec_128_exp( int dataHandle, int position, int word, ref bit[(128 - 1):0] value, ref int status ), \
+  export task get_watchpoint_data_vec_256_exp( int dataHandle, int position, int word, ref bit[(256 - 1):0] value, ref int status ), \
+  export task get_watchpoint_data_vec_512_exp( int dataHandle, int position, int word, ref bit[(512 - 1):0] value, ref int status ), \
+  export task get_watchpoint_data_vec_1024_exp( int dataHandle, int position, int word, ref bit[(1024 - 1):0] value, ref int status )
+
+`define SVT_XACTOR_BFM_IF_UTIL_EXPORT_BLOCK_STREAM \
+  export task block_stream_exp( int streamId, int timeOut, ref int cmd_status ), \
+  export task sync_stream_exp( int streamId, int timeOut, ref int cmd_status )
+
+`define SVT_XACTOR_BFM_IF_UTIL_EXPORT_DELETE_HANDLE \
+  export task delete_handle_exp( int streamId, int handle )
+
+`define SVT_XACTOR_BFM_IF_UTIL_EXPORT_SET_CONFIG_PARAM \
+  export task set_config_param_exp( int streamId, int _parameter, int value )
+
+`define SVT_XACTOR_BFM_IF_UTIL_EXPORT_GET_CONFIG_PARAM \
+  export task get_config_param_exp( int streamId, int _parameter, ref int value )
+
+`ifdef SVT_XACTOR_BFM_CMD_SET_PORT
+ `define SVT_XACTOR_BFM_IF_UTIL_EXPORT_SET_PORT \
+    export task set_port_exp( int streamId, int portId, bit [(`SVT_XACTOR_BFM_CMD_SET_PORT-1):0] value, int numDelayClocks, int numDriveClocks )
+`endif
+
+`ifdef SVT_XACTOR_BFM_CMD_GET_PORT
+ `define SVT_XACTOR_BFM_IF_UTIL_EXPORT_GET_PORT \
+    export task get_port_exp( int streamId, int portId, ref bit [(`SVT_XACTOR_BFM_CMD_GET_PORT-1):0] value )
+`endif
+
+`define SVT_XACTOR_BFM_IF_UTIL_EXPORT_START_STREAM \
+  export task start_stream_exp( ref int newStreamId )
+
+`define SVT_XACTOR_BFM_IF_UTIL_EXPORT_NEW_STREAM \
+  export task new_stream_exp( int channelId, ref int newStreamId )
+
+`define SVT_XACTOR_BFM_IF_UTIL_EXPORT_END_STREAM \
+  export task end_stream_exp( int streamId )
+
+`define SVT_XACTOR_BFM_IF_UTIL_EXPORT_GET_VERSION \
+  export task get_version_exp( ref bit[`VMT_MODEL_VERSION_STRING_WIDTH-1:0] version )
+
+`define SVT_XACTOR_BFM_IF_UTIL_EXPORT_RESET_MODEL \
+  export task reset_model_exp( bit[15:0] resetType )
+
+`define SVT_XACTOR_BFM_IF_UTIL_EXPORT_OPEN_LOG \
+  export task open_log_exp( int logType, bit[`VMT_MESSAGE_LOG_STRING_WIDTH-1:0] filename, bit[`VMT_MESSAGE_LOG_STRING_WIDTH-1:0] mode )
+
+`define SVT_XACTOR_BFM_IF_UTIL_EXPORT_CLOSE_LOG \
+  export task close_log_exp( int logType )
+
+`define SVT_XACTOR_BFM_IF_UTIL_EXPORT_ENABLE_LOG \
+  export task enable_log_exp( int logType )
+
+`define SVT_XACTOR_BFM_IF_UTIL_EXPORT_DISABLE_LOG \
+  export task disable_log_exp( int logType )
+
+
+`define SVT_XACTOR_BFM_IF_UTIL_IMPORT_SET_MSG_LEVEL \
+  import task enable_msg_type( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] types, int logId ), \
+  import task disable_msg_type( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] types, int logId ), \
+  import task enable_msg_id( int streamId, int id, int logId ), \
+  import task disable_msg_id( int streamId, int id, int logId ), \
+  import task enable_type_ctrl_msg_id( int streamId, int id, int logId ), \
+  import task enable_msg_log( int streamId, int logId ), \
+  import task disable_msg_log( int streamId, int logId ), \
+  import task open_msg_log( int streamId, string  filename, int mode, ref int logId ), \
+  import task close_msg_log( int streamId, int logId ), \
+  import task enable_msg_feature( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] scope, bit[(`VMT_MESSAGE_FEATURE_WIDTH - 1):0] features, int logId ), \
+  import task disable_msg_feature( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] scope, bit[(`VMT_MESSAGE_FEATURE_WIDTH - 1):0] features, int logId )
+
+`define SVT_XACTOR_BFM_IF_UTIL_IMPORT_START \
+  import task start()
+
+`define SVT_XACTOR_BFM_IF_UTIL_IMPORT_CREATE_WATCHPOINT \
+  import task create_watchpoint( int wp_type, int id, ref int watchpointHandle ), \
+  import task combine_watchpoints( int base1, int i_logic, int base2, ref int watchpointHandle ), \
+  import task create_watchpoint_range( int wp_type, int id_low, int id_high, ref int watchpointHandle ), \
+  import task destroy_watchpoint ( int streamId, int wpHandl ), \
+  import task disable_watchpoint ( int streamId, int wpHandl ), \
+  import task enable_watchpoint ( int streamId, int wpHandl ), \
+  import task set_watchpoint_trigger ( int streamId, int wpHandle, int i_parameter, int value ), \
+  import task get_watchpoint_trigger ( int streamId, int wpHandle, int i_parameter, ref int value )
+
+`define  SVT_XACTOR_BFM_IF_UTIL_IMPORT_WATCH_FOR \
+  import task watch_for( int wpHandle, ref int objHandle ), \
+  import task get_watchpoint_data_count(int dataHandle, ref int count ), \
+  import task get_watchpoint_data_size(int dataHandle, int position, ref int dataSize ), \
+  import task get_watchpoint_data_type(int dataHandle, int position, ref int dataType ), \
+  import task get_watchpoint_data_name(int dataHandle, int position, ref string name, ref int status ), \
+  import task get_watchpoint_data_bit(int dataHandle, int position, ref bit value, ref int status ), \
+  import task get_watchpoint_data_int(int dataHandle, int position, ref int value, ref int status ), \
+  import task get_watchpoint_data_string(int dataHandle, int position, int line, ref string value, ref int status ), \
+  import task get_watchpoint_data_vec_2( int dataHandle, int position, int word, ref bit[(2 - 1):0] value, ref int status ), \
+  import task get_watchpoint_data_vec_4( int dataHandle, int position, int word, ref bit[(4 - 1):0] value, ref int status ), \
+  import task get_watchpoint_data_vec_8( int dataHandle, int position, int word, ref bit[(8 - 1):0] value, ref int status ), \
+  import task get_watchpoint_data_vec_16( int dataHandle, int position, int word, ref bit[(16 - 1):0] value, ref int status ), \
+  import task get_watchpoint_data_vec_32( int dataHandle, int position, int word, ref bit[(32 - 1):0] value, ref int status ), \
+  import task get_watchpoint_data_vec_64( int dataHandle, int position, int word, ref bit[(64 - 1):0] value, ref int status ), \
+  import task get_watchpoint_data_vec_128( int dataHandle, int position, int word, ref bit[(128 - 1):0] value, ref int status ), \
+  import task get_watchpoint_data_vec_256( int dataHandle, int position, int word, ref bit[(256 - 1):0] value, ref int status ), \
+  import task get_watchpoint_data_vec_512( int dataHandle, int position, int word, ref bit[(512 - 1):0] value, ref int status ), \
+  import task get_watchpoint_data_vec_1024( int dataHandle, int position, int word, ref bit[(1024 - 1):0] value, ref int status )
+
+`define SVT_XACTOR_BFM_IF_UTIL_IMPORT_BLOCK_STREAM \
+  import task block_stream( int streamId, int timeOut, ref int cmd_status ), \
+  import task sync_stream( int streamId, int timeOut, ref int cmd_status )
+
+`define SVT_XACTOR_BFM_IF_UTIL_IMPORT_DELETE_HANDLE \
+  import task delete_handle( int streamId, int handle )
+
+`define SVT_XACTOR_BFM_IF_UTIL_IMPORT_SET_CONFIG_PARAM \
+  import task set_config_param( int streamId, int _parameter, int value ), \
+  import task set_config_param_bv( int streamId, int _parameter, bit[31:0] value )
+
+`define SVT_XACTOR_BFM_IF_UTIL_IMPORT_GET_CONFIG_PARAM \
+  import task get_config_param( int streamId, int _parameter, ref int value ), \
+  import task get_config_param_bv( int streamId, int _parameter, ref bit[31:0] value )
+
+`ifdef SVT_XACTOR_BFM_CMD_SET_PORT
+ `define SVT_XACTOR_BFM_IF_UTIL_IMPORT_SET_PORT \
+    import task set_port( int streamId, int portId, bit [(`SVT_XACTOR_BFM_CMD_SET_PORT-1):0] value, int numDelayClocks, int numDriveClocks )
+`endif
+
+`ifdef SVT_XACTOR_BFM_CMD_GET_PORT
+ `define SVT_XACTOR_BFM_IF_UTIL_IMPORT_GET_PORT \
+    import task get_port( int streamId, int portId, ref bit [(`SVT_XACTOR_BFM_CMD_GET_PORT-1):0] value )
+`endif
+
+`define SVT_XACTOR_BFM_IF_UTIL_IMPORT_START_STREAM \
+  import task start_stream( ref int newStreamId )
+
+`define SVT_XACTOR_BFM_IF_UTIL_IMPORT_NEW_STREAM \
+  import task new_stream( int channelId, ref int newStreamId )
+
+`define SVT_XACTOR_BFM_IF_UTIL_IMPORT_END_STREAM \
+  import task end_stream( int streamId )
+
+`define SVT_XACTOR_BFM_IF_UTIL_IMPORT_GET_VERSION \
+  import task get_version( ref bit[`VMT_MODEL_VERSION_STRING_WIDTH-1:0] version )
+
+`define SVT_XACTOR_BFM_IF_UTIL_IMPORT_RESET_MODEL \
+  import task reset_model( bit[15:0] resetType )
+
+`define SVT_XACTOR_BFM_IF_UTIL_IMPORT_OPEN_LOG \
+  import task open_log( int logType, bit[`VMT_MESSAGE_LOG_STRING_WIDTH-1:0] filename, bit[`VMT_MESSAGE_LOG_STRING_WIDTH-1:0] mode )
+
+`define SVT_XACTOR_BFM_IF_UTIL_IMPORT_CLOSE_LOG \
+  import task close_log( int logType )
+
+`define SVT_XACTOR_BFM_IF_UTIL_IMPORT_ENABLE_LOG \
+  import task enable_log( int logType )
+
+`define SVT_XACTOR_BFM_IF_UTIL_IMPORT_DISABLE_LOG \
+  import task disable_log( int logType )
+
+
+`define SVT_XACTOR_BFM_CMD_IF_UTIL_WRAP_COMMAND_CALLS(port, inst) \
+`ifdef SVT_XACTOR_BFM_CMD_SET_MSG_LEVEL \
+task port.enable_msg_type_exp( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] types, int logId ); \
+  inst.enable_msg_type( streamId, types, logId ); \
+endtask \
+task port.disable_msg_type_exp( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] types, int logId ); \
+  inst.disable_msg_type( streamId, types, logId ); \
+endtask \
+task port.enable_msg_id_exp( int streamId, int id, int logId ); \
+  inst.enable_msg_id( streamId, id, logId ); \
+endtask \
+task port.disable_msg_id_exp( int streamId, int id, int logId ); \
+  inst.disable_msg_id( streamId, id, logId ); \
+endtask \
+task port.enable_type_ctrl_msg_id_exp( int streamId, int id, int logId ); \
+  inst.enable_type_ctrl_msg_id( streamId, id, logId ); \
+endtask \
+task port.enable_msg_log_exp( int streamId, int logId ); \
+  inst.enable_msg_log( streamId, logId ); \
+endtask \
+task port.disable_msg_log_exp( int streamId, int logId ); \
+  inst.disable_msg_log( streamId, logId ); \
+endtask \
+task automatic port.open_msg_log_exp( int streamId, string  filename, int mode, ref int logId ); \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _logId = logId; \
+  inst.open_msg_log( streamId, filename, mode, _logId ); \
+  logId = _logId; \
+endtask \
+task port.close_msg_log_exp( int streamId, int logId ); \
+  inst.close_msg_log( streamId, logId ); \
+endtask \
+task port.enable_msg_feature_exp( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] scope, bit[(`VMT_MESSAGE_FEATURE_WIDTH - 1):0] features, int logId ); \
+  inst.enable_msg_feature( streamId, scope, features, logId ); \
+endtask \
+task port.disable_msg_feature_exp( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] scope, bit[(`VMT_MESSAGE_FEATURE_WIDTH - 1):0] features, int logId ); \
+  inst.disable_msg_feature( streamId, scope, features, logId ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_START \
+task port.start_exp(); \
+  inst.start(); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_CREATE_WATCHPOINT \
+task automatic port.create_watchpoint_exp( int wp_type, int id, ref int watchpointHandle ); \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _watchpointHandle = watchpointHandle; \
+  inst.create_watchpoint( wp_type, id, _watchpointHandle ); \
+  watchpointHandle = _watchpointHandle; \
+endtask \
+task automatic port.combine_watchpoints_exp( int base1, int i_logic, int base2, ref int watchpointHandle ); \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _watchpointHandle = watchpointHandle; \
+  inst.combine_watchpoints( base1, i_logic, base2, _watchpointHandle ); \
+  watchpointHandle = _watchpointHandle; \
+endtask \
+task automatic port.create_watchpoint_range_exp( int wp_type, int id_low, int id_high, ref int watchpointHandle ); \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _watchpointHandle = watchpointHandle; \
+  inst.create_watchpoint_range( wp_type, id_low, id_high, _watchpointHandle ); \
+  watchpointHandle = _watchpointHandle; \
+endtask \
+task port.destroy_watchpoint_exp( int streamId, int wpHandl ); \
+  inst.destroy_watchpoint( streamId, wpHandl ); \
+endtask \
+task port.disable_watchpoint_exp( int streamId, int wpHandl ); \
+  inst.disable_watchpoint( streamId, wpHandl ); \
+endtask \
+task port.enable_watchpoint_exp( int streamId, int wpHandl ); \
+  inst.enable_watchpoint( streamId, wpHandl ); \
+endtask \
+task port.set_watchpoint_trigger_exp( int streamId, int wpHandle, int i_parameter, int value ); \
+  inst.set_watchpoint_trigger( streamId, wpHandle, i_parameter, value ); \
+endtask \
+task automatic port.get_watchpoint_trigger_exp( int streamId, int wpHandle, int i_parameter, ref int value ); \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _value = value; \
+  inst.get_watchpoint_trigger( streamId, wpHandle, i_parameter, _value ); \
+  value = _value; \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_WATCH_FOR \
+task automatic port.watch_for_exp( int wpHandle, ref int objHandle ); \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _objHandle = objHandle; \
+  inst.watch_for( wpHandle, _objHandle ); \
+  objHandle = _objHandle; \
+endtask \
+task automatic port.get_watchpoint_data_count_exp(int dataHandle, ref int count ); \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _count = count; \
+  inst.get_watchpoint_data_count(dataHandle, _count ); \
+  count = _count; \
+endtask \
+task automatic port.get_watchpoint_data_size_exp(int dataHandle, int position, ref int dataSize ); \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _dataSize = dataSize; \
+  inst.get_watchpoint_data_size(dataHandle, position, _dataSize ); \
+  dataSize = _dataSize; \
+endtask \
+task automatic port.get_watchpoint_data_type_exp(int dataHandle, int position, ref int dataType ); \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _dataType = dataType; \
+  inst.get_watchpoint_data_type(dataHandle, position, _dataType ); \
+  dataType = _dataType; \
+endtask \
+task automatic port.get_watchpoint_data_name_exp(int dataHandle, int position, ref string name, ref int status ); \
+  `SVT_XACTOR_BFM_IF_UTIL_WP_DATA_STRING_EXCHANGE_TYPE _name = name; \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _status = status; \
+  inst.get_watchpoint_data_name(dataHandle, position, _name, _status ); \
+  name = _name; \
+  status = _status; \
+endtask \
+task automatic port.get_watchpoint_data_bit_exp(int dataHandle, int position, ref bit value, ref int status ); \
+  `SVT_XACTOR_BFM_IF_UTIL_BIT_EXCHANGE_TYPE _value = value; \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _status = status; \
+  inst.get_watchpoint_data_bit(dataHandle, position, _value, _status ); \
+  value = _value; \
+  status = _status; \
+endtask \
+task automatic port.get_watchpoint_data_int_exp(int dataHandle, int position, ref int value, ref int status ); \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _value = value; \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _status = status; \
+  inst.get_watchpoint_data_int(dataHandle, position, _value, _status ); \
+  value = _value; \
+  status = _status; \
+endtask \
+task automatic port.get_watchpoint_data_string_exp(int dataHandle, int position, int line, ref string value, ref int status ); \
+  `SVT_XACTOR_BFM_IF_UTIL_WP_DATA_STRING_EXCHANGE_TYPE _value = value; \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _status = status; \
+  inst.get_watchpoint_data_string(dataHandle, position, line, _value, _status ); \
+  value = _value; \
+  status = _status; \
+endtask \
+task automatic port.get_watchpoint_data_vec_2_exp( int dataHandle, int position, int word, ref bit[(2 - 1):0] value, ref int status ); \
+  `SVT_XACTOR_BFM_IF_UTIL_BIT_EXCHANGE_TYPE[(2 - 1):0] _value = value; \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _status = status; \
+  inst.get_watchpoint_data_vec_2( dataHandle, position, word,  _value, _status ); \
+  value = _value; \
+  status = _status; \
+endtask \
+task automatic port.get_watchpoint_data_vec_4_exp( int dataHandle, int position, int word, ref bit[(4 - 1):0] value, ref int status ); \
+  `SVT_XACTOR_BFM_IF_UTIL_BIT_EXCHANGE_TYPE[(4 - 1):0] _value = value; \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _status = status; \
+  inst.get_watchpoint_data_vec_4( dataHandle, position, word,  _value, _status ); \
+  value = _value; \
+  status = _status; \
+endtask \
+task automatic port.get_watchpoint_data_vec_8_exp( int dataHandle, int position, int word, ref bit[(8 - 1):0] value, ref int status ); \
+  `SVT_XACTOR_BFM_IF_UTIL_BIT_EXCHANGE_TYPE[(8 - 1):0] _value = value; \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _status = status; \
+  inst.get_watchpoint_data_vec_8( dataHandle, position, word,  _value, _status ); \
+  value = _value; \
+  status = _status; \
+endtask \
+task automatic port.get_watchpoint_data_vec_16_exp( int dataHandle, int position, int word, ref bit[(16 - 1):0] value, ref int status ); \
+  `SVT_XACTOR_BFM_IF_UTIL_BIT_EXCHANGE_TYPE[(16 - 1):0] _value = value; \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _status = status; \
+  inst.get_watchpoint_data_vec_16( dataHandle, position, word,  _value, _status ); \
+  value = _value; \
+  status = _status; \
+endtask \
+task automatic port.get_watchpoint_data_vec_32_exp( int dataHandle, int position, int word, ref bit[(32 - 1):0] value, ref int status ); \
+  `SVT_XACTOR_BFM_IF_UTIL_BIT_EXCHANGE_TYPE[(32 - 1):0] _value = value; \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _status = status; \
+  inst.get_watchpoint_data_vec_32( dataHandle, position, word,  _value, _status ); \
+  value = _value; \
+  status = _status; \
+endtask \
+task automatic port.get_watchpoint_data_vec_64_exp( int dataHandle, int position, int word, ref bit[(64 - 1):0] value, ref int status ); \
+  `SVT_XACTOR_BFM_IF_UTIL_BIT_EXCHANGE_TYPE[(64 - 1):0] _value = value; \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _status = status; \
+  inst.get_watchpoint_data_vec_64( dataHandle, position, word,  _value, _status ); \
+  value = _value; \
+  status = _status; \
+endtask \
+task automatic port.get_watchpoint_data_vec_128_exp( int dataHandle, int position, int word, ref bit[(128 - 1):0] value, ref int status ); \
+  `SVT_XACTOR_BFM_IF_UTIL_BIT_EXCHANGE_TYPE[(128 - 1):0] _value = value; \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _status = status; \
+  inst.get_watchpoint_data_vec_128( dataHandle, position, word,  _value, _status ); \
+  value = _value; \
+  status = _status; \
+endtask \
+task automatic port.get_watchpoint_data_vec_256_exp( int dataHandle, int position, int word, ref bit[(256 - 1):0] value, ref int status ); \
+  `SVT_XACTOR_BFM_IF_UTIL_BIT_EXCHANGE_TYPE[(256 - 1):0] _value = value; \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _status = status; \
+  inst.get_watchpoint_data_vec_256( dataHandle, position, word,  _value, _status ); \
+  value = _value; \
+  status = _status; \
+endtask \
+task automatic port.get_watchpoint_data_vec_512_exp( int dataHandle, int position, int word, ref bit[(512 - 1):0] value, ref int status ); \
+  `SVT_XACTOR_BFM_IF_UTIL_BIT_EXCHANGE_TYPE[(512 - 1):0] _value = value; \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _status = status; \
+  inst.get_watchpoint_data_vec_512( dataHandle, position, word,  _value, _status ); \
+  value = _value; \
+  status = _status; \
+endtask \
+task automatic port.get_watchpoint_data_vec_1024_exp( int dataHandle, int position, int word, ref bit[(1024 - 1):0] value, ref int status ) ; \
+  `SVT_XACTOR_BFM_IF_UTIL_BIT_EXCHANGE_TYPE[(1024 - 1):0] _value = value; \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _status = status; \
+  inst.get_watchpoint_data_vec_1024( dataHandle, position, word,  _value, _status ); \
+  value = _value; \
+  status = _status; \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_BLOCK_STREAM \
+task automatic port.block_stream_exp( int streamId, int timeOut, ref int cmd_status ); \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _cmd_status = cmd_status; \
+  inst.block_stream( streamId, timeOut, _cmd_status ); \
+  cmd_status = _cmd_status; \
+endtask \
+task automatic port.sync_stream_exp( int streamId, int timeOut, ref int cmd_status ); \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _cmd_status = cmd_status; \
+  inst.sync_stream( streamId, timeOut, _cmd_status ); \
+  cmd_status = _cmd_status; \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_DELETE_HANDLE \
+task port.delete_handle_exp( int streamId, int handle ); \
+  inst.delete_handle( streamId, handle ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_SET_CONFIG_PARAM \
+task port.set_config_param_exp( int streamId, int _parameter, int value ); \
+  inst.set_config_param( streamId, _parameter, value ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_GET_CONFIG_PARAM \
+task automatic port.get_config_param_exp( int streamId, int _parameter, ref int value ); \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _value = value; \
+  inst.get_config_param( streamId, _parameter, _value ); \
+  value = _value; \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_SET_PORT \
+task port.set_port_exp( int streamId, int portId, bit [(`SVT_XACTOR_BFM_CMD_SET_PORT-1):0] value, int numDelayClocks, int numDriveClocks ); \
+  inst.set_port( streamId, portId, value, numDelayClocks, numDriveClocks ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_GET_PORT \
+task automatic port.get_port_exp( int streamId, int portId, ref bit [(`SVT_XACTOR_BFM_CMD_GET_PORT-1):0] value ); \
+  `SVT_XACTOR_BFM_IF_UTIL_BIT_EXCHANGE_TYPE[(`SVT_XACTOR_BFM_CMD_GET_PORT - 1):0] _value; \
+  _value = value; \
+  inst.get_port( streamId, portId, _value ); \
+  value = _value; \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_START_STREAM \
+task automatic port.start_stream_exp( ref int newStreamId ); \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _newStreamId = newStreamId; \
+  inst.start_stream( _newStreamId ); \
+  newStreamId = _newStreamId; \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_NEW_STREAM \
+task automatic port.new_stream_exp( int channelId, ref int newStreamId ); \
+  `SVT_XACTOR_BFM_IF_UTIL_INT_EXCHANGE_TYPE _newStreamId = newStreamId; \
+  inst.new_stream( channelId, _newStreamId ); \
+  newStreamId = _newStreamId; \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_END_STREAM \
+task automatic port.end_stream_exp( int streamId ); \
+  inst.end_stream( streamId ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_GET_VERSION \
+task automatic port.get_version_exp( ref bit[`VMT_MODEL_VERSION_STRING_WIDTH-1:0] version ); \
+  `SVT_XACTOR_BFM_IF_UTIL_BIT_EXCHANGE_TYPE[(`VMT_MODEL_VERSION_STRING_WIDTH - 1):0] _version = version; \
+  inst.get_version( _version ); \
+  version = _version; \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_RESET_MODEL \
+task port.reset_model_exp( bit[15:0] resetType ); \
+  inst.reset_model( resetType ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_OPEN_LOG \
+task port.open_log_exp( int logType, bit[`VMT_MESSAGE_LOG_STRING_WIDTH-1:0] filename, bit[`VMT_MESSAGE_LOG_STRING_WIDTH-1:0] mode ); \
+  inst.open_log( logType, filename, mode ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_CLOSE_LOG \
+task port.close_log_exp( int logType ); \
+  inst.close_log( logType ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_ENABLE_LOG \
+task port.enable_log_exp( int logType ); \
+  inst.enable_log( logType ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_DISABLE_LOG \
+task port.disable_log_exp( int logType ); \
+  inst.disable_log( logType ); \
+endtask\
+`endif
+
+
+`define SVT_XACTOR_BFM_CMD_IF_UTIL_WRAP_NOP_COMMAND_CALLS(port) \
+`ifdef SVT_XACTOR_BFM_CMD_SET_MSG_LEVEL \
+task port.enable_msg_type_exp( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] types, int logId ); \
+endtask \
+task port.disable_msg_type_exp( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] types, int logId ); \
+endtask \
+task port.enable_msg_id_exp( int streamId, int id, int logId ); \
+endtask \
+task port.disable_msg_id_exp( int streamId, int id, int logId ); \
+endtask \
+task port.enable_type_ctrl_msg_id_exp( int streamId, int id, int logId ); \
+endtask \
+task port.enable_msg_log_exp( int streamId, int logId ); \
+endtask \
+task port.disable_msg_log_exp( int streamId, int logId ); \
+endtask \
+task automatic port.open_msg_log_exp( int streamId, string  filename, int mode, ref int logId ); \
+endtask \
+task port.close_msg_log_exp( int streamId, int logId ); \
+endtask \
+task port.enable_msg_feature_exp( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] scope, bit[(`VMT_MESSAGE_FEATURE_WIDTH - 1):0] features, int logId ); \
+endtask \
+task port.disable_msg_feature_exp( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] scope, bit[(`VMT_MESSAGE_FEATURE_WIDTH - 1):0] features, int logId ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_START \
+task port.start_exp(); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_CREATE_WATCHPOINT \
+task automatic port.create_watchpoint_exp( int wp_type, int id, ref int watchpointHandle ); \
+endtask \
+task automatic port.combine_watchpoints_exp( int base1, int i_logic, int base2, ref int watchpointHandle ); \
+endtask \
+task automatic port.create_watchpoint_range_exp( int wp_type, int id_low, int id_high, ref int watchpointHandle ); \
+endtask \
+task port.destroy_watchpoint_exp( int streamId, int wpHandl ); \
+endtask \
+task port.disable_watchpoint_exp( int streamId, int wpHandl ); \
+endtask \
+task port.enable_watchpoint_exp( int streamId, int wpHandl ); \
+endtask \
+task port.set_watchpoint_trigger_exp( int streamId, int wpHandle, int i_parameter, int value ); \
+endtask \
+task automatic port.get_watchpoint_trigger_exp( int streamId, int wpHandle, int i_parameter, ref int value ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_WATCH_FOR \
+task automatic port.watch_for_exp( int wpHandle, ref int objHandle ); \
+endtask \
+task automatic port.get_watchpoint_data_count_exp(int dataHandle, ref int count ); \
+endtask \
+task automatic port.get_watchpoint_data_size_exp(int dataHandle, int position, ref int dataSize ); \
+endtask \
+task automatic port.get_watchpoint_data_type_exp(int dataHandle, int position, ref int dataType ); \
+endtask \
+task automatic port.get_watchpoint_data_name_exp(int dataHandle, int position, ref string name, ref int status ); \
+endtask \
+task automatic port.get_watchpoint_data_bit_exp(int dataHandle, int position, ref bit value, ref int status ); \
+endtask \
+task automatic port.get_watchpoint_data_int_exp(int dataHandle, int position, ref int value, ref int status ); \
+endtask \
+task automatic port.get_watchpoint_data_string_exp(int dataHandle, int position, int line, ref string value, ref int status ); \
+endtask \
+task automatic port.get_watchpoint_data_vec_2_exp( int dataHandle, int position, int word, ref bit[(2 - 1):0] value, ref int status ); \
+endtask \
+task automatic port.get_watchpoint_data_vec_4_exp( int dataHandle, int position, int word, ref bit[(4 - 1):0] value, ref int status ); \
+endtask \
+task automatic port.get_watchpoint_data_vec_8_exp( int dataHandle, int position, int word, ref bit[(8 - 1):0] value, ref int status ); \
+endtask \
+task automatic port.get_watchpoint_data_vec_16_exp( int dataHandle, int position, int word, ref bit[(16 - 1):0] value, ref int status ); \
+endtask \
+task automatic port.get_watchpoint_data_vec_32_exp( int dataHandle, int position, int word, ref bit[(32 - 1):0] value, ref int status ); \
+endtask \
+task automatic port.get_watchpoint_data_vec_64_exp( int dataHandle, int position, int word, ref bit[(64 - 1):0] value, ref int status ); \
+endtask \
+task automatic port.get_watchpoint_data_vec_128_exp( int dataHandle, int position, int word, ref bit[(128 - 1):0] value, ref int status ); \
+endtask \
+task automatic port.get_watchpoint_data_vec_256_exp( int dataHandle, int position, int word, ref bit[(256 - 1):0] value, ref int status ); \
+endtask \
+task automatic port.get_watchpoint_data_vec_512_exp( int dataHandle, int position, int word, ref bit[(512 - 1):0] value, ref int status ); \
+endtask \
+task automatic port.get_watchpoint_data_vec_1024_exp( int dataHandle, int position, int word, ref bit[(1024 - 1):0] value, ref int status ) ; \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_BLOCK_STREAM \
+task automatic port.block_stream_exp( int streamId, int timeOut, ref int cmd_status ); \
+endtask \
+task automatic port.sync_stream_exp( int streamId, int timeOut, ref int cmd_status ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_DELETE_HANDLE \
+task port.delete_handle_exp( int streamId, int handle ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_SET_CONFIG_PARAM \
+task port.set_config_param_exp( int streamId, int _parameter, int value ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_GET_CONFIG_PARAM \
+task automatic port.get_config_param_exp( int streamId, int _parameter, ref int value ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_SET_PORT \
+task port.set_port_exp( int streamId, int portId, bit [(`SVT_XACTOR_BFM_CMD_SET_PORT-1):0] value, int numDelayClocks, int numDriveClocks ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_GET_PORT \
+task automatic port.get_port_exp( int streamId, int portId, ref bit [(`SVT_XACTOR_BFM_CMD_GET_PORT-1):0] value ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_START_STREAM \
+task automatic port.start_stream_exp( ref int newStreamId ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_NEW_STREAM \
+task automatic port.new_stream_exp( int channelId, ref int newStreamId ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_END_STREAM \
+task automatic port.end_stream_exp( int streamId ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_GET_VERSION \
+task automatic port.get_version_exp( ref bit[`VMT_MODEL_VERSION_STRING_WIDTH-1:0] version ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_RESET_MODEL \
+task port.reset_model_exp( bit[15:0] resetType ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_OPEN_LOG \
+task port.open_log_exp( int logType, bit[`VMT_MESSAGE_LOG_STRING_WIDTH-1:0] filename, bit[`VMT_MESSAGE_LOG_STRING_WIDTH-1:0] mode ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_CLOSE_LOG \
+task port.close_log_exp( int logType ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_ENABLE_LOG \
+task port.enable_log_exp( int logType ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_DISABLE_LOG \
+task port.disable_log_exp( int logType ); \
+endtask\
+`endif
+
+
+`define SVT_XACTOR_BFM_VMT_CMD_METHODS_DECL \
+`ifdef SVT_XACTOR_BFM_CMD_SET_MSG_LEVEL \
+  extern virtual task enable_msg_type( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] types, int logId ); \
+  extern virtual task disable_msg_type( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] types, int logId ); \
+  extern virtual task enable_msg_id( int streamId, int id, int logId ); \
+  extern virtual task disable_msg_id( int streamId, int id, int logId ); \
+  extern virtual task enable_type_ctrl_msg_id( int streamId, int id, int logId ); \
+  extern virtual task enable_msg_log( int streamId, int logId ); \
+  extern virtual task disable_msg_log( int streamId, int logId ); \
+  extern virtual task open_msg_log( int streamId, string  filename, int mode, ref int logId ); \
+  extern virtual task close_msg_log( int streamId, int logId ); \
+  extern virtual task enable_msg_feature( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] scope,  bit[(`VMT_MESSAGE_FEATURE_WIDTH - 1):0] features, int logId ); \
+  extern virtual task disable_msg_feature( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] scope, bit[(`VMT_MESSAGE_FEATURE_WIDTH - 1):0] features, int logId ); \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_START \
+  extern virtual task start(); \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_CREATE_WATCHPOINT \
+  extern virtual task create_watchpoint( int wp_type, int id, ref int watchpointHandle ); \
+  extern virtual task combine_watchpoints( int base1, int i_logic, int base2, ref int watchpointHandle ); \
+  extern virtual task create_watchpoint_range( int wp_type, int id_low, int id_high, ref int watchpointHandle ); \
+  extern virtual task destroy_watchpoint( int streamId, int wpHandl ); \
+  extern virtual task disable_watchpoint( int streamId, int wpHandl ); \
+  extern virtual task enable_watchpoint( int streamId, int wpHandl ); \
+  extern virtual task set_watchpoint_trigger( int streamId, int wpHandle, int i_parameter, int value ); \
+  extern virtual task get_watchpoint_trigger( int streamId, int wpHandle, int i_parameter, ref int value ); \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_WATCH_FOR \
+  extern virtual task watch_for( int wpHandle, ref int objHandle ); \
+  extern virtual task get_watchpoint_data_count(int dataHandle, ref int count ); \
+  extern virtual task get_watchpoint_data_size(int dataHandle, int position, ref int dataSize ); \
+  extern virtual task get_watchpoint_data_type(int dataHandle, int position, ref int dataType ); \
+  extern virtual task get_watchpoint_data_name(int dataHandle, int position, ref string name, ref int status ); \
+  extern virtual task get_watchpoint_data_bit(int dataHandle, int position, ref bit value, ref int status ); \
+  extern virtual task get_watchpoint_data_int(int dataHandle, int position, ref int value, ref int status ); \
+  extern virtual task get_watchpoint_data_string(int dataHandle, int position, int line, ref string value, ref int status ); \
+  extern virtual task get_watchpoint_data_vec_2( int dataHandle, int position, int word, ref bit[(2 - 1):0] value, ref int status ); \
+  extern virtual task get_watchpoint_data_vec_4( int dataHandle, int position, int word, ref bit[(4 - 1):0] value, ref int status ); \
+  extern virtual task get_watchpoint_data_vec_8( int dataHandle, int position, int word, ref bit[(8 - 1):0] value, ref int status ); \
+  extern virtual task get_watchpoint_data_vec_16( int dataHandle, int position, int word, ref bit[(16 - 1):0] value, ref int status ); \
+  extern virtual task get_watchpoint_data_vec_32( int dataHandle, int position, int word, ref bit[(32 - 1):0] value, ref int status ); \
+  extern virtual task get_watchpoint_data_vec_64( int dataHandle, int position, int word, ref bit[(64 - 1):0] value, ref int status ); \
+  extern virtual task get_watchpoint_data_vec_128( int dataHandle, int position, int word, ref bit[(128 - 1):0] value, ref int status ); \
+  extern virtual task get_watchpoint_data_vec_256( int dataHandle, int position, int word, ref bit[(256 - 1):0] value, ref int status ); \
+  extern virtual task get_watchpoint_data_vec_512( int dataHandle, int position, int word, ref bit[(512 - 1):0] value, ref int status ); \
+  extern virtual task get_watchpoint_data_vec_1024( int dataHandle, int position, int word, ref bit[(1024 - 1):0] value, ref int status ); \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_BLOCK_STREAM \
+  extern virtual task block_stream( int streamId, int timeOut, ref int cmd_status ); \
+  extern virtual task sync_stream( int streamId, int timeOut, ref int cmd_status ); \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_DELETE_HANDLE \
+  extern virtual task delete_handle( int streamId, int handle ); \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_SET_CONFIG_PARAM \
+  extern virtual task set_config_param( int streamId, int _parameter, int value ); \
+  extern virtual task set_config_param_bv( int streamId, int _parameter, bit[31:0] value ); \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_GET_CONFIG_PARAM \
+  extern virtual task get_config_param( int streamId, int _parameter, ref int value ); \
+  extern virtual task get_config_param_bv( int streamId, int _parameter, ref bit[31:0] value ); \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_SET_PORT \
+  extern virtual task set_port( int streamId, int portId, bit [(`SVT_XACTOR_BFM_CMD_SET_PORT-1):0] value, int numDelayClocks, int numDriveClocks ); \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_GET_PORT \
+  extern virtual task get_port( int streamId, int portId, ref bit [(`SVT_XACTOR_BFM_CMD_GET_PORT-1):0] value ); \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_START_STREAM \
+  extern virtual task start_stream( ref int newStreamId ); \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_NEW_STREAM \
+  extern virtual task new_stream( int channelId, ref int newStreamId ); \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_END_STREAM \
+  extern virtual task end_stream( int streamId ); \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_GET_VERSION \
+  extern virtual task get_version( ref bit[`VMT_MODEL_VERSION_STRING_WIDTH-1:0] version ); \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_RESET_MODEL \
+  extern virtual task reset_model( bit[15:0] resetType ); \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_OPEN_LOG \
+  extern virtual task open_log( int logType, bit[`VMT_MESSAGE_LOG_STRING_WIDTH-1:0] filename, bit[`VMT_MESSAGE_LOG_STRING_WIDTH-1:0] mode ); \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_CLOSE_LOG \
+  extern virtual task close_log( int logType ); \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_ENABLE_LOG \
+  extern virtual task enable_log( int logType ); \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_DISABLE_LOG \
+  extern virtual task disable_log( int logType ); \
+`endif
+
+
+`define SVT_XACTOR_BFM_VMT_CMD_METHODS_DEFAULT_IMP(classname) \
+`ifdef SVT_XACTOR_BFM_CMD_SET_MSG_LEVEL \
+task classname::enable_msg_type( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] types, int logId ); \
+  `svt_error("enable_msg_type", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::disable_msg_type( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] types, int logId ); \
+  `svt_error("disable_msg_type", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::enable_msg_id( int streamId, int id, int logId ); \
+  `svt_error("enable_msg_id", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::disable_msg_id( int streamId, int id, int logId ); \
+  `svt_error("disable_msg_id", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::enable_type_ctrl_msg_id( int streamId, int id, int logId ); \
+  `svt_error("enable_type_ctrl_msg_id", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::enable_msg_log( int streamId, int logId ); \
+  `svt_error("enable_msg_log", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::disable_msg_log( int streamId, int logId ); \
+  `svt_error("disable_msg_log", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::open_msg_log( int streamId, string  filename, int mode, ref int logId ); \
+  `svt_error("open_msg_log", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::close_msg_log( int streamId, int logId ); \
+  `svt_error("close_msg_log", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::enable_msg_feature( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] scope, bit[(`VMT_MESSAGE_FEATURE_WIDTH - 1):0] features, int logId ); \
+  `svt_error("enable_msg_feature", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::disable_msg_feature( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] scope, bit[(`VMT_MESSAGE_FEATURE_WIDTH - 1):0] features, int logId ); \
+  `svt_error("disable_msg_feature", "Virtual method must be overridden by an extended class."); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_START \
+task classname::start(); \
+  `svt_error("start", "Virtual method must be overridden by an extended class."); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_CREATE_WATCHPOINT \
+task classname::create_watchpoint( int wp_type, int id, ref int watchpointHandle ); \
+  `svt_error("create_watchpoint", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::combine_watchpoints( int base1, int i_logic, int base2, ref int watchpointHandle ); \
+  `svt_error("combine_watchpoints", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::create_watchpoint_range( int wp_type, int id_low, int id_high, ref int watchpointHandle ); \
+  `svt_error("create_watchpoint_range", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::destroy_watchpoint( int streamId, int wpHandl ); \
+  `svt_error("destroy_watchpoint", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::disable_watchpoint( int streamId, int wpHandl ); \
+  `svt_error("disable_watchpoint", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::enable_watchpoint( int streamId, int wpHandl ); \
+  `svt_error("enable_watchpoint", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::set_watchpoint_trigger( int streamId, int wpHandle, int i_parameter, int value ); \
+  `svt_error("set_watchpoint_trigger", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::get_watchpoint_trigger( int streamId, int wpHandle, int i_parameter, ref int value ); \
+  `svt_error("get_watchpoint_trigger", "Virtual method must be overridden by an extended class."); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_WATCH_FOR \
+task classname::watch_for( int wpHandle, ref int objHandle ); \
+  `svt_error("watch_for", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::get_watchpoint_data_count(int dataHandle, ref int count ); \
+  `svt_error("get_watchpoint_data_count", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::get_watchpoint_data_size(int dataHandle, int position, ref int dataSize ); \
+  `svt_error("get_watchpoint_data_size", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::get_watchpoint_data_type(int dataHandle, int position, ref int dataType ); \
+  `svt_error("get_watchpoint_data_type", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::get_watchpoint_data_name(int dataHandle, int position, ref string name, ref int status ); \
+  `svt_error("get_watchpoint_data_name", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::get_watchpoint_data_bit(int dataHandle, int position, ref bit value, ref int status ); \
+  `svt_error("get_watchpoint_data_bit", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::get_watchpoint_data_int(int dataHandle, int position, ref int value, ref int status ); \
+  `svt_error("get_watchpoint_data_int", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::get_watchpoint_data_string(int dataHandle, int position, int line, ref string value, ref int status ); \
+  `svt_error("get_watchpoint_data_string", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::get_watchpoint_data_vec_2( int dataHandle, int position, int word, ref bit[(2 - 1):0] value, ref int status ); \
+  `svt_error("get_watchpoint_data_vec_2", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::get_watchpoint_data_vec_4( int dataHandle, int position, int word, ref bit[(4 - 1):0] value, ref int status ); \
+  `svt_error("get_watchpoint_data_vec_4", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::get_watchpoint_data_vec_8( int dataHandle, int position, int word, ref bit[(8 - 1):0] value, ref int status ); \
+  `svt_error("get_watchpoint_data_vec_8", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::get_watchpoint_data_vec_16( int dataHandle, int position, int word, ref bit[(16 - 1):0] value, ref int status ); \
+  `svt_error("get_watchpoint_data_vec_16", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::get_watchpoint_data_vec_32( int dataHandle, int position, int word, ref bit[(32 - 1):0] value, ref int status ); \
+  `svt_error("get_watchpoint_data_vec_32", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::get_watchpoint_data_vec_64( int dataHandle, int position, int word, ref bit[(64 - 1):0] value, ref int status ); \
+  `svt_error("get_watchpoint_data_vec_64", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::get_watchpoint_data_vec_128( int dataHandle, int position, int word, ref bit[(128 - 1):0] value, ref int status ); \
+  `svt_error("get_watchpoint_data_vec_128", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::get_watchpoint_data_vec_256( int dataHandle, int position, int word, ref bit[(256 - 1):0] value, ref int status ); \
+  `svt_error("get_watchpoint_data_vec_256", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::get_watchpoint_data_vec_512( int dataHandle, int position, int word, ref bit[(512 - 1):0] value, ref int status ); \
+  `svt_error("get_watchpoint_data_vec_512", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::get_watchpoint_data_vec_1024( int dataHandle, int position, int word, ref bit[(1024 - 1):0] value, ref int status ) ; \
+  `svt_error("get_watchpoint_data_vec_1024", "Virtual method must be overridden by an extended class."); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_BLOCK_STREAM \
+task classname::block_stream( int streamId, int timeOut, ref int cmd_status ); \
+  `svt_error("block_stream", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::sync_stream( int streamId, int timeOut, ref int cmd_status ); \
+  `svt_error("sync_stream", "Virtual method must be overridden by an extended class."); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_DELETE_HANDLE \
+task classname::delete_handle( int streamId, int handle ); \
+  `svt_error("delete_handle", "Virtual method must be overridden by an extended class."); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_SET_CONFIG_PARAM \
+task classname::set_config_param( int streamId, int _parameter, int value ); \
+  `svt_error("set_config_param", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::set_config_param_bv( int streamId, int _parameter, bit[31:0] value ); \
+  `svt_error("set_config_param", "Virtual method must be overridden by an extended class."); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_GET_CONFIG_PARAM \
+task classname::get_config_param( int streamId, int _parameter, ref int value ); \
+  `svt_error("get_config_param", "Virtual method must be overridden by an extended class."); \
+endtask \
+task classname::get_config_param_bv( int streamId, int _parameter, ref bit[31:0] value ); \
+  `svt_error("get_config_param", "Virtual method must be overridden by an extended class."); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_SET_PORT \
+task classname::set_port( int streamId, int portId, bit [(`SVT_XACTOR_BFM_CMD_SET_PORT-1):0] value, int numDelayClocks, int numDriveClocks ); \
+  `svt_error("set_port", "Virtual method must be overridden by an extended class."); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_GET_PORT \
+task classname::get_port( int streamId, int portId, ref bit [(`SVT_XACTOR_BFM_CMD_GET_PORT-1):0] value ); \
+  `svt_error("get_port", "Virtual method must be overridden by an extended class."); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_START_STREAM \
+task classname::start_stream( ref int newStreamId ); \
+  `svt_error("start_stream", "Virtual method must be overridden by an extended class."); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_NEW_STREAM \
+task classname::new_stream( int channelId, ref int newStreamId ); \
+  `svt_error("new_stream", "Virtual method must be overridden by an extended class."); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_END_STREAM \
+task classname::end_stream( int streamId ); \
+  `svt_error("end_stream", "Virtual method must be overridden by an extended class."); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_GET_VERSION \
+task classname::get_version( ref bit[`VMT_MODEL_VERSION_STRING_WIDTH-1:0] version ); \
+  `svt_error("get_version", "Virtual method must be overridden by an extended class."); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_RESET_MODEL \
+task classname::reset_model( bit[15:0] resetType ); \
+  `svt_error("reset_model", "Virtual method must be overridden by an extended class."); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_OPEN_LOG \
+task classname::open_log( int logType, bit[`VMT_MESSAGE_LOG_STRING_WIDTH-1:0] filename, bit[`VMT_MESSAGE_LOG_STRING_WIDTH-1:0] mode ); \
+  `svt_error("open_log", "Virtual method must be overridden by an extended class."); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_CLOSE_LOG \
+task classname::close_log( int logType ); \
+  `svt_error("close_log", "Virtual method must be overridden by an extended class."); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_ENABLE_LOG \
+task classname::enable_log( int logType ); \
+  `svt_error("enable_log", "Virtual method must be overridden by an extended class."); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_DISABLE_LOG \
+task classname::disable_log( int logType ); \
+  `svt_error("disable_log", "Virtual method must be overridden by an extended class."); \
+endtask \
+`endif
+
+
+`define SVT_XACTOR_BFM_VMT_CMD_METHODS_EXTENDED_IMP(classname, cmdmacro, path, port) \
+`ifdef SVT_XACTOR_BFM_CMD_SET_MSG_LEVEL \
+task classname::enable_msg_type( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] types, int logId ); \
+  `cmdmacro(path, port, enable_msg_type( streamId, types, logId ) ); \
+endtask \
+task classname::disable_msg_type( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] types, int logId ); \
+  `cmdmacro(path, port, disable_msg_type( streamId, types, logId ) ); \
+endtask \
+task classname::enable_msg_id( int streamId, int id, int logId ); \
+  `cmdmacro(path, port, enable_msg_id( streamId, id, logId ) ); \
+endtask \
+task classname::disable_msg_id( int streamId, int id, int logId ); \
+  `cmdmacro(path, port, disable_msg_id( streamId, id, logId ) ); \
+endtask \
+task classname::enable_type_ctrl_msg_id( int streamId, int id, int logId ); \
+  `cmdmacro(path, port, enable_type_ctrl_msg_id( streamId, id, logId ) ); \
+endtask \
+task classname::enable_msg_log( int streamId, int logId ); \
+  `cmdmacro(path, port, enable_msg_log( streamId, logId ) ); \
+endtask \
+task classname::disable_msg_log( int streamId, int logId ); \
+  `cmdmacro(path, port, disable_msg_log( streamId, logId ) ); \
+endtask \
+task classname::open_msg_log( int streamId, string  filename, int mode, ref int logId ); \
+`ifdef SVT_MULTI_SIM_CAST_STRING_TO_PACKED_ARRAY \
+`ifndef QUESTA \
+  bit [1023:0] _filename; \
+  $cast(_filename, filename); \
+  `cmdmacro(path, port, open_msg_log( streamId, _filename, mode, logId ) ); \
+`else \
+  `cmdmacro(path, port, open_msg_log( streamId, filename, mode, logId ) ); \
+`endif \
+`else \
+  `cmdmacro(path, port, open_msg_log( streamId, filename, mode, logId ) ); \
+`endif \
+endtask \
+task classname::close_msg_log( int streamId, int logId ); \
+  `cmdmacro(path, port, close_msg_log( streamId, logId ) ); \
+endtask \
+task classname::enable_msg_feature( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] scope, bit[(`VMT_MESSAGE_FEATURE_WIDTH - 1):0] features, int logId ); \
+  `cmdmacro(path, port, enable_msg_feature( streamId, scope, features, logId ) ); \
+endtask \
+task classname::disable_msg_feature( int streamId, bit[(`VMT_MESSAGE_MASK_WIDTH - 1):0] scope, bit[(`VMT_MESSAGE_FEATURE_WIDTH - 1):0] features, int logId ); \
+  `cmdmacro(path, port, disable_msg_feature( streamId, scope, features, logId ) ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_START \
+task classname::start(); \
+  `cmdmacro(path, port, start() ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_CREATE_WATCHPOINT \
+task classname::create_watchpoint( int wp_type, int id, ref int watchpointHandle ); \
+  `cmdmacro(path, port, create_watchpoint( wp_type, id, watchpointHandle ) ); \
+endtask \
+task classname::combine_watchpoints( int base1, int i_logic, int base2, ref int watchpointHandle ); \
+  `cmdmacro(path, port, combine_watchpoints( base1, i_logic, base2, watchpointHandle ) ); \
+endtask \
+task classname::create_watchpoint_range( int wp_type, int id_low, int id_high, ref int watchpointHandle ); \
+  `cmdmacro(path, port, create_watchpoint_range( wp_type, id_low, id_high, watchpointHandle ) ); \
+endtask \
+task classname::destroy_watchpoint( int streamId, int wpHandl ); \
+  `cmdmacro(path, port, destroy_watchpoint( streamId, wpHandl ) ); \
+endtask \
+task classname::disable_watchpoint( int streamId, int wpHandl ); \
+  `cmdmacro(path, port, disable_watchpoint( streamId, wpHandl ) ); \
+endtask \
+task classname::enable_watchpoint( int streamId, int wpHandl ); \
+  `cmdmacro(path, port, enable_watchpoint( streamId, wpHandl ) ); \
+endtask \
+task classname::set_watchpoint_trigger( int streamId, int wpHandle, int i_parameter, int value ); \
+  `cmdmacro(path, port, set_watchpoint_trigger( streamId, wpHandle, i_parameter, value ) ); \
+endtask \
+task classname::get_watchpoint_trigger( int streamId, int wpHandle, int i_parameter, ref int value ); \
+  `cmdmacro(path, port, get_watchpoint_trigger( streamId, wpHandle, i_parameter, value ) ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_WATCH_FOR \
+task classname::watch_for( int wpHandle, ref int objHandle ); \
+  `cmdmacro(path, port, watch_for( wpHandle, objHandle ) ); \
+endtask \
+task classname::get_watchpoint_data_count(int dataHandle, ref int count ); \
+  `cmdmacro(path, port, get_watchpoint_data_count(dataHandle, count ) ); \
+endtask \
+task classname::get_watchpoint_data_size(int dataHandle, int position, ref int dataSize ); \
+  `cmdmacro(path, port, get_watchpoint_data_size(dataHandle, position, dataSize ) ); \
+endtask \
+task classname::get_watchpoint_data_type(int dataHandle, int position, ref int dataType ); \
+  `cmdmacro(path, port, get_watchpoint_data_type(dataHandle, position, dataType ) ); \
+endtask \
+task classname::get_watchpoint_data_name(int dataHandle, int position, ref string name, ref int status ); \
+`ifdef SVT_MULTI_SIM_CAST_STRING_TO_PACKED_ARRAY \
+`ifndef QUESTA \
+  bit [1023:0] _name; \
+  `cmdmacro(path, port, get_watchpoint_data_name(dataHandle, position, _name, status ) ); \
+  name = $sformatf("%0s", _name); \
+`else \
+  `cmdmacro(path, port, get_watchpoint_data_name(dataHandle, position, name, status ) ); \
+`endif \
+`else \
+  `cmdmacro(path, port, get_watchpoint_data_name(dataHandle, position, name, status ) ); \
+`endif \
+endtask \
+task classname::get_watchpoint_data_bit(int dataHandle, int position, ref bit value, ref int status ); \
+  `cmdmacro(path, port, get_watchpoint_data_bit(dataHandle, position, value, status ) ); \
+endtask \
+task classname::get_watchpoint_data_int(int dataHandle, int position, ref int value, ref int status ); \
+  `cmdmacro(path, port, get_watchpoint_data_int(dataHandle, position, value, status ) ); \
+endtask \
+task classname::get_watchpoint_data_string(int dataHandle, int position, int line, ref string value, ref int status ); \
+`ifdef SVT_MULTI_SIM_CAST_STRING_TO_PACKED_ARRAY \
+`ifndef QUESTA \
+  bit [1023:0] _value; \
+  `cmdmacro(path, port, get_watchpoint_data_string(dataHandle, position, line, _value, status ) ); \
+  value = $sformatf("%0s", _value); \
+`else \
+  `cmdmacro(path, port, get_watchpoint_data_string(dataHandle, position, line, value, status ) ); \
+`endif \
+`else \
+  `cmdmacro(path, port, get_watchpoint_data_string(dataHandle, position, line, value, status ) ); \
+`endif \
+endtask \
+task classname::get_watchpoint_data_vec_2( int dataHandle, int position, int word, ref bit[(2 - 1):0] value, ref int status ); \
+  `cmdmacro(path, port, get_watchpoint_data_vec_2( dataHandle, position, word,  value, status ) ); \
+endtask \
+task classname::get_watchpoint_data_vec_4( int dataHandle, int position, int word, ref bit[(4 - 1):0] value, ref int status ); \
+  `cmdmacro(path, port, get_watchpoint_data_vec_4( dataHandle, position, word,  value, status ) ); \
+endtask \
+task classname::get_watchpoint_data_vec_8( int dataHandle, int position, int word, ref bit[(8 - 1):0] value, ref int status ); \
+  `cmdmacro(path, port, get_watchpoint_data_vec_8( dataHandle, position, word,  value, status ) ); \
+endtask \
+task classname::get_watchpoint_data_vec_16( int dataHandle, int position, int word, ref bit[(16 - 1):0] value, ref int status ); \
+  `cmdmacro(path, port, get_watchpoint_data_vec_16( dataHandle, position, word,  value, status ) ); \
+endtask \
+task classname::get_watchpoint_data_vec_32( int dataHandle, int position, int word, ref bit[(32 - 1):0] value, ref int status ); \
+  `cmdmacro(path, port, get_watchpoint_data_vec_32( dataHandle, position, word,  value, status ) ); \
+endtask \
+task classname::get_watchpoint_data_vec_64( int dataHandle, int position, int word, ref bit[(64 - 1):0] value, ref int status ); \
+  `cmdmacro(path, port, get_watchpoint_data_vec_64( dataHandle, position, word,  value, status ) ); \
+endtask \
+task classname::get_watchpoint_data_vec_128( int dataHandle, int position, int word, ref bit[(128 - 1):0] value, ref int status ); \
+  `cmdmacro(path, port, get_watchpoint_data_vec_128( dataHandle, position, word,  value, status ) ); \
+endtask \
+task classname::get_watchpoint_data_vec_256( int dataHandle, int position, int word, ref bit[(256 - 1):0] value, ref int status ); \
+  `cmdmacro(path, port, get_watchpoint_data_vec_256( dataHandle, position, word,  value, status ) ); \
+endtask \
+task classname::get_watchpoint_data_vec_512( int dataHandle, int position, int word, ref bit[(512 - 1):0] value, ref int status ); \
+  `cmdmacro(path, port, get_watchpoint_data_vec_512( dataHandle, position, word,  value, status ) ); \
+endtask \
+task classname::get_watchpoint_data_vec_1024( int dataHandle, int position, int word, ref bit[(1024 - 1):0] value, ref int status ) ; \
+  `cmdmacro(path, port, get_watchpoint_data_vec_1024( dataHandle, position, word,  value, status )  ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_BLOCK_STREAM \
+task classname::block_stream( int streamId, int timeOut, ref int cmd_status ); \
+  `cmdmacro(path, port, block_stream( streamId, timeOut, cmd_status ) ); \
+endtask \
+task classname::sync_stream( int streamId, int timeOut, ref int cmd_status ); \
+  `cmdmacro(path, port, sync_stream( streamId, timeOut, cmd_status ) ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_DELETE_HANDLE \
+task classname::delete_handle( int streamId, int handle ); \
+  `cmdmacro(path, port, delete_handle( streamId, handle ) ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_SET_CONFIG_PARAM \
+task classname::set_config_param( int streamId, int _parameter, int value ); \
+  `cmdmacro(path, port, set_config_param( streamId, _parameter, value ) ); \
+endtask \
+task classname::set_config_param_bv( int streamId, int _parameter, bit[31:0] value ); \
+  `cmdmacro(path, port, set_config_param_bv( streamId, _parameter, value ) ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_GET_CONFIG_PARAM \
+task classname::get_config_param( int streamId, int _parameter, ref int value ); \
+  `cmdmacro(path, port, get_config_param( streamId, _parameter, value ) ); \
+endtask \
+task classname::get_config_param_bv( int streamId, int _parameter, ref bit[31:0] value ); \
+  `cmdmacro(path, port, get_config_param_bv( streamId, _parameter, value ) ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_SET_PORT \
+task classname::set_port( int streamId, int portId, bit [(`SVT_XACTOR_BFM_CMD_SET_PORT-1):0] value, int numDelayClocks, int numDriveClocks ); \
+  `cmdmacro(path, port, set_port( streamId, portId, value, numDelayClocks, numDriveClocks ) ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_GET_PORT \
+task classname::get_port( int streamId, int portId, ref bit [(`SVT_XACTOR_BFM_CMD_GET_PORT-1):0] value ); \
+  `cmdmacro(path, port, get_port( streamId, portId, value ) ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_START_STREAM \
+task classname::start_stream( ref int newStreamId ); \
+  `cmdmacro(path, port, start_stream( newStreamId ) ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_NEW_STREAM \
+task classname::new_stream( int channelId, ref int newStreamId ); \
+  `cmdmacro(path, port, new_stream( channelId, newStreamId ) ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_END_STREAM \
+task classname::end_stream( int streamId ); \
+  `cmdmacro(path, port, end_stream( streamId ) ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_GET_VERSION \
+task classname::get_version( ref bit[`VMT_MODEL_VERSION_STRING_WIDTH-1:0] version ); \
+  `cmdmacro(path, port, get_version( version ) ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_RESET_MODEL \
+task classname::reset_model( bit[15:0] resetType ); \
+  `cmdmacro(path, port, reset_model( resetType ) ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_OPEN_LOG \
+task classname::open_log( int logType, bit[`VMT_MESSAGE_LOG_STRING_WIDTH-1:0] filename, bit[`VMT_MESSAGE_LOG_STRING_WIDTH-1:0] mode ); \
+  `cmdmacro(path, port, open_log( logType, filename, mode ) ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_CLOSE_LOG \
+task classname::close_log( int logType ); \
+  `cmdmacro(path, port, close_log( logType ) ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_ENABLE_LOG \
+task classname::enable_log( int logType ); \
+  `cmdmacro(path, port, enable_log( logType ) ); \
+endtask \
+`endif \
+`ifdef SVT_XACTOR_BFM_CMD_DISABLE_LOG \
+task classname::disable_log( int logType ); \
+  `cmdmacro(path, port, disable_log( logType ) ); \
+endtask \
+`endif
+
+`endprotect
+
+`endif // GUARD_SVT_XACTOR_BFM_IF_UTIL_SVI

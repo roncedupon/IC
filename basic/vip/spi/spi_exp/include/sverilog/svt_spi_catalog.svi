@@ -1,0 +1,217 @@
+//
+//=======================================================================
+//
+// Copyright (c) 2013 Synopsys, Inc.
+//
+// This memory model catalog and the associated technical specifications
+// are confidential and proprietary to the respective part manufacturer.
+// Your use or disclosure of this information is subject to the terms and
+// conditions of a written license agreement between you, or your
+// company, Synopsys, Inc and the memory manufacturer.
+//
+//-----------------------------------------------------------------------
+// 
+
+`ifndef GUARD_SVT_SPI_CATALOG_SVI
+`define GUARD_SVT_SPI_CATALOG_SVI
+
+//
+// Your use or disclosure of the following technical specification is
+// subject to the terms and conditions of a written license agreement
+// between you, or your company, Synopsys and ISSI.
+//
+`svt_mem_vendor_catalog_begin(spi, ISSI)
+   `svt_mem_vendor_part(IS25WP256D, "256Mb, 1.8V", 32Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/ISSI/IS25WP256D.cfg")
+   `svt_mem_vendor_part(IS25WP128, "128Mb, 1.8V", 16Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/ISSI/IS25WP128.cfg")
+`svt_mem_vendor_catalog_end
+
+//
+// Your use or disclosure of the following technical specification is
+// subject to the terms and conditions of a written license agreement
+// between you, or your company, Synopsys and Winbond.
+//
+`svt_mem_vendor_catalog_begin(spi, Winbond)
+   `svt_mem_vendor_part(W25Q_20BW, "2Mb, 3V", 256Kb, x8, 80MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Winbond/W25Q_20BW.cfg")
+   `svt_mem_vendor_part(W25Q_256JW, "256Mb, 3V", 32Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Winbond/W25Q_256JW.cfg")
+   `svt_mem_vendor_part(W25X_40BV, "4Mb, 3V", 512Kb, x8, 104MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Winbond/W25X_40BV.cfg")
+   `svt_mem_vendor_part(W25Q_16DW, "16Mb, 1.8V", 2Mb, x8, 104MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Winbond/W25Q_16DW.cfg")
+   `svt_mem_vendor_part(W25X_20BV, "2Mb, 3V", 256Kb, x8, 104MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Winbond/W25X_20BV.cfg")
+   `svt_mem_vendor_part(W25Q_128BV, "128Mb, 3V", 16Mb, x8, 104MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Winbond/W25Q_128BV.cfg")
+   `svt_mem_vendor_part(W25X_10BV, "1Mb, 3V", 128Kb, x8, 104MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Winbond/W25X_10BV.cfg")
+`svt_mem_vendor_catalog_end
+
+//
+// Your use or disclosure of the following technical specification is
+// subject to the terms and conditions of a written license agreement
+// between you, or your company, Synopsys and Cypress.
+//
+`svt_mem_vendor_catalog_begin(spi, Cypress)
+   `svt_mem_vendor_part(CY14V101Q3, "1Mb, 3V", 128Kb, x8, 30MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Cypress/CY14V101Q3.cfg")
+   `svt_mem_vendor_part(CY14V101QS, "1Mb, 3V", 128Kb, x8, 108MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Cypress/CY14V101QS.cfg")
+`svt_mem_vendor_catalog_end
+
+//
+// Your use or disclosure of the following technical specification is
+// subject to the terms and conditions of a written license agreement
+// between you, or your company, Synopsys and Microchip.
+//
+`svt_mem_vendor_catalog_begin(spi, Microchip)
+   `svt_mem_vendor_part(MC23A1024, "1Mb, 3V", 128Kb, x8, 20MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Microchip/MC23A1024.cfg")
+`svt_mem_vendor_catalog_end
+
+//
+// Your use or disclosure of the following technical specification is
+// subject to the terms and conditions of a written license agreement
+// between you, or your company, Synopsys and Micron.
+//
+`svt_mem_vendor_catalog_begin(spi, Micron)
+   `svt_mem_vendor_part(MT25QU512ABB, "512Mb, 1.8V", 64Mb, x8, 108MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Micron/MT25QU512ABB.cfg")
+   `svt_mem_vendor_part(MT25QL128ABA, "128Mb, 3V", 64Mb, x2, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Micron/MT25QL128ABA.cfg")
+   `svt_mem_vendor_part(N25Q_256Mb_1_8V_65nm, "256Mb, 1.8V", 32Mb, x8, 108MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Micron/N25Q_256Mb_1_8V_65nm.cfg")
+   `svt_mem_vendor_part(MT25QU128ABA, "128Mb, 1.8V", 64Mb, x2, 166MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Micron/MT25QU128ABA.cfg")
+   `svt_mem_vendor_part(N25Q_512Mb_3V_65nm, "512Mb, 1.8V", 64Mb, x8, 108MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Micron/N25Q_512Mb_3V_65nm.cfg")
+   `svt_mem_vendor_part(MT35XU512ABA, "512Mb, 1.8V", 64Mb, x8, 108MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Micron/MT35XU512ABA.cfg")
+   `svt_mem_vendor_part(N25Q_16Mb_1_8V_65nm, "16Mb, 1.8V", 2Mb, x8, 108MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Micron/N25Q_16Mb_1_8V_65nm.cfg")
+   `svt_mem_vendor_part(N25Q_1Gb_3V_65nm, "1Gb, 3V", 128Mb, x8, 108MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Micron/N25Q_1Gb_3V_65nm.cfg")
+`svt_mem_vendor_catalog_end
+
+//
+// Your use or disclosure of the following technical specification is
+// subject to the terms and conditions of a written license agreement
+// between you, or your company, Synopsys and apmemory.
+//
+`svt_mem_vendor_catalog_begin(spi, apmemory)
+   `svt_mem_vendor_part(APS3208LOBx7, "32Mb, 1.8V", 4Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS3208LOBx7.cfg")
+   `svt_mem_vendor_part(APS512XXNOBRx5, "512Mb, 1.8V", 64Mb, x8, 200MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS512XXNOBRx5.cfg")
+   `svt_mem_vendor_part(APS512XXNOBRx7, "512Mb, 1.8V", 64Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS512XXNOBRx7.cfg")
+   `svt_mem_vendor_part(APS12808LOAx5, "128Mb, 1.8V", 16Mb, x8, 200MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS12808LOAx5.cfg")
+   `svt_mem_vendor_part(APS3208LOBx5, "32Mb, 1.8V", 4Mb, x8, 200MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS3208LOBx5.cfg")
+   `svt_mem_vendor_part(APS6408LOBx5, "64Mb, 1.8V", 8Mb, x8, 200MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS6408LOBx5.cfg")
+   `svt_mem_vendor_part(APS25608NOBRx5, "256Mb, 1.8V", 32Mb, x8, 200MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS25608NOBRx5.cfg")
+   `svt_mem_vendor_part(APS12808LOBx5, "128Mb, 1.8V", 16Mb, x8, 200MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS12808LOBx5.cfg")
+   `svt_mem_vendor_part(APS12808LOBx7, "128Mb, 1.8V", 16Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS12808LOBx7.cfg")
+   `svt_mem_vendor_part(APS51208NOBRx7, "512Mb, 1.8V", 64Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS51208NOBRx7.cfg")
+   `svt_mem_vendor_part(APS6408LOAx5, "64Mb, 1.8V", 8Mb, x8, 200MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS6408LOAx5.cfg")
+   `svt_mem_vendor_part(APS6404LSQR_SIP, "64Mb, 1.8V", 8Mb, x8, 144MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS6404LSQR_SIP.cfg")
+   `svt_mem_vendor_part(APS1604MSQR_PKG, "16Mb, 1.8V", 2Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS1604MSQR_PKG.cfg")
+   `svt_mem_vendor_part(APS6408LOAx7, "64Mb, 1.8V", 8Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS6408LOAx7.cfg")
+   `svt_mem_vendor_part(APS256XXNOBRx5, "256Mb, 1.8V", 32Mb, x8, 200MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS256XXNOBRx5.cfg")
+   `svt_mem_vendor_part(APS6404LSQR_PKG, "64Mb, 1.8V", 8Mb, x8, 144MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS6404LSQR_PKG.cfg")
+   `svt_mem_vendor_part(APS1604MSQR_SIP, "16Mb, 1.8V", 2Mb, x8, 144MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS1604MSQR_SIP.cfg")
+   `svt_mem_vendor_part(APS256XXNOBRx7, "256Mb, 1.8V", 32Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS256XXNOBRx7.cfg")
+   `svt_mem_vendor_part(APS3208LOAx5, "32Mb, 1.8V", 4Mb, x8, 200MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS3208LOAx5.cfg")
+   `svt_mem_vendor_part(APS25608NOBRx7, "256Mb, 1.8V", 32Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS25608NOBRx7.cfg")
+   `svt_mem_vendor_part(APS12808LOAx7, "128Mb, 1.8V", 16Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS12808LOAx7.cfg")
+   `svt_mem_vendor_part(APS3208LOAx7, "32Mb, 1.8V", 4Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS3208LOAx7.cfg")
+   `svt_mem_vendor_part(APS6408LOBx7, "64Mb, 1.8V", 8Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS6408LOBx7.cfg")
+   `svt_mem_vendor_part(APS51208NOBRx5, "512Mb, 1.8V", 64Mb, x8, 200MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/apmemory/APS51208NOBRx5.cfg")
+`svt_mem_vendor_catalog_end
+
+//
+// Your use or disclosure of the following technical specification is
+// subject to the terms and conditions of a written license agreement
+// between you, or your company, Synopsys and STM.
+//
+`svt_mem_vendor_catalog_begin(spi, STM)
+   `svt_mem_vendor_part(M95128, "128Kb, 5.5V", 16Kb, x8, 30MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/STM/M95128.cfg")
+`svt_mem_vendor_catalog_end
+
+//
+// Your use or disclosure of the following technical specification is
+// subject to the terms and conditions of a written license agreement
+// between you, or your company, Synopsys and Everspin.
+//
+`svt_mem_vendor_catalog_begin(spi, Everspin)
+   `svt_mem_vendor_part(MR10Q010, "1Mb, 3V", 128Kb, x8, 40MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Everspin/MR10Q010.cfg")
+`svt_mem_vendor_catalog_end
+
+//
+// Your use or disclosure of the following technical specification is
+// subject to the terms and conditions of a written license agreement
+// between you, or your company, Synopsys and Macronix.
+//
+`svt_mem_vendor_catalog_begin(spi, Macronix)
+   `svt_mem_vendor_part(MX25L12865E_VIO_30V, "128Mb, 3V", 16Mb, x8, 104MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Macronix/MX25L12865E_VIO_30V.cfg")
+   `svt_mem_vendor_part(MX25L6445E_VCC_27V, "64Mb, 3V", 8Mb, x8, 33MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Macronix/MX25L6445E_VCC_27V.cfg")
+   `svt_mem_vendor_part(MX25UM51245G, "512Mb, 1.8V", 64Mb, x8, 33MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Macronix/MX25UM51245G.cfg")
+   `svt_mem_vendor_part(MX25R1635F, "16Mb, 1.8V", 2Mb, x8, 33MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Macronix/MX25R1635F.cfg")
+   `svt_mem_vendor_part(MX25UM51245GM, "512Mb, 1.8V", 64Mb, x8, 33MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Macronix/MX25UM51245GM.cfg")
+   `svt_mem_vendor_part(MX25U25635F, "256Mb, 1.8V", 32Mb, x8, 108MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Macronix/MX25U25635F.cfg")
+   `svt_mem_vendor_part(MX25U3235F, "32Mb, 1.8V", 4Mb, x8, 33MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Macronix/MX25U3235F.cfg")
+   `svt_mem_vendor_part(MX25U25635F_Z4I_08G, "256Mb, 1.8V", 32Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Macronix/MX25U25635F_Z4I_08G.cfg")
+   `svt_mem_vendor_part(MX25L6445E_VCC_30V, "64Mb, 3V", 8Mb, x8, 33MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Macronix/MX25L6445E_VCC_30V.cfg")
+   `svt_mem_vendor_part(MX25L12865E_VIO_27V, "128Mb, 3V", 16Mb, x8, 104MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Macronix/MX25L12865E_VIO_27V.cfg")
+   `svt_mem_vendor_part(MX25LM51245G, "512Mb, 3V", 64Mb, x8, 33MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Macronix/MX25LM51245G.cfg")
+`svt_mem_vendor_catalog_end
+
+//
+// Your use or disclosure of the following technical specification is
+// subject to the terms and conditions of a written license agreement
+// between you, or your company, Synopsys and Spansion.
+//
+`svt_mem_vendor_catalog_begin(spi, Spansion)
+   `svt_mem_vendor_part(S25FL512S_HPLC_VIO_36V_DDR_66MHz, "512Mb, 3V", 64Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Spansion/S25FL512S_HPLC_VIO_36V_DDR_66MHz.cfg")
+   `svt_mem_vendor_part(S25FL512S_HPLC, "512Mb, 3V", 64Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Spansion/S25FL512S_HPLC.cfg")
+   `svt_mem_vendor_part(S25FL512S_EHPLC_VIO_27V_DDR_66MHz, "512Mb, 3V", 64Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Spansion/S25FL512S_EHPLC_VIO_27V_DDR_66MHz.cfg")
+   `svt_mem_vendor_part(S25FL512S_EHPLC_VIO_36V_DDR_66MHz, "512Mb, 3V", 64Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Spansion/S25FL512S_EHPLC_VIO_36V_DDR_66MHz.cfg")
+   `svt_mem_vendor_part(S25FL512S_HPLC_VIO_27V_DDR_66MHz, "512Mb, 3V", 64Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Spansion/S25FL512S_HPLC_VIO_27V_DDR_66MHz.cfg")
+   `svt_mem_vendor_part(S25FS128S, "512Mb, 3V", 64Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Spansion/S25FS128S.cfg")
+   `svt_mem_vendor_part(S25FS256S, "512Mb, 3V", 64Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Spansion/S25FS256S.cfg")
+   `svt_mem_vendor_part(S25FS512S, "512Mb, 3V", 64Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Spansion/S25FS512S.cfg")
+   `svt_mem_vendor_part(S25FL512S_EHPLC, "512Mb, 3V", 64Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Spansion/S25FL512S_EHPLC.cfg")
+   `svt_mem_vendor_part(S25FL512S_EHPLC_VIO_36V_DDR_80MHz, "512Mb, 3V", 64Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Spansion/S25FL512S_EHPLC_VIO_36V_DDR_80MHz.cfg")
+   `svt_mem_vendor_part(S25FL512S_EHPLC_VIO_27V_DDR_80MHz, "512Mb, 3V", 64Mb, x8, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nor/Spansion/S25FL512S_EHPLC_VIO_27V_DDR_80MHz.cfg")
+`svt_mem_vendor_catalog_end
+
+//
+// Your use or disclosure of the following technical specification is
+// subject to the terms and conditions of a written license agreement
+// between you, or your company, Synopsys and Adesto.
+//
+`svt_mem_vendor_catalog_begin(spi, Adesto)
+   `svt_mem_vendor_part(ATXP032, "32Mb, 2.5V", 2Mb, x16, 133MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/xSPI_nor/Adesto/ATXP032.cfg")
+`svt_mem_vendor_catalog_end
+
+//
+// Your use or disclosure of the following technical specification is
+// subject to the terms and conditions of a written license agreement
+// between you, or your company, Synopsys and generic.
+//
+`svt_mem_vendor_catalog_begin(spi, generic)
+   `svt_mem_vendor_part(xSPI_JESD251_A1, "32Mb, 2.5V", 2Mb, x16, 200MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/xSPI_nor/generic/xSPI_JESD251_A1.cfg")
+   `svt_mem_vendor_part(xSPI_JESD251_PRFL_2_0, "256Mb, 2.5V", 2Mb, x16, 200MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/xSPI_nor/generic/xSPI_JESD251_PRFL_2_0.cfg")
+   `svt_mem_vendor_part(xSPI_JESD251, "32Mb, 2.5V", 2Mb, x16, 200MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/xSPI_nor/generic/xSPI_JESD251.cfg")
+`svt_mem_vendor_catalog_end
+
+//
+// Your use or disclosure of the following technical specification is
+// subject to the terms and conditions of a written license agreement
+// between you, or your company, Synopsys and model.
+//
+`svt_mem_vendor_catalog_begin(spi, model)
+   `svt_mem_vendor_part(SPI_Mem_Model, "1GB, 3V", 1Gb, x8, 30MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/generic/model/SPI_Mem_Model.cfg")
+   `svt_mem_vendor_part(SPI_Multilane_Mem_Model, "1GB, 3V", 1Gb, x8, 30MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/generic/model/SPI_Multilane_Mem_Model.cfg")
+   `svt_mem_vendor_part(SPI_UWIRE_Mem_Model, "1GB, 3V", 1Gb, x8, 30MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/generic/model/SPI_UWIRE_Mem_Model.cfg")
+`svt_mem_vendor_catalog_end
+
+//
+// Your use or disclosure of the following technical specification is
+// subject to the terms and conditions of a written license agreement
+// between you, or your company, Synopsys and GigaDevice.
+//
+`svt_mem_vendor_catalog_begin(spi, GigaDevice)
+   `svt_mem_vendor_part(GD5F1GQ4RB, "1Gb, 1.8V", 128Mb, x8, 104MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nand/GigaDevice/GD5F1GQ4RB.cfg")
+   `svt_mem_vendor_part(GD5F1GQ4, "1Gb, 3V", 128Mb, x8, 104MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nand/GigaDevice/GD5F1GQ4.cfg")
+`svt_mem_vendor_catalog_end
+
+//
+// Your use or disclosure of the following technical specification is
+// subject to the terms and conditions of a written license agreement
+// between you, or your company, Synopsys and Micron.
+//
+`svt_mem_vendor_catalog_begin(spi, Micron)
+   `svt_mem_vendor_part(MT29F2G01ABBGDSF, "2Gb, 1.8V", 128Mb, x8, 80MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nand/Micron/MT29F2G01ABBGDSF.cfg")
+   `svt_mem_vendor_part(MT29F1G01AAADD, "1Gb, 3V", 128Mb, x8, 50MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nand/Micron/MT29F1G01AAADD.cfg")
+   `svt_mem_vendor_part(MT29F2G01ABBGDWB, "2Gb, 1.8V", 128Mb, x8, 80MHz, "/mnt/disk_0/softwares/vips/designware/vip/svt/spi_svt/R-2020.12/catalog/spi/nand/Micron/MT29F2G01ABBGDWB.cfg")
+`svt_mem_vendor_catalog_end
+`endif // GUARD_SVT_SPI_CATALOG_SVI

@@ -1,0 +1,834 @@
+//=======================================================================
+// COPYRIGHT (C) 2013-2016 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+// This include file is intended to be included in hdl UVM memory model wrappers
+// to implement command wrapping.  This file should be used by either svt_env
+// or svt_agent extensions.  This code to be included in class definitions.
+// Therefore, guarding the file is inappropriate.
+
+// =============================================================================
+// HDL TASK EXPORTS: This file 'exports' the model methods which will be
+// available to an HDL testbench, as tasks called on an instance of the model
+// (which is encapsulated in a shell file). These tasks are declared in the
+// interface of the shell file (it is the shell module that is instantiated as
+// a VIP model component in the HDL testbench). Except for the initialization
+// usage of set_data_prop(), these tasks simply call their counterparts in the
+// internal model instance.
+//
+`include `SVT_SOURCE_MAP_LIB_INCLUDE_SVI(R-2020.12,svt_uvm_component_export)
+
+//---------------------------------------------------------------------------
+/**
+ * @groupname membackdoor
+ * Command Support:
+ * Initialize the specified address range in the memory with the specified
+ * pattern. Supported patterns are: constant value, incrementing values,
+ * decrementing values, walk left, walk right. For user-defined patterns, the
+ * backdoor should be used.
+ * Only virtual initialization is supported.
+ * 
+ * The following macros are the only supported values for the pattern argument:
+ * <ul>
+ *  <li>\`SVT_MEM_INITIALIZE_CONST</li>
+ *  <li>\`SVT_MEM_INITIALIZE_INCR</li>
+ *  <li>\`SVT_MEM_INITIALIZE_DECR</li>
+ *  <li>\`SVT_MEM_INITIALIZE_WALK_LEFT</li>
+ *  <li>\`SVT_MEM_INITIALIZE_WALK_RIGHT</li>
+ * </ul>
+ * 
+ * @param pattern initialization pattern.
+ * 
+ * @param base_data Starting data value used with each pattern
+ * 
+ * @param start_addr start address of the region to be initialized.
+ * 
+ * @param end_addr end address of the region to be initilized.
+ */
+task cmd_mem_initialize(output bit is_valid, input int pattern, input bit [`SVT_MEM_MAX_DATA_WIDTH-1:0] base_data, input bit [`SVT_MEM_MAX_ADDR_WIDTH-1:0] start_addr, input bit [`SVT_MEM_MAX_ADDR_WIDTH-1:0] end_addr);
+  begin
+    svt_env env;
+    svt_agent agent;
+    svt_mem_cmd_assistant assist;
+    if ($cast(agent, model)) begin
+      void'($cast(assist, agent.get_cmd_assist()));
+    end
+    else if ($cast(env, model)) begin
+      void'($cast(assist, env.get_cmd_assist()));
+    end
+
+    if (assist != null) begin
+      assist.cmd_mem_initialize(is_valid, svt_mem_core::init_pattern_type_enum'(pattern), base_data, start_addr, end_addr);
+    end
+    else begin
+      is_valid = 0;
+      `uvm_error("cmd_mem_initialize", "Command not supported by this model");
+    end
+  end
+endtask
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname membackdoor
+ * Command Support:
+ * Retrieve the data value from the memory at the provided address.
+ *
+ * @param is_valid Functions as a <i>return</i> value ('0' if the value was
+ * not found in the memory).
+ *
+ * @param addr Address to obtain the data from
+ *
+ * @param data Value of the data retrieved
+ */
+task cmd_mem_peek(output bit is_valid, input bit[`SVT_MEM_MAX_ADDR_WIDTH-1:0] addr, output bit[`SVT_MEM_MAX_DATA_WIDTH-1:0] data);
+  begin
+    svt_env env;
+    svt_agent agent;
+    svt_mem_cmd_assistant assist;
+    if ($cast(agent, model)) begin
+      void'($cast(assist, agent.get_cmd_assist()));
+    end
+    else if ($cast(env, model)) begin
+      void'($cast(assist, env.get_cmd_assist()));
+    end
+
+    if (assist != null) begin
+      assist.cmd_mem_peek(is_valid, addr, data);
+    end
+    else begin
+      is_valid = 0;
+      `uvm_error("cmd_mem_peek", "Command not supported by this model");
+    end
+  end
+endtask
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname membackdoor
+ * Command Support:
+ * Set the data value in the memory at the provided address.
+ *
+ * @param is_valid Functions as a <i>return</i> value ('0' if the value was
+ * not found in the memory).
+ *
+ * @param addr Address to obtain the data from
+ *
+ * @param data Value of the data retrieved
+ */
+task cmd_mem_poke(output bit is_valid, input bit[`SVT_MEM_MAX_ADDR_WIDTH-1:0] addr, input bit[`SVT_MEM_MAX_DATA_WIDTH-1:0] data);
+  begin
+    svt_env env;
+    svt_agent agent;
+    svt_mem_cmd_assistant assist;
+    if ($cast(agent, model)) begin
+      void'($cast(assist, agent.get_cmd_assist()));
+    end
+    else if ($cast(env, model)) begin
+      void'($cast(assist, env.get_cmd_assist()));
+    end
+
+    if (assist != null) begin
+      assist.cmd_mem_poke(is_valid, addr, data);
+    end
+    else begin
+      is_valid = 0;
+      `uvm_error("cmd_mem_poke", "Command not supported by this model");
+    end
+  end
+endtask
+
+//---------------------------------------------------------------------------
+/**
+ * @groupname membackdoor
+ * Command Support:
+ * Updates the attributes for the supplied address.
+ * 
+ * @param is_valid Functions as a <i>return</i> value ('0' if the value is
+ * outside of the configured range).
+ * 
+ * @param attr Attribute to be set
+ * 
+ * @param addr Address at which the attribute is updated
+ */
+task cmd_mem_set_attributes(output bit is_valid, input bit [`SVT_MEM_MAX_ATTR_WIDTH-1:0] attr, input bit [`SVT_MEM_MAX_ADDR_WIDTH-1:0] addr);
+  begin
+    svt_env env;
+    svt_agent agent;
+    svt_mem_cmd_assistant assist;
+    if ($cast(agent, model)) begin
+      void'($cast(assist, agent.get_cmd_assist()));
+    end
+    else if ($cast(env, model)) begin
+      void'($cast(assist, env.get_cmd_assist()));
+    end
+
+    if (assist != null) begin
+      assist.cmd_mem_set_attributes(is_valid, attr, addr);
+    end
+    else begin
+      is_valid = 0;
+      `uvm_error("cmd_mem_set_attributes", "Command not supported by this model");
+    end
+  end
+endtask
+
+//---------------------------------------------------------------------------
+/**
+ * @groupname membackdoor
+ * Command Support:
+ * Compares the attributes at the supplied address against the supplied mask.
+ * 
+ * @param is_valid Functions as a <i>return</i> value ('1' if the attibutes
+ * at the supplied address match the mask).
+ * 
+ * @param attr Attributes to test for
+ * 
+ * @param addr Address to test at
+ */
+task cmd_mem_test_attributes(output bit is_valid, input bit [`SVT_MEM_MAX_ATTR_WIDTH-1:0] attr, input bit [`SVT_MEM_MAX_ADDR_WIDTH-1:0] addr);
+  begin
+    svt_env env;
+    svt_agent agent;
+    svt_mem_cmd_assistant assist;
+    if ($cast(agent, model)) begin
+      void'($cast(assist, agent.get_cmd_assist()));
+    end
+    else if ($cast(env, model)) begin
+      void'($cast(assist, env.get_cmd_assist()));
+    end
+
+    if (assist != null) begin
+      assist.cmd_mem_test_attributes(is_valid, attr, addr);
+    end
+    else begin
+      is_valid = 0;
+      `uvm_error("cmd_mem_test_attributes", "Command not supported by this model");
+    end
+  end
+endtask
+
+//---------------------------------------------------------------------------
+/**
+ * @groupname membackdoor
+ * Command Support:
+ * Clear the specified attributes for the specified address.
+ *
+ * @param is_valid Functions as a <i>return</i> value ('0' if the value is
+ * outside of the configured range).
+ * 
+ * @param attr Attribute mask which determines which attributes to clear
+ * 
+ * @param addr Address to modify the attribute for
+ */
+task cmd_mem_clear_attributes(output bit is_valid, input bit [`SVT_MEM_MAX_ATTR_WIDTH-1:0] attr, input bit [`SVT_MEM_MAX_ADDR_WIDTH-1:0] addr);
+  begin
+    svt_env env;
+    svt_agent agent;
+    svt_mem_cmd_assistant assist;
+    if ($cast(agent, model)) begin
+      void'($cast(assist, agent.get_cmd_assist()));
+    end
+    else if ($cast(env, model)) begin
+      void'($cast(assist, env.get_cmd_assist()));
+    end
+
+    if (assist != null) begin
+      assist.cmd_mem_clear_attributes(is_valid, attr, addr);
+    end
+    else begin
+      is_valid = 0;
+      `uvm_error("cmd_mem_clear_attributes", "Command not supported by this model");
+    end
+  end
+endtask
+
+//---------------------------------------------------------------------------
+/**
+ * @groupname membackdoor
+ * Command Support:
+ * Free the data associated with the specified address range, as if it had never
+ * been written.
+ * 
+ * @param is_valid Functions as a <i>return</i> value that indicates the success
+ * of the memory free operation.
+ * 
+ * @param addr_lo Low address
+ * 
+ * @param addr_hi High address
+ */
+task cmd_mem_free(output bit is_valid, input bit [`SVT_MEM_MAX_ADDR_WIDTH-1:0] addr_lo, input bit [`SVT_MEM_MAX_ADDR_WIDTH-1:0] addr_hi);
+  begin
+    svt_env env;
+    svt_agent agent;
+    svt_mem_cmd_assistant assist;
+    if ($cast(agent, model)) begin
+      void'($cast(assist, agent.get_cmd_assist()));
+    end
+    else if ($cast(env, model)) begin
+      void'($cast(assist, env.get_cmd_assist()));
+    end
+
+    if (assist != null) begin
+      assist.cmd_mem_free(is_valid, addr_lo, addr_hi);
+    end
+    else begin
+      is_valid = 0;
+      `uvm_error("cmd_mem_free", "Command not supported by this model");
+    end
+  end
+endtask
+
+//---------------------------------------------------------------------------
+/**
+ * @groupname membackdoor
+ * Command Support:
+ * Free all data in the memory.
+ * 
+ * @param is_valid Functions as a <i>return</i> value that indicates the success
+ * of the memory free operation.
+ */
+task cmd_mem_free_all(output bit is_valid);
+  begin
+    svt_env env;
+    svt_agent agent;
+    svt_mem_cmd_assistant assist;
+    if ($cast(agent, model)) begin
+      void'($cast(assist, agent.get_cmd_assist()));
+    end
+    else if ($cast(env, model)) begin
+      void'($cast(assist, env.get_cmd_assist()));
+    end
+
+    if (assist != null) begin
+      assist.cmd_mem_free_all(is_valid);
+    end
+    else begin
+      is_valid = 0;
+      `uvm_error("cmd_mem_free_all", "Command not supported by this model");
+    end
+  end
+endtask
+
+//---------------------------------------------------------------------------
+/**
+ * @groupname membackdoor
+ * Command Support:
+ * Reset the backdoor iterator to the first address with all the
+ * specified (bitwise-OR'd) attributes set.
+ * 
+ * @param is_valid Functions as a <i>return</i> value that indicates the success
+ * of the reset operation.
+ * 
+ * @param attr Attribute to reset the iterator to
+ */
+task cmd_mem_reset_ittr(output bit is_valid, input bit [`SVT_MEM_MAX_ATTR_WIDTH-1:0] attr=1);
+  begin
+    svt_env env;
+    svt_agent agent;
+    svt_mem_cmd_assistant assist;
+    if ($cast(agent, model)) begin
+      void'($cast(assist, agent.get_cmd_assist()));
+    end
+    else if ($cast(env, model)) begin
+      void'($cast(assist, env.get_cmd_assist()));
+    end
+
+    if (assist != null) begin
+      assist.cmd_mem_reset_ittr(is_valid, attr);
+    end
+    else begin
+      is_valid = 0;
+      `uvm_error("cmd_mem_reset_ittr", "Command not supported by this model");
+    end
+  end
+endtask
+
+//---------------------------------------------------------------------------
+/**
+ * @groupname membackdoor
+ * Command Support:
+ * Move the iterator to the next memory location. The order in which
+ * memory location are visited is not specified.
+ * 
+ * @param is_valid Functions as a <i>return</i> value that indicates the success
+ * of the next operation.
+ */
+task cmd_mem_next_ittr(output bit is_valid);
+  begin
+    svt_env env;
+    svt_agent agent;
+    svt_mem_cmd_assistant assist;
+    if ($cast(agent, model)) begin
+      void'($cast(assist, agent.get_cmd_assist()));
+    end
+    else if ($cast(env, model)) begin
+      void'($cast(assist, env.get_cmd_assist()));
+    end
+
+    if (assist != null) begin
+      assist.cmd_mem_next_ittr(is_valid);
+    end
+    else begin
+      is_valid = 0;
+      `uvm_error("cmd_mem_next_ittr", "Command not supported by this model");
+    end
+  end
+endtask
+
+//---------------------------------------------------------------------------
+/**
+ * @groupname membackdoor
+ * Command Support:
+ * Obtain the value in the memory location corresponding to the current
+ * location of the iterator.
+ * 
+ * @param is_valid Functions as a <i>return</i> value that indicates the success
+ * of the get_data operation.
+ * 
+ * @param data Data value obtained
+ */
+task cmd_mem_get_data(output bit is_valid, output bit [`SVT_MEM_MAX_DATA_WIDTH-1:0] data);
+  begin
+    svt_env env;
+    svt_agent agent;
+    svt_mem_cmd_assistant assist;
+    if ($cast(agent, model)) begin
+      void'($cast(assist, agent.get_cmd_assist()));
+    end
+    else if ($cast(env, model)) begin
+      void'($cast(assist, env.get_cmd_assist()));
+    end
+
+    if (assist != null) begin
+      assist.cmd_mem_get_data(is_valid, data);
+    end
+    else begin
+      is_valid = 0;
+      `uvm_error("cmd_mem_get_data", "Command not supported by this model");
+    end
+  end
+endtask
+
+//---------------------------------------------------------------------------
+/**
+ * @groupname membackdoor
+ * Command Support:
+ * Obtain the address of the memory location corresponding to the current
+ * location of the iterator.
+ * 
+ * @param is_valid Functions as a <i>return</i> value that indicates the success
+ * of the get_addr operation.
+ * 
+ * @param addr Address value obtained
+   */
+task cmd_mem_get_addr(output bit is_valid, output bit [`SVT_MEM_MAX_ADDR_WIDTH-1:0] addr);
+  begin
+    svt_env env;
+    svt_agent agent;
+    svt_mem_cmd_assistant assist;
+    if ($cast(agent, model)) begin
+      void'($cast(assist, agent.get_cmd_assist()));
+    end
+    else if ($cast(env, model)) begin
+      void'($cast(assist, env.get_cmd_assist()));
+    end
+
+    if (assist != null) begin
+      assist.cmd_mem_get_addr(is_valid, addr);
+    end
+    else begin
+      is_valid = 0;
+      `uvm_error("cmd_mem_get_addr", "Command not supported by this model");
+    end
+  end
+endtask
+
+//---------------------------------------------------------------------------
+/**
+ * @groupname membackdoor
+ * Command Support:
+ * Obtain the bitwise-OR of all attributes set for the memory location
+ * corresponding to the current location of the iterator
+ * 
+ * @param is_valid Functions as a <i>return</i> value that indicates the success
+ * of the get_attributes operation.
+ * 
+ * @param attr Attribute value obtained
+ */
+task cmd_mem_get_attributes(output bit is_valid, output bit [`SVT_MEM_MAX_ATTR_WIDTH-1:0] attr);
+  begin
+    svt_env env;
+    svt_agent agent;
+    svt_mem_cmd_assistant assist;
+    if ($cast(agent, model)) begin
+      void'($cast(assist, agent.get_cmd_assist()));
+    end
+    else if ($cast(env, model)) begin
+      void'($cast(assist, env.get_cmd_assist()));
+    end
+
+    if (assist != null) begin
+      assist.cmd_mem_get_attributes(is_valid, attr);
+    end
+    else begin
+      is_valid = 0;
+      `uvm_error("cmd_mem_get_attributes", "Command not supported by this model");
+    end
+  end
+endtask
+
+//---------------------------------------------------------------------------
+/**
+ * @groupname membackdoor
+ * Command Support:
+ * Sets the error checking enables which determine whether particular types of
+ * errors or warnings will be checked by the C-based memserver application. The
+ * check_enables mask uses the same bits as the status values.
+ * 
+ * The following macros can be supplied as a bitwise-OR:
+ * <ul>
+ *  <li>`SVT_MEM_SA_CHECK_RD_RD_NO_WR</li>
+ *  <li>`SVT_MEM_SA_CHECK_WR_LOSS</li>
+ *  <li>`SVT_MEM_SA_CHECK_WR_SAME</li>
+ *  <li>`SVT_MEM_SA_CHECK_WR_WR</li>
+ *  <li>`SVT_MEM_SA_CHECK_RD_B4_WR</li>
+ *  <li>`SVT_MEM_SA_CHECK_WR_PROT</li>
+ *  <li>`SVT_MEM_SA_CHECK_ADR_ERR</li>
+ *  <li>`SVT_MEM_SA_CHECK_DATA_ERR</li>
+ *  <li>`SVT_MEM_SA_CHECK_ACCESS_LOCKED</li>
+ *  <li>`SVT_MEM_SA_CHECK_ACCESS_ERROR</li>
+ *  <li>`SVT_MEM_SA_CHECK_PARTIAL_RD</li>
+ * </ul>
+ * 
+ * Note however that not all status values represent error checks that can be
+ * disabled. Two pre-defined check enable defines exist:
+ * <ul>
+ *  <li>`SVT_MEM_SA_CHECK_STD</li>
+ *  <ul>
+ *   <li>includes RD_B4_WR, PARTIAL_RD, ADR_ERR, DATA_ERR</li>
+ *  </ul>
+ *  <li>`SVT_MEM_SA_CHECK_ALL</li>
+ *  <ul>
+ *   <li>includes all checks listed above</li>
+ *  </ul>
+ * </ul>
+ * 
+ * @param is_valid Functions as a <i>return</i> value that indicates the success
+ * of the set_checks operation.
+ *
+ * @param check_mask Error check enable mask
+ */
+task cmd_mem_set_checks(output bit is_valid, input int check_mask);
+  begin
+    svt_env env;
+    svt_agent agent;
+    svt_mem_cmd_assistant assist;
+    if ($cast(agent, model)) begin
+      void'($cast(assist, agent.get_cmd_assist()));
+    end
+    else if ($cast(env, model)) begin
+      void'($cast(assist, env.get_cmd_assist()));
+    end
+
+    if (assist != null) begin
+      assist.cmd_mem_set_checks(is_valid, check_mask);
+    end
+    else begin
+      is_valid = 0;
+      `uvm_error("cmd_mem_set_checks", "Command not supported by this model");
+    end
+  end
+endtask
+
+//---------------------------------------------------------------------------
+/**
+ * @groupname membackdoor
+ * Command Support:
+ * Retrieves the check mask which determines which checks the memserver performs 
+ *
+ * Retrieves the check mask which determines which checks the C-based memserver
+ * application performs.  The return value is a bitwise-OR that determines which
+ * checks are enabled.
+ * 
+ * The following macros can be used to test whether specific checks are enabled:
+ * <ul>
+ *  <li>`SVT_MEM_SA_CHECK_RD_RD_NO_WR</li>
+ *  <li>`SVT_MEM_SA_CHECK_WR_LOSS</li>
+ *  <li>`SVT_MEM_SA_CHECK_WR_SAME</li>
+ *  <li>`SVT_MEM_SA_CHECK_WR_WR</li>
+ *  <li>`SVT_MEM_SA_CHECK_RD_B4_WR</li>
+ *  <li>`SVT_MEM_SA_CHECK_WR_PROT</li>
+ *  <li>`SVT_MEM_SA_CHECK_ADR_ERR</li>
+ *  <li>`SVT_MEM_SA_CHECK_DATA_ERR</li>
+ *  <li>`SVT_MEM_SA_CHECK_ACCESS_LOCKED</li>
+ *  <li>`SVT_MEM_SA_CHECK_ACCESS_ERROR</li>
+ *  <li>`SVT_MEM_SA_CHECK_PARTIAL_RD</li>
+ * </ul>
+ * 
+ * @param is_valid Functions as a <i>return</i> value that indicates the success
+ * of the get_checks operation.
+ * 
+ * @param check_mask Returns the currently enabled checks
+ */
+task cmd_mem_get_checks(output bit is_valid, output check_mask);
+  begin
+    svt_env env;
+    svt_agent agent;
+    svt_mem_cmd_assistant assist;
+    if ($cast(agent, model)) begin
+      void'($cast(assist, agent.get_cmd_assist()));
+    end
+    else if ($cast(env, model)) begin
+      void'($cast(assist, env.get_cmd_assist()));
+    end
+
+    if (assist != null) begin
+      assist.cmd_mem_get_checks(is_valid, check_mask);
+    end
+    else begin
+      is_valid = 0;
+      `uvm_error("cmd_mem_get_checks", "Command not supported by this model");
+    end
+  end
+endtask
+
+//---------------------------------------------------------------------------
+/**
+ * @groupname memcore
+ * Command Support:
+ * Loads memory locations with the contents of the specified disk file. Disk
+ * file format is determined automatically based on file suffix and/or file
+ * contents.  The following formats are supported:
+ *  - mempa
+ *  - mif
+ *  .
+ * 
+ * The memory locations can be flagged as write protected by setting the
+ * write_protected argument.  When set to protect, memserver allocates an
+ * attribute for system use and marks each loaded memory location with it.
+ * When write protect checking is enabled, a write to a protected location
+ * will cause a STATUS_WR_PROT error.
+ * 
+ * Use the cmd_mem_set_checks() function to enable or disable write protect checking
+ * (default is disabled).
+ * 
+ * @param is_valid Functions as a <i>return</i> value that indicates the success
+ * of the load operation.
+ * 
+ * @param filename Name of the file to load.  The file extension determines
+ *        which format to expect.
+ * 
+ * @param write_protected Marks the addresses initialized by the file as
+ *        write protected.
+ */
+`ifdef SVT_MULTI_SIM_STRING_ARG_IN_EXPORTED_METHODS
+task cmd_mem_load(output bit is_valid, input bit[80*8-1:0] _filename, input bit write_protected);
+  string filename;
+  filename = $sformatf("%0s", _filename);
+`else
+task cmd_mem_load(output bit is_valid, input string filename, input bit write_protected);
+`endif
+  begin
+    svt_env env;
+    svt_agent agent;
+    svt_mem_cmd_assistant assist;
+    if ($cast(agent, model)) begin
+      void'($cast(assist, agent.get_cmd_assist()));
+    end
+    else if ($cast(env, model)) begin
+      void'($cast(assist, env.get_cmd_assist()));
+    end
+
+    if (assist != null) begin
+      assist.cmd_mem_load(is_valid, filename, write_protected);
+    end
+    else begin
+      is_valid = 0;
+      `uvm_error("cmd_mem_load", "Command not supported by this model");
+    end
+  end
+
+endtask
+
+//---------------------------------------------------------------------------
+/**
+ * @groupname memcore
+ * Command Support:
+ * Write the content of the memory to the specified file.
+ * 
+ * @param is_valid Functions as a <i>return</i> value that indicates the success
+ * of the dump operation.
+ * 
+ * @param filename Name of the file to write to.  The file extension
+ *        determines which format the file is created in.
+ * 
+ * @param filetype The string name of  the format to be used when writing a
+ *        memory dump file. The "MEMH" (Verilog readmemh format) is built
+ *        into memsever.
+ * 
+ * @param append Start a new file, or aadd onto an existing file
+ * 
+ * @param addr_lo Starting address
+ * 
+ * @param addr_hi Ending address
+ */
+`ifdef SVT_MULTI_SIM_STRING_ARG_IN_EXPORTED_METHODS
+task cmd_mem_dump(output bit is_valid, input bit[80*8-1:0] _filename, input bit[80*8-1:0] _filetype, input bit append, input bit [`SVT_MEM_MAX_ADDR_WIDTH-1:0] addr_lo, input bit [`SVT_MEM_MAX_ADDR_WIDTH-1:0] addr_hi);
+  string filename;
+  string filetype;
+  filename = $sformatf("%0s", _filename);
+  filetype = $sformatf("%0s", _filetype);
+`else
+task cmd_mem_dump(output bit is_valid, input string filename, input string filetype, input bit append, input bit [`SVT_MEM_MAX_ADDR_WIDTH-1:0] addr_lo, input bit [`SVT_MEM_MAX_ADDR_WIDTH-1:0] addr_hi);
+`endif
+  begin
+    svt_env env;
+    svt_agent agent;
+    svt_mem_cmd_assistant assist;
+    if ($cast(agent, model)) begin
+      void'($cast(assist, agent.get_cmd_assist()));
+    end
+    else if ($cast(env, model)) begin
+      void'($cast(assist, env.get_cmd_assist()));
+    end
+
+    if (assist != null) begin
+      assist.cmd_mem_dump(is_valid, filename, filetype, append, addr_lo, addr_hi);
+    end
+    else begin
+      is_valid = 0;
+      `uvm_error("cmd_mem_dump", "Command not supported by this model");
+    end
+  end
+
+endtask
+
+//---------------------------------------------------------------------------
+/**
+ * @groupname memcore
+ * Command Support:
+ * Compare the content of the memory in the specifed address range
+ * (entire memory by default) with the data found in the specifed file,
+ * using the relevant policy based on the filename.
+ * 
+ * The following comparison mode are available:
+ * 
+ * - Subset: The content of the file is present in the memory core. The 
+ *   memory core may contain additional values that are ignored.
+ * - Strict: The content of the file is strictly equal to the content of the
+ *   memory core.
+ * - Superset: The content of the memory core is present in the file. The
+ *   file may contain additional values that are ignored.
+ * - Intersect: The same addresses present in the memory core and in the
+ *   file contain the same data. Addresses present only in the file or the
+ *   memory core are ignored.
+ * .
+ * 
+ * The following macros are the only supported values for the compare_type argument:
+ * <ul>
+ *  <li>\`SVT_MEM_COMPARE_SUBSET</li>
+ *  <li>\`SVT_MEM_COMPARE_STRICT</li>
+ *  <li>\`SVT_MEM_COMPARE_SUPERSET</li>
+ *  <li>\`SVT_MEM_COMPARE_INTERSECT</li>
+ * </ul>
+ * 
+ * @param is_valid Functions as a <i>return</i> value that indicates the success
+ * of the compare operation.
+ * 
+ * @param filename Name of the file to compare to.  The file extension
+ *        determines which format the file is created in.
+ *
+ * @param compare_type Determines which kind of compare is executed
+ *
+ * @param max_errors Data comparison terminates after reaching max_errors. If
+ *        max_errors is 0 assume a maximum error count of 10.
+ *
+ * @param addr_lo Starting address
+ *
+ * @param addr_hi Ending address
+ */
+`ifdef SVT_MULTI_SIM_STRING_ARG_IN_EXPORTED_METHODS
+task cmd_mem_compare(output bit is_valid, input bit[80*8-1:0] _filename, input int compare_type, input int max_errors, input bit [`SVT_MEM_MAX_ADDR_WIDTH-1:0] addr_lo, input bit [`SVT_MEM_MAX_ADDR_WIDTH-1:0] addr_hi);
+  string filename;
+  filename = $sformatf("%0s", _filename);
+`else
+task cmd_mem_compare(output bit is_valid, input string filename, input int compare_type, input int max_errors, input bit [`SVT_MEM_MAX_ADDR_WIDTH-1:0] addr_lo, input bit [`SVT_MEM_MAX_ADDR_WIDTH-1:0] addr_hi);
+`endif
+  begin
+    svt_env env;
+    svt_agent agent;
+    svt_mem_cmd_assistant assist;
+    if ($cast(agent, model)) begin
+      void'($cast(assist, agent.get_cmd_assist()));
+    end
+    else if ($cast(env, model)) begin
+      void'($cast(assist, env.get_cmd_assist()));
+    end
+
+    if (assist != null) begin
+      assist.cmd_mem_compare(is_valid, filename, svt_mem_core::compare_type_enum'(compare_type), max_errors, addr_lo, addr_hi);
+    end
+    else begin
+      is_valid = 0;
+      `uvm_error("cmd_mem_compare", "Command not supported by this model");
+    end
+  end
+
+endtask
+
+//---------------------------------------------------------------------------
+/**
+ * @groupname memcatalog
+ * Loads a part number from the specified catalog.
+ * 
+ * @param is_valid Functions as a <i>return</i> value that indicates the success
+ * of the cmd_mem_load_part_cfg operation.
+ * 
+ * @param mem_class Determines which memory class to select the part number from
+ * 
+ * @param mem_package Determines which package category to select the part number from
+ * 
+ * @param mem_vendor Determines which vendor category to selct the part number from
+ * 
+ * @param part_name Specifies the part name to load
+ */
+`ifdef SVT_MULTI_SIM_STRING_ARG_IN_EXPORTED_METHODS
+task cmd_mem_load_part_cfg(output bit is_valid, input int mem_class, input int mem_package, input int mem_vendor, input bit[80*8-1:0] _part_name);
+  string part_name;
+  part_name = $sformatf("%0s", _part_name);
+`else
+task cmd_mem_load_part_cfg(output bit is_valid, input int mem_class, input int mem_package, input int mem_vendor, input string part_name);
+`endif
+  begin
+    svt_env env;
+    svt_agent agent;
+    svt_mem_cmd_assistant assist;
+    if ($cast(agent, model)) begin
+      void'($cast(assist, agent.get_cmd_assist()));
+    end
+    else if ($cast(env, model)) begin
+      void'($cast(assist, env.get_cmd_assist()));
+    end
+
+    if (assist != null) begin
+      assist.cmd_mem_load_part_cfg(is_valid, mem_class, mem_package, mem_vendor, part_name);
+    end
+    else begin
+      is_valid = 0;
+      `uvm_error("cmd_mem_load_part_cfg", "Command not supported by this model");
+    end
+  end
+
+endtask
+
+//==============================================================================

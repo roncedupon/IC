@@ -1,0 +1,92 @@
+//=======================================================================
+// COPYRIGHT (C) 2012-2017 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+`ifndef GUARD_SVT_MEM_CATALOG_SVI
+`define GUARD_SVT_MEM_CATALOG_SVI
+
+/** Short-hand macro to define a suite-specific, vendor-specific
+ *  catalog class and start populating part entries.
+ *  May be used multiple times to create multiple catalog "pages".
+ * 
+ *  Assumes the existence of a catalog class named svt_<suite>_vendor_catalog
+ *  and of a catalog entry class named svt_<suite>_vendor_part.
+ */
+`define svt_mem_vendor_catalog_begin(__suite, __name) \
+`define svt___current_suite  __suite\
+`define svt___current_vendor __name
+
+
+/** Short-hand macro for defining a vendor part catalog entry.
+ *  Must be used between `svt_mem_vendor_catalog_begin and
+ *  `svt_mem_vendor_catalog_end macros
+ */
+`define svt_mem_vendor_part(__name, __descr, __depth, __width, __speed, __cfg) \
+  `svt_mem_vendor_part2(`svt___current_suite, `svt___current_vendor, __name, __descr, __depth, __width, __speed, __cfg)
+
+`define svt_mem_vendor_part2(__suite, __vendor, __name, __descr, __depth, __width, __speed, __cfg) \
+  svt_``__suite``_vendor_part __name``__in__``__suite``_``__vendor``_catalog \
+    = new(svt_``__suite``_vendor_catalog::get_vendor(`"__vendor`"), `"__name`", __descr, \
+          SVT_MEM_``__depth, SVT_MEM_``__width, SVT_MEM_``__speed, __cfg);
+
+/** Short-hand macro for closing a vendor part catalog "page".
+ */
+`define svt_mem_vendor_catalog_end \
+`undef svt___current_suite \
+`undef svt___current_vendor
+
+// Defines for memory part depths
+`define SVT_MEM_DEPTH_2KB     1
+`define SVT_MEM_DEPTH_4KB     2
+`define SVT_MEM_DEPTH_8KB     3
+`define SVT_MEM_DEPTH_16KB    4
+`define SVT_MEM_DEPTH_32KB    5
+`define SVT_MEM_DEPTH_64KB    6
+`define SVT_MEM_DEPTH_128KB   7
+`define SVT_MEM_DEPTH_256KB   8
+`define SVT_MEM_DEPTH_512KB   9
+`define SVT_MEM_DEPTH_1MB    10
+`define SVT_MEM_DEPTH_2MB    11
+`define SVT_MEM_DEPTH_4MB    12
+`define SVT_MEM_DEPTH_8MB    13
+`define SVT_MEM_DEPTH_16MB   14
+`define SVT_MEM_DEPTH_24MB   15
+`define SVT_MEM_DEPTH_32MB   16
+`define SVT_MEM_DEPTH_48MB   17
+`define SVT_MEM_DEPTH_64MB   18
+`define SVT_MEM_DEPTH_128MB  19
+`define SVT_MEM_DEPTH_192MB  20
+`define SVT_MEM_DEPTH_256MB  21
+`define SVT_MEM_DEPTH_384MB  22
+`define SVT_MEM_DEPTH_512MB  23
+`define SVT_MEM_DEPTH_768MB  24
+`define SVT_MEM_DEPTH_1536MB 25
+`define SVT_MEM_DEPTH_1GB    26
+`define SVT_MEM_DEPTH_2GB    27
+`define SVT_MEM_DEPTH_3GB    28
+`define SVT_MEM_DEPTH_4GB    29
+`define SVT_MEM_DEPTH_6GB    30
+`define SVT_MEM_DEPTH_8GB    31
+`define SVT_MEM_DEPTH_9GB    32
+`define SVT_MEM_DEPTH_12GB   33
+`define SVT_MEM_DEPTH_16GB   34
+`define SVT_MEM_DEPTH_24GB   35
+`define SVT_MEM_DEPTH_32GB   36
+`define SVT_MEM_DEPTH_48GB   37
+`define SVT_MEM_DEPTH_64GB   38
+`define SVT_MEM_DEPTH_96GB   39
+`define SVT_MEM_DEPTH_128GB  40
+`define SVT_MEM_DEPTH_192GB  41
+`define SVT_MEM_DEPTH_256GB  42
+
+`endif

@@ -1,0 +1,1776 @@
+//=======================================================================
+// COPYRIGHT (C) 2010-2016 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+`ifndef GUARD_SVT_UVM_UTIL_SVI
+`define GUARD_SVT_UVM_UTIL_SVI
+
+// -------------------------------------------------------------------------
+// SVT Message macros should be used instead of the methedology specific
+// message formatting routines
+// -------------------------------------------------------------------------
+
+// =============================================================================
+// The UVM object macros do not currently support arrays of real properties.
+// The following sets of macros implement this using the same strategy that
+// the other object macros have used.  Unfortunately, this strategy is not
+// the same in UVM EA and UVM 1.0. So, we need to implement this differently
+// depending on the UVM version that we are using.
+
+// =============================================================================
+// UVM 1.0 implementation of the uvm_field_array_real macro
+`ifndef UVM_FIX_REV_EA
+
+`ifndef uvm_print_qda_real3
+
+`define uvm_print_qda_real3(F, P, T) \
+  begin \
+    uvm_printer p__; \
+    uvm_printer_knobs k__; \
+    int curr, max__; max__=0; curr=0; \
+    if(P!=null) p__ = P; \
+    else p__ = uvm_default_printer; \
+    foreach(F[i__]) max__++; \
+    p__.print_array_header (`"F`", max__,`"T``(real)`"); \
+    k__ = p__.knobs; \
+    if((p__.knobs.depth == -1) || (p__.m_scope.depth() < p__.knobs.depth+1)) \
+    begin \
+      foreach(F[i__]) begin \
+        if(k__.begin_elements == -1 || k__.end_elements == -1 || curr < k__.begin_elements ) begin \
+          p__.print_real(p__.index_string(curr), F[curr], "["); \
+        end \
+        else break; \
+        curr++; \
+      end \
+      if(curr<max__) begin \
+        if((max__-k__.end_elements) > curr) curr = max__-k__.end_elements; \
+        if(curr<k__.begin_elements) curr = k__.begin_elements; \
+        else begin \
+          p__.print_array_range(k__.begin_elements, curr-1); \
+        end \
+        for(curr=curr; curr<max__; ++curr) begin \
+          p__.print_real(p__.index_string(curr), F[curr], "["); \
+        end \
+      end \
+    end \
+    p__.print_array_footer(max__); \
+  end
+ 
+`endif
+
+`ifndef uvm_print_array_real2
+
+`define uvm_print_array_real2(F, P) \
+  `uvm_print_qda_real3(F, P, da)
+
+`endif
+
+`ifndef uvm_print_array_real
+
+`define uvm_print_array_real(F) \
+  `uvm_print_array_real2(F, uvm_default_printer)
+   
+`endif
+
+`ifndef m_uvm_record_array_real
+
+// m_uvm_record_array_real
+// ------------------------
+
+`define m_uvm_record_qda_real(ARG, FLAG, SZ) \
+  begin \
+    if(!((FLAG)&UVM_NORECORD)) begin \
+      int sz__ = SZ; \
+      if(sz__ == 0) begin \
+        __m_uvm_status_container.recorder.record_field(`"ARG``.size`", 0, 32, UVM_DEC); \
+      end \
+      else if(sz__ < 10) begin \
+        foreach(ARG[i]) begin \
+           __m_uvm_status_container.scope.set_arg_element(`"ARG`",i); \
+           __m_uvm_status_container.recorder.record_field_real(__m_uvm_status_container.scope.get(), ARG[i]); \
+        end \
+      end \
+      else begin \
+        for(int i=0; i<5; ++i) begin \
+           __m_uvm_status_container.scope.set_arg_element(`"ARG`", i); \
+           __m_uvm_status_container.recorder.record_field_real(__m_uvm_status_container.scope.get(), ARG[i]); \
+        end \
+        for(int i=sz__-5; i<sz__; ++i) begin \
+           __m_uvm_status_container.scope.set_arg_element(`"ARG`", i); \
+           __m_uvm_status_container.recorder.record_field_real(__m_uvm_status_container.scope.get(), ARG[i]); \
+        end \
+      end \
+    end \
+  end
+
+`endif
+
+`ifndef uvm_field_array_real
+
+// MACRO: `uvm_field_array_real
+//
+// Implements the data operations for a one-dimensional dynamic array of
+// reals.
+//
+//|  `uvm_field_array_real(ARG,FLAG)
+//
+// ~ARG~ is a one-dimensional dynamic array of reals,
+// and ~FLAG~ is a bitwise OR of one or more flag settings as described in
+// <Field Macros> above.
+
+`define uvm_field_array_real(ARG,FLAG) \
+   `M_UVM_FIELD_QDA_REAL(ARRAY,ARG,FLAG,da) 
+
+`define M_UVM_FIELD_QDA_REAL(TYPE,ARG,FLAG,T) \
+  begin \
+    case (what__) \
+      UVM_CHECK_FIELDS: \
+        __m_uvm_status_container.do_field_check(`"ARG`", this); \
+      UVM_COPY: \
+        begin \
+          if (local_data__ == null) return; \
+          if(!((FLAG)&UVM_NOCOPY)) ARG = local_data__.ARG; \
+        end \
+      UVM_COMPARE: \
+        begin \
+          if (local_data__ == null) return; \
+          if(!((FLAG)&UVM_NOCOMPARE)) begin \
+            if(ARG != local_data__.ARG) begin \
+               if(__m_uvm_status_container.comparer.show_max == 1) begin \
+                 __m_uvm_status_container.scope.set_arg(`"ARG`"); \
+                 __m_uvm_status_container.comparer.print_msg(""); \
+               end \
+               else if(__m_uvm_status_container.comparer.show_max) begin \
+                 if(ARG.size() != local_data__.ARG.size()) begin \
+                   void'(__m_uvm_status_container.comparer.compare_field(`"ARG_size`", ARG.size(), local_data__.ARG.size(), 32)); \
+                 end \
+                 else begin \
+                   foreach(ARG[i]) begin \
+                     if(ARG[i] != local_data__.ARG[i]) begin \
+                       __m_uvm_status_container.scope.set_arg_element(`"ARG`",i); \
+                       void'(__m_uvm_status_container.comparer.compare_field_real(`"ARG`", ARG[i], local_data__.ARG[i])); \
+                     end \
+                   end \
+                 end \
+               end \
+               else if ((__m_uvm_status_container.comparer.physical&&((FLAG)&UVM_PHYSICAL)) || \
+                        (__m_uvm_status_container.comparer.abstract&&((FLAG)&UVM_ABSTRACT)) || \
+                        (!((FLAG)&UVM_PHYSICAL) && !((FLAG)&UVM_ABSTRACT)) ) \
+                 __m_uvm_status_container.comparer.result++; \
+               if(__m_uvm_status_container.comparer.result && (__m_uvm_status_container.comparer.show_max <= __m_uvm_status_container.comparer.result)) return; \
+            end \
+          end \
+         end \
+      UVM_PACK: \
+        if(!((FLAG)&UVM_NOPACK)) begin \
+          if(__m_uvm_status_container.packer.use_metadata) __m_uvm_status_container.packer.pack_field_int(ARG.size(), 32); \
+          foreach(ARG[i]) begin \
+            __m_uvm_status_container.packer.pack_field_int($realtobits(ARG[i]), 64); \
+          end \
+        end \
+      UVM_UNPACK: \
+        if(!((FLAG)&UVM_NOPACK)) begin \
+          int sz = ARG.size(); \
+          if(__m_uvm_status_container.packer.use_metadata) sz = __m_uvm_status_container.packer.unpack_field_int(32); \
+          if(sz != ARG.size()) begin \
+            `M_UVM_``TYPE``_RESIZE (ARG,0) \
+          end \
+          foreach(ARG[i]) begin \
+            ARG[i] = $bitstoreal(__m_uvm_status_container.packer.unpack_field_int(64)); \
+          end \
+        end \
+      UVM_RECORD: \
+        `m_uvm_record_qda_real(ARG, FLAG, ARG.size()) \
+      UVM_PRINT: \
+        begin \
+          if(((FLAG)&UVM_NOPRINT) == 0) begin \
+            `uvm_print_qda_real3(ARG, __m_uvm_status_container.printer, T) \
+          end \
+        end \
+      UVM_SETINT: \
+        begin \
+          __m_uvm_status_container.scope.set_arg(`"ARG`"); \
+          if(uvm_is_match(str__, __m_uvm_status_container.scope.get())) begin \
+            if((FLAG)&UVM_READONLY) begin \
+              uvm_report_warning("RDONLY", $sformatf("Readonly argument match %s is ignored",  \
+                 __m_uvm_status_container.get_full_scope_arg()), UVM_NONE); \
+            end \
+            else begin \
+             int sz =  uvm_object::__m_uvm_status_container.bitstream; \
+             if (__m_uvm_status_container.print_matches) \
+                  uvm_report_info("STRMTC", {"set_int()", ": Matched string ", str__, " to field ", __m_uvm_status_container.get_full_scope_arg()}, UVM_LOW); \
+             if(ARG.size() !=  sz) begin \
+               `M_UVM_``TYPE``_RESIZE(ARG,0) \
+             end \
+             __m_uvm_status_container.status = 1; \
+            end \
+          end \
+          else if(!((FLAG)&UVM_READONLY)) begin \
+            foreach(ARG[i]) begin \
+              __m_uvm_status_container.scope.set_arg_element(`"ARG`",i); \
+              if(uvm_is_match(str__, __m_uvm_status_container.scope.get())) begin \
+                if (__m_uvm_status_container.print_matches) \
+                  uvm_report_info("STRMTC", {"set_int()", ": Matched string ", str__, " to field ", __m_uvm_status_container.get_full_scope_arg()}, UVM_LOW); \
+                ARG[i] =  uvm_object::__m_uvm_status_container.bitstream; \
+                __m_uvm_status_container.status = 1; \
+              end \
+            end \
+          end \
+        end \
+    endcase \
+  end
+
+`endif //  `ifndef uvm_field_array_real
+
+`ifndef uvm_field_sarray_real
+
+// MACRO: `uvm_field_sarray_real
+//
+// Implements the data operations for a one-dimensional fixed length array of
+// reals.
+//
+//|  `uvm_field_sarray_real(ARG,FLAG)
+//
+// ~ARG~ is a one-dimensional fixed length array of reals,
+// and ~FLAG~ is a bitwise OR of one or more flag settings as described in
+// <Field Macros> above.
+
+`define uvm_field_sarray_real(ARG,FLAG) \
+  begin \
+    case (what__) \
+      UVM_CHECK_FIELDS: \
+        __m_uvm_status_container.do_field_check(`"ARG`", this); \
+      UVM_COPY: \
+        begin \
+          if (local_data__ == null) return; \
+          if(!((FLAG)&UVM_NOCOPY)) ARG = local_data__.ARG; \
+        end \
+      UVM_COMPARE: \
+        begin \
+          if (local_data__ == null) return; \
+          if(!((FLAG)&UVM_NOCOMPARE)) begin \
+            if(ARG != local_data__.ARG) begin \
+               if(__m_uvm_status_container.comparer.show_max == 1) begin \
+                 __m_uvm_status_container.scope.set_arg(`"ARG`"); \
+                 __m_uvm_status_container.comparer.print_msg(""); \
+               end \
+               else if(__m_uvm_status_container.comparer.show_max) begin \
+                   foreach(ARG[i]) begin \
+                     if(ARG[i] != local_data__.ARG[i]) begin \
+                       __m_uvm_status_container.scope.set_arg_element(`"ARG`",i); \
+                       void'(__m_uvm_status_container.comparer.compare_field_real(`"ARG`", ARG[i], local_data__.ARG[i])); \
+                     end \
+                   end \
+               end \
+               else if ((__m_uvm_status_container.comparer.physical&&((FLAG)&UVM_PHYSICAL)) || \
+                        (__m_uvm_status_container.comparer.abstract&&((FLAG)&UVM_ABSTRACT)) || \
+                        (!((FLAG)&UVM_PHYSICAL) && !((FLAG)&UVM_ABSTRACT)) ) \
+                 __m_uvm_status_container.comparer.result++; \
+               if(__m_uvm_status_container.comparer.result && (__m_uvm_status_container.comparer.show_max <= __m_uvm_status_container.comparer.result)) return; \
+            end \
+          end \
+         end \
+      UVM_PACK: \
+        if(!((FLAG)&UVM_NOPACK)) begin \
+          foreach(ARG[i]) begin \
+            __m_uvm_status_container.packer.pack_field_int($realtobits(ARG[i]), 64); \
+          end \
+        end \
+      UVM_UNPACK: \
+        if(!((FLAG)&UVM_NOPACK)) begin \
+          foreach(ARG[i]) begin \
+            ARG[i] = $bitstoreal(__m_uvm_status_container.packer.unpack_field_int(64)); \
+          end \
+        end \
+      UVM_RECORD: \
+        `m_uvm_record_qda_real(ARG, FLAG, $size(ARG)) \
+      UVM_PRINT: \
+        if(!((FLAG)&UVM_NOPRINT)) begin \
+          if(((FLAG)&UVM_NOPRINT) == 0) begin \
+            `uvm_print_qda_real3(ARG, __m_uvm_status_container.printer, T) \
+          end \
+        end \
+      UVM_SETINT: \
+        begin \
+          __m_uvm_status_container.scope.set_arg(`"ARG`"); \
+          if(uvm_is_match(str__, __m_uvm_status_container.scope.get())) begin \
+            if((FLAG)&UVM_READONLY) begin \
+              uvm_report_warning("RDONLY", $sformatf("Readonly argument match %s is ignored",  \
+                 __m_uvm_status_container.get_full_scope_arg()), UVM_NONE); \
+            end \
+            else begin \
+              uvm_report_warning("RDONLY", $sformatf("%s: static arrays cannot be resized via configuraton.",  \
+                 __m_uvm_status_container.get_full_scope_arg()), UVM_NONE); \
+            end \
+          end \
+          else if(!((FLAG)&UVM_READONLY)) begin \
+            foreach(ARG[i]) begin \
+              __m_uvm_status_container.scope.set_arg_element(`"ARG`",i); \
+              if(uvm_is_match(str__, __m_uvm_status_container.scope.get())) begin \
+                if (__m_uvm_status_container.print_matches) \
+                  uvm_report_info("STRMTC", {"set_int()", ": Matched string ", str__, " to field ", __m_uvm_status_container.get_full_scope_arg()}, UVM_LOW); \
+                ARG[i] =  uvm_object::__m_uvm_status_container.bitstream; \
+                __m_uvm_status_container.status = 1; \
+              end \
+            end \
+          end \
+        end \
+    endcase \
+  end
+`endif //  `ifndef uvm_field_sarray_real
+
+`else // !`ifndef UVM_FIX_REV_EA
+// =============================================================================
+// UVM EA version of the uvm_field_array_real macro
+
+`ifndef uvm_print_qda_real3
+
+`define uvm_print_qda_real3(F, P, T) \
+  begin \
+    uvm_printer p__; \
+    uvm_printer_knobs k__; \
+    int curr, max__; max__=0; curr=0; \
+    if(P!=null) p__ = P; \
+    else p__ = uvm_default_printer; \
+    foreach(F[i__]) max__++; \
+    p__.print_array_header (`"F`", max__,`"T``(integral)`"); \
+    k__ = p__.knobs; \
+    if((p__.knobs.depth == -1) || (p__.m_scope.depth() < p__.knobs.depth+1)) \
+    begin \
+      foreach(F[i__]) begin \
+        if(k__.begin_elements == -1 || k__.end_elements == -1 || curr < k__.begin_elements ) begin \
+          p__.print_field_real(p__.index_string(curr), F[curr], "["); \
+        end \
+        else break; \
+        curr++; \
+      end \
+      if(curr<max__) begin \
+        if((max__-k__.end_elements) > curr) curr = max__-k__.end_elements; \
+        if(curr<k__.begin_elements) curr = k__.begin_elements; \
+        else begin \
+          p__.print_array_range(k__.begin_elements, curr-1); \
+        end \
+        for(curr=curr; curr<max__; ++curr) begin \
+          p__.print_field_real(p__.index_string(curr), F[curr], "["); \
+        end \
+      end \
+    end \
+    p__.print_array_footer(max__); \
+    p__.print_footer(); \
+  end
+ 
+`endif
+
+`ifndef uvm_print_array_real2
+
+`define uvm_print_array_real2(F, P) \
+  `uvm_print_qda_real3(F, P, da)
+
+`endif
+
+`ifndef uvm_print_array_real
+
+`define uvm_print_array_real(F) \
+  `uvm_print_array_real2(F, uvm_default_printer)
+   
+`endif
+
+`ifndef m_uvm_record_array_real
+
+// m_uvm_record_array_real
+// ------------------------
+
+`define m_uvm_record_array_real(ARG, RECORDER) \
+  begin \
+    if(RECORDER.tr_handle != 0) begin\
+      for(int i__=0; i__<ARG.size(); ++i__) \
+        RECORDER.record_field_real($sformatf(`"ARG[%0d]`", i__), ARG[i__]); \
+    end \
+  end
+
+`endif
+
+`ifndef M_UVM_FIELD_DATA_ARRAY_REAL
+
+// M_UVM_FIELD_DATA_ARRAY_REAL
+// ---------------------------
+
+`define M_UVM_FIELD_DATA_ARRAY_REAL(ARG,FLAG) \
+   begin \
+   if((what__ & (FLAG)) || (what__ >= UVM_MACRO_EXTRAS)) begin \
+     case (what__) \
+       UVM_COMPARE: \
+         if ( !((FLAG)&UVM_NOCOMPARE) && (tmp_data__ != null) ) begin \
+           int i__; \
+           $cast(local_data__, tmp_data__); \
+           if(ARG.size() != local_data__.``ARG.size()) begin \
+             int s1__, s2__; \
+             m_sc.stringv = ""; \
+             s1__ = ARG.size(); s2__ = local_data__.ARG.size(); \
+             $swrite(m_sc.stringv, "lhs size = %0d : rhs size = %0d", s1__, s2__);\
+             uvm_auto_options_object.comparer.print_msg(m_sc.stringv); \
+           end \
+           for(i__=0; i__<ARG.size() && i__<local_data__.ARG.size(); ++i__) \
+             if(ARG[i__] != local_data__.ARG[i__]) begin \
+               real ls__, rs__; \
+               ls__ = ARG[i__]; rs__ = local_data__.ARG[i__]; \
+               uvm_auto_options_object.comparer.scope.down_element(i__, null);\
+               $swrite(m_sc.stringv, "lhs = %0f : rhs = %0f", ls__, rs__); \
+               uvm_auto_options_object.comparer.print_msg(m_sc.stringv); \
+               uvm_auto_options_object.comparer.scope.up_element(null);\
+             end \
+         end \
+       UVM_COPY: \
+         if(!((FLAG)&UVM_NOCOPY) && (tmp_data__ != null) ) \
+          begin \
+           int i__; \
+           $cast(local_data__, tmp_data__); \
+           /*Resizing of array is done in uvm_field_array* macro*/ \
+           for(i__=0; i__ < ARG.size(); ++i__) \
+             ARG[i__] = local_data__.ARG[i__] ; \
+         end \
+       UVM_PRINT: \
+         begin \
+           if((FLAG)&UVM_NOPRINT != 0 && \
+                          uvm_auto_options_object.printer.knobs.print_fields == 1) \
+             `uvm_print_array_real2(ARG, uvm_auto_options_object.printer) \
+         end \
+       UVM_RECORD: \
+         begin \
+           if(((FLAG)&UVM_NORECORD) == 0 && !m_sc.array_warning_done) begin \
+             `m_uvm_record_array_real(ARG, uvm_auto_options_object.recorder) \
+           end \
+         end \
+     endcase \
+   end \
+   end 
+
+`endif
+
+`ifndef M_UVM_FIELD_ARRAY_REAL_PACK
+
+`define M_UVM_FIELD_ARRAY_REAL_PACK(ARG,FLAG) \
+   case(what__) \
+      UVM_PACK: \
+        if(((FLAG)&UVM_NOPACK) == 0) \
+        begin \
+          if((((FLAG)&UVM_ABSTRACT) && uvm_auto_options_object.packer.abstract) || \
+              (!((FLAG)&UVM_ABSTRACT) && uvm_auto_options_object.packer.physical)) begin \
+            if(uvm_auto_options_object.packer.use_metadata == 1) \
+              uvm_auto_options_object.packer.pack_field_int(ARG.size(), 32); \
+            foreach(ARG[i]) \
+              uvm_auto_options_object.packer.pack_real(ARG[i]); \
+          end \
+        end \
+      UVM_UNPACK: \
+        if(((FLAG)&UVM_NOPACK) == 0) \
+        begin \
+          if((((FLAG)&UVM_ABSTRACT) && uvm_auto_options_object.packer.abstract) || \
+              (!((FLAG)&UVM_ABSTRACT) && uvm_auto_options_object.packer.physical)) begin \
+            if(uvm_auto_options_object.packer.use_metadata) begin \
+              int s_; \
+              s_ = uvm_auto_options_object.packer.unpack_field_int(32); \
+              ARG = new[s_]; \
+            end \
+            foreach(ARG[i]) \
+              ARG[i] = uvm_auto_options_object.packer.unpack_real(); \
+          end \
+        end \
+  endcase
+
+`endif //  `ifndef M_UVM_FIELD_ARRAY_REAL_PACK
+
+
+`ifndef M_UVM_FIELD_SET_ARRAY_REAL
+
+`define M_UVM_FIELD_SET_ARRAY_REAL(ARRAY, RHS, FLAG) \
+  if((what__ >= UVM_START_FUNCS && what__ <= UVM_END_FUNCS) && (((FLAG)&UVM_READONLY) == 0)) begin \
+    int index__; \
+    bit wildcard_index__; \
+    index__ = uvm_get_array_index_int(str__, wildcard_index__); \
+    if(what__==UVM_SETINT) \
+    begin \
+      if(uvm_is_array(str__) ) begin\
+        if(wildcard_index__) begin \
+          for(int index__=0; index__<ARRAY.size(); ++index__) begin \
+            if(uvm_is_match(str__, {m_sc.scope.get_arg(),$sformatf("[%0d]", index__)})) begin \
+              ARRAY[index__] = RHS; \
+              m_sc.status = 1; \
+            end \
+          end \
+        end \
+        else if(uvm_is_match(str__, {m_sc.scope.get_arg(),$sformatf("[%0d]", index__)})) begin \
+          ARRAY[index__] = RHS; \
+          m_sc.status = 1; \
+        end \
+        else if(what__==UVM_SET && uvm_is_match(str__, m_sc.scope.get_arg())) begin \
+          int size__; \
+          size__ = m_sc.bitstream; \
+          ARRAY = new[size__](ARRAY); \
+          m_sc.status = 1; \
+        end \
+      end \
+      else if(what__==UVM_SET && uvm_is_match(str__, m_sc.scope.get_arg())) begin \
+        int size__; \
+        size__ = m_sc.bitstream; \
+        ARRAY = new[size__](ARRAY); \
+        m_sc.status = 1; \
+      end \
+    end \
+    else if(what__==UVM_SET && uvm_is_match(str__, m_sc.scope.get_arg())) begin \
+     int size__; \
+     size__ = m_sc.bitstream; \
+     ARRAY = new[size__](ARRAY); \
+     m_sc.status = 1; \
+    end \
+ end
+
+`endif
+
+`ifndef uvm_field_array_real
+
+// MACRO: `uvm_field_array_real
+//
+// Implements the data operations for a one-dimensional dynamic array of
+// reals.
+//
+//|  `uvm_field_array_real(ARG,FLAG)
+//
+// ~ARG~ is a one-dimensional dynamic array of reals,
+// and ~FLAG~ is a bitwise OR of one or more flag settings as described in
+// <Field Macros> above.
+
+`define uvm_field_array_real(ARG,FLAG) \
+  begin \
+  if(what__==UVM_CHECK_FIELDS) m_do_field_check(`"ARG`"); \
+  m_sc.scope.down(`"ARG`",null); \
+  if(what__==UVM_COPY && !((FLAG)&UVM_NOCOPY)) begin \
+    if(local_data__!=null) begin \
+      ARG = new [local_data__.ARG.size()](local_data__.ARG); \
+    end \
+    else begin \
+      ARG.delete(); \
+    end \
+  end \
+  `M_UVM_FIELD_DATA_ARRAY_REAL(ARG,FLAG) \
+  `M_UVM_FIELD_ARRAY_REAL_PACK(ARG,FLAG) \
+  `M_UVM_FIELD_SET_ARRAY_REAL(ARG, m_sc.bitstream, FLAG) \
+  m_sc.scope.up(null); \
+  end
+
+`endif
+
+`endif
+
+`define SVT_XVM(obj)          uvm_``obj
+`define SVT_XVM_UC(obj)       UVM_``obj
+
+`define SVT_FATAL_VERBOSITY   UVM_NONE
+`define SVT_ERROR_VERBOSITY   UVM_NONE
+`define SVT_WARNING_VERBOSITY UVM_NONE
+`define SVT_NORMAL_VERBOSITY  UVM_LOW
+`define SVT_TRACE_VERBOSITY   UVM_MEDIUM
+`define SVT_DEBUG_VERBOSITY   UVM_HIGH
+`define SVT_VERBOSE_VERBOSITY UVM_FULL
+
+`ifdef SVT_DISABLE_ALL_MSG
+ `define svt_fatal(id, msg) do begin end while (0)
+ `define svt_error(id, msg) do begin end while (0)
+ `define svt_warning(id, msg) do begin end while (0)
+`else
+`define svt_fatal(id, msg) \
+ `ifdef uvm_fatal_context \
+   do \
+     `uvm_fatal_context(id, msg, reporter) \
+   while (0) \
+ `else \
+   do \
+     if (reporter.uvm_report_enabled(UVM_NONE,UVM_FATAL,id)) \
+       reporter.uvm_report_fatal(id, msg, UVM_NONE, `uvm_file, `uvm_line); \
+   while (0) \
+ `endif
+
+`define svt_error(id, msg) \
+ `ifdef uvm_error_context \
+     do \
+     `uvm_error_context(id, msg, reporter) \
+   while (0) \
+ `else \
+   do \
+     if (reporter.uvm_report_enabled(UVM_NONE,UVM_ERROR,id)) \
+       reporter.uvm_report_error(id, msg, UVM_NONE, `uvm_file, `uvm_line); \
+   while (0) \
+ `endif
+
+`define svt_warning(id, msg) \
+ `ifdef uvm_warning_context \
+   do \
+     `uvm_warning_context(id, msg, reporter) \
+   while(0) \
+ `else \
+   do \
+     if (reporter.uvm_report_enabled(UVM_NONE,UVM_WARNING,id)) \
+       reporter.uvm_report_warning(id, msg, UVM_NONE, `uvm_file, `uvm_line); \
+   while (0) \
+ `endif
+`endif // !`ifdef SVT_DISABLE_ALL_MSG
+
+// Generates a message with UVM_NONE verbosity.  This should be used extremely sparingly.
+`define svt_insuppressible_note(id, msg) \
+ `ifdef uvm_info_context \
+   do \
+     `uvm_info_context(id, msg, UVM_NONE, reporter) \
+   while (0) \
+ `else \
+   do \
+     /* The check to see if the report is enabled is skipped because we always want to generate this message. */ \
+     reporter.uvm_report_info(id, msg, UVM_NONE, `uvm_file, `uvm_line); \
+   while (0) \
+ `endif
+
+`ifdef SVT_DISABLE_MSG
+ `define svt_note(id, msg) do begin end while (0)
+ `define svt_trace(id, msg) do begin end while (0)
+ `define svt_debug(id, msg) do begin end while (0)
+ `define svt_verbose(id, msg) do begin end while (0)
+`else
+`define svt_note(id, msg) \
+ `ifdef uvm_info_context \
+   do \
+     `uvm_info_context(id, msg, UVM_LOW, reporter) \
+   while (0) \
+ `else \
+   do \
+     if (reporter.uvm_report_enabled(UVM_LOW,UVM_INFO,id)) \
+       reporter.uvm_report_info(id, msg, UVM_LOW, `uvm_file, `uvm_line); \
+   while (0) \
+ `endif
+
+`define svt_trace(id, msg) \
+ `ifdef uvm_info_context \
+   do \
+     `uvm_info_context(id, msg, UVM_MEDIUM, reporter) \
+   while (0) \
+ `else \
+   do \
+     if (reporter.uvm_report_enabled(UVM_MEDIUM,UVM_INFO,id)) \
+       reporter.uvm_report_info(id, msg, UVM_MEDIUM, `uvm_file, `uvm_line); \
+   while (0) \
+ `endif
+
+`define svt_debug(id, msg) \
+ `ifdef uvm_info_context \
+   do \
+     `uvm_info_context(id, msg, UVM_HIGH, reporter) \
+   while (0) \
+ `else \
+   do \
+     if (reporter.uvm_report_enabled(UVM_HIGH,UVM_INFO,id)) \
+       reporter.uvm_report_info(id, msg, UVM_HIGH, `uvm_file, `uvm_line); \
+   while (0) \
+ `endif
+
+`define svt_verbose(id, msg) \
+ `ifdef uvm_info_context \
+   do \
+     `uvm_info_context(id, msg, UVM_FULL, reporter) \
+   while (0) \
+ `else \
+   do \
+     if (reporter.uvm_report_enabled(UVM_FULL,UVM_INFO,id)) \
+       reporter.uvm_report_info(id, msg, UVM_FULL, `uvm_file, `uvm_line); \
+   while (0) \
+ `endif
+`endif // !`ifdef SVT_DISABLE_MSG
+
+`ifdef SVT_DISABLE_ALL_MSG
+ `define svt_fatal_context(id, msg, clientfile, clientline) do begin end while (0)
+ `define svt_error_context(id, msg, clientfile, clientline) do begin end while (0)
+ `define svt_warning_context(id, msg, clientfile, clientline) do begin end while (0)
+`else
+`define svt_fatal_context(id, msg, clientfile, clientline) \
+`ifdef uvm_fatal_context \
+  do \
+    if ((clientfile != "") || (clientline != 0)) begin \
+`ifdef UVM_REPORT_DISABLE_FILE \
+      clientfile = ""; \
+`endif \
+`ifdef UVM_REPORT_DISABLE_LINE \
+      clientline = 0; \
+`endif \
+      if (reporter.uvm_report_enabled(UVM_NONE,UVM_FATAL,id)) \
+        reporter.uvm_report_fatal(id, msg, UVM_NONE, clientfile, clientline); \
+    end else \
+      `uvm_fatal_context(id, msg, reporter) \
+  while (0) \
+`else \
+  /* This can lose the clientfile/clientline information in non-context situations, */ \
+  /* but since we believe the exposure is minimal we have chosen to live with this. */ \
+  `svt_fatal(id, msg) \
+`endif
+
+`define svt_error_context(id, msg, clientfile, clientline) \
+`ifdef uvm_error_context \
+  do \
+    if ((clientfile != "") || (clientline != 0)) begin \
+`ifdef UVM_REPORT_DISABLE_FILE \
+      clientfile = ""; \
+`endif \
+`ifdef UVM_REPORT_DISABLE_LINE \
+      clientline = 0; \
+`endif \
+      if (reporter.uvm_report_enabled(UVM_NONE,UVM_ERROR,id)) \
+        reporter.uvm_report_error(id, msg, UVM_NONE, clientfile, clientline); \
+    end else \
+      `uvm_error_context(id, msg, reporter) \
+  while (0) \
+`else \
+  /* This can lose the clientfile/clientline information in non-context situations, */ \
+  /* but since we believe the exposure is minimal we have chosen to live with this. */ \
+  `svt_error(id, msg) \
+`endif
+
+`define svt_warning_context(id, msg, clientfile, clientline) \
+`ifdef uvm_warning_context \
+  do \
+    if ((clientfile != "") || (clientline != 0)) begin \
+`ifdef UVM_REPORT_DISABLE_FILE \
+      clientfile = ""; \
+`endif \
+`ifdef UVM_REPORT_DISABLE_LINE \
+      clientline = 0; \
+`endif \
+      if (reporter.uvm_report_enabled(UVM_NONE,UVM_WARNING,id)) \
+        reporter.uvm_report_warning(id, msg, UVM_NONE, clientfile, clientline); \
+    end else \
+      `uvm_warning_context(id, msg, reporter) \
+  while (0) \
+`else \
+  /* This can lose the clientfile/clientline information in non-context situations, */ \
+  /* but since we believe the exposure is minimal we have chosen to live with this. */ \
+  `svt_warning(id, msg) \
+`endif
+`endif // !`ifdef SVT_DISABLE_ALL_MSG
+
+`ifdef SVT_DISABLE_MSG
+ `define svt_note_context(id, msg, clientfile, clientline) do begin end while (0)
+ `define svt_trace_context(id, msg, clientfile, clientline) do begin end while (0)
+ `define svt_debug_context(id, msg, clientfile, clientline) do begin end while (0)
+ `define svt_verbose_context(id, msg, clientfile, clientline) do begin end while (0)
+`else
+`define svt_note_context(id, msg, clientfile, clientline) \
+`ifdef uvm_info_context \
+  do \
+    if ((clientfile != "") || (clientline != 0)) begin \
+`ifdef UVM_REPORT_DISABLE_FILE \
+      clientfile = ""; \
+`endif \
+`ifdef UVM_REPORT_DISABLE_LINE \
+      clientline = 0; \
+`endif \
+      if (reporter.uvm_report_enabled(UVM_LOW,UVM_INFO,id)) \
+        reporter.uvm_report_info(id, msg, UVM_LOW, clientfile, clientline); \
+    end else \
+      `uvm_info_context(id, msg, UVM_LOW, reporter) \
+  while (0) \
+`else \
+  /* This can lose the clientfile/clientline information in non-context situations, */ \
+  /* but since we believe the exposure is minimal we have chosen to live with this. */ \
+  `svt_note(id, msg) \
+`endif
+
+`define svt_trace_context(id, msg, clientfile, clientline) \
+`ifdef uvm_info_context \
+  do \
+    if ((clientfile != "") || (clientline != 0)) begin \
+`ifdef UVM_REPORT_DISABLE_FILE \
+      clientfile = ""; \
+`endif \
+`ifdef UVM_REPORT_DISABLE_LINE \
+      clientline = 0; \
+`endif \
+      if (reporter.uvm_report_enabled(UVM_MEDIUM,UVM_INFO,id)) \
+        reporter.uvm_report_info(id, msg, UVM_MEDIUM, clientfile, clientline); \
+    end else \
+      `uvm_info_context(id, msg, UVM_MEDIUM, reporter) \
+  while (0) \
+`else \
+  /* This can lose the clientfile/clientline information in non-context situations, */ \
+  /* but since we believe the exposure is minimal we have chosen to live with this. */ \
+  `svt_trace(id, msg) \
+`endif
+
+`define svt_debug_context(id, msg, clientfile, clientline) \
+`ifdef uvm_info_context \
+  do \
+    if ((clientfile != "") || (clientline != 0)) begin \
+`ifdef UVM_REPORT_DISABLE_FILE \
+      clientfile = ""; \
+`endif \
+`ifdef UVM_REPORT_DISABLE_LINE \
+      clientline = 0; \
+`endif \
+      if (reporter.uvm_report_enabled(UVM_HIGH,UVM_INFO,id)) \
+        reporter.uvm_report_info(id, msg, UVM_HIGH, clientfile, clientline); \
+    end else \
+      `uvm_info_context(id, msg, UVM_HIGH, reporter) \
+  while (0) \
+`else \
+  /* This can lose the clientfile/clientline information in non-context situations, */ \
+  /* but since we believe the exposure is minimal we have chosen to live with this. */ \
+  `svt_debug(id, msg) \
+`endif
+
+`define svt_verbose_context(id, msg, clientfile, clientline) \
+`ifdef uvm_info_context \
+  do \
+    if ((clientfile != "") || (clientline != 0)) begin \
+`ifdef UVM_REPORT_DISABLE_FILE \
+      clientfile = ""; \
+`endif \
+`ifdef UVM_REPORT_DISABLE_LINE \
+      clientline = 0; \
+`endif \
+      if (reporter.uvm_report_enabled(UVM_FULL,UVM_INFO,id)) \
+        reporter.uvm_report_info(id, msg, UVM_FULL, clientfile, clientline); \
+    end else \
+      `uvm_info_context(id, msg, UVM_FULL, reporter) \
+  while (0) \
+`else \
+  /* This can lose the clientfile/clientline information in non-context situations, */ \
+  /* but since we believe the exposure is minimal we have chosen to live with this. */ \
+  `svt_verbose(id, msg) \
+`endif
+`endif // !`ifdef SVT_DISABLE_MSG
+
+`ifdef SVT_DISABLE_ALL_MSG
+ `define svt_xvm_fatal(id, msg) begin end
+ `define svt_xvm_error(id, msg) begin end
+ `define svt_xvm_warning(id, msg) begin end
+`else
+`define svt_xvm_fatal(id, msg) \
+  `uvm_fatal(id, msg)
+
+`define svt_xvm_error(id, msg) \
+  `uvm_error(id, msg)
+
+`define svt_xvm_warning(id, msg) \
+  `uvm_warning(id, msg)
+`endif // !`ifdef SVT_DISABLE_ALL_MSG
+
+`ifdef SVT_DISABLE_MSG
+ `define svt_xvm_note(id, msg) begin end
+ `define svt_xvm_trace(id, msg) begin end
+ `define svt_xvm_debug(id, msg) begin end
+ `define svt_xvm_verbose(id, msg) begin end
+`else
+`define svt_xvm_note(id, msg) \
+  `uvm_info(id, msg, UVM_LOW)
+
+`define svt_xvm_trace(id, msg) \
+  `uvm_info(id, msg, UVM_MEDIUM)
+
+`define svt_xvm_debug(id, msg) \
+  `uvm_info(id, msg, UVM_HIGH)
+
+`define svt_xvm_verbose(id, msg) \
+  `uvm_info(id, msg, UVM_FULL)
+`endif // !`ifdef SVT_DISABLE_MSG
+
+// -------------------------------------------------------------------------
+// Define common callback macros
+// -------------------------------------------------------------------------
+
+`define svt_callback_utils(T)
+
+`define svt_xvm_typedef_cb(T,CB,POOL) \
+  typedef uvm_callbacks#(T,CB) POOL
+
+`define svt_xvm_register_cb(T,CB) \
+  `uvm_register_cb(T,CB)
+
+`define svt_xvm_do_callbacks(T,CB,METHOD) \
+  `uvm_do_callbacks(T,CB,METHOD)
+
+`define svt_xvm_do_obj_callbacks(T,CB,OBJ,METHOD) \
+  `uvm_do_obj_callbacks(T,CB,OBJ,METHOD)
+
+`define svt_do_callbacks(T,CB,METHOD) \
+  `svt_xvm_do_callbacks(T,CB,METHOD)
+
+`define svt_do_obj_callbacks(T,CB,OBJ,METHOD) \
+  `svt_xvm_do_obj_callbacks(T,CB,OBJ,METHOD)
+
+// -------------------------------------------------------------------------
+// Define common methodology name macros
+// -------------------------------------------------------------------------
+`define SVT_DATA_METHODOLOGY_KEYWORD     uvm
+`define SVT_DATA_METHODOLOGY_KEYWORD_UC  UVM
+
+// -------------------------------------------------------------------------
+// Define a common macro to declare a base object type
+// -------------------------------------------------------------------------
+`define SVT_DATA_BASE_OBJECT_TYPE uvm_object
+
+// -------------------------------------------------------------------------
+// Define a wrapper for the display methods
+// -------------------------------------------------------------------------
+`define SVT_DATA_DISPLAY_KEYWORD print
+`define SVT_DATA_PSDISPLAY_KEYWORD sprint
+`define SVT_DATA_DISPLAY(prefix) print()
+`define SVT_DATA_PSDISPLAY(prefix) sprint()
+`define SVT_DATA_LOG_KEYWORD reporter
+`define SVT_DATA_COPY clone
+`define SVT_DATA_BYTE_PACK pack
+`define SVT_DATA_BYTE_UNPACK unpack
+`define SVT_DATA_GET_OBJECT_HIERNAME get_full_name
+`define SVT_DATA_GET_OBJECT_TYPENAME get_type_name
+
+// -------------------------------------------------------------------------
+// Make SVT names for common constants
+// -------------------------------------------------------------------------
+
+`define SVT_PACKER_MAX_BYTES `UVM_PACKER_MAX_BYTES
+
+// -------------------------------------------------------------------------
+// Mapping of the flags to the UVM automation macros to common SVT flags
+// -------------------------------------------------------------------------
+
+// 1-to-1 mapping to UVM automation flags
+`define SVT_NOCOPY     (1<<1)
+`define SVT_NOCOMPARE  (1<<3)
+`define SVT_NOPRINT    (1<<5)
+`define SVT_NORECORD   (1<<7)
+`ifndef SVT_UVM_1800_2_2017_OR_HIGHER
+`define SVT_NODEFPRINT (1<<16)
+`else
+`define SVT_NODEFPRINT (1<<15)
+`endif
+`define SVT_NOPACK     (1<<9)
+`ifndef SVT_UVM_1800_2_2017_OR_HIGHER
+`define SVT_PHYSICAL   (1<<13)
+`define SVT_ABSTRACT   (1<<14)
+`define SVT_READONLY   (1<<16)
+`endif
+// Note:
+// The features enabled by these macros differ from the UVM defaults.  The SVT based
+// macros enable DEEP copy by default for SVT_ALL_ON.
+`ifndef SVT_UVM_1800_2_2017_OR_HIGHER
+`define SVT_ALL_ON     'b000010101010101
+`define SVT_DEFAULT    'b000000101010101
+`else
+`define SVT_ALL_ON     'b1000000101010101
+`define SVT_DEFAULT    'b0000000101010101
+`endif
+
+// In cases where we are overriding the underlying routines for UVM but not for
+// VMM/OVM, or for UVM but not for VMM/OVM, then the `SVT_VMM_<FEATURE> flags may be used
+`define SVT_UVM_NOCOPY `SVT_NOCOPY
+`define SVT_VMM_NOCOPY 0
+`define SVT_UVM_NOCOMPARE `SVT_NOCOMPARE
+`define SVT_VMM_NOCOMPARE 0
+`define SVT_UVM_NOPRINT `SVT_NOPRINT
+`define SVT_VMM_NOPRINT 0
+`define SVT_UVM_NORECORD `SVT_NORECORD
+`define SVT_VMM_NORECORD 0
+`define SVT_UVM_NODEFPRINT `SVT_NODEFPRINT
+`define SVT_VMM_NODEFPRINT 0
+`define SVT_UVM_NOPACK `SVT_NOPACK
+`define SVT_VMM_NOPACK 0
+
+`define SVT_BIN       UVM_BIN
+`define SVT_DEC       UVM_DEC
+`define SVT_UNSIGNED  UVM_UNSIGNED
+`ifdef SVT_UVM_1800_2_2017_OR_HIGHER
+`define SVT_UNFORMAT2 UVM_UNFORMAT2
+`define SVT_UNFORMAT4 UVM_UNFORMAT4
+`endif
+`define SVT_OCT       UVM_OCT
+`define SVT_HEX       UVM_HEX
+`define SVT_STRING    UVM_STRING
+`define SVT_TIME      UVM_TIME
+`define SVT_ENUM      UVM_ENUM
+`ifdef SVT_UVM_1800_2_2017_OR_HIGHER
+`define SVT_REAL      UVM_REAL
+`define SVT_REAL_DEC  UVM_REAL_DEC
+`define SVT_REAL_EXP  UVM_REAL_EXP
+`endif
+
+// Arguments that can be or'ed in to the FLAG.  Note that this only affects
+// UVM.  To affect VMM, the third argument on the object field macros must be
+// used.
+`define SVT_DEEP      UVM_DEEP
+`define SVT_SHALLOW   UVM_SHALLOW
+`ifdef SVT_ENABLE_REFERENCE_NORECORD
+// To allow for VIPs that haven't added NORECORD to their shorthand macros,
+// automatically assume NORECORD if REFERENCE has been set.
+`define SVT_REFERENCE UVM_REFERENCE | `SVT_NORECORD
+`else
+`define SVT_REFERENCE UVM_REFERENCE
+`endif
+
+// VMM do_how_e enumerations affect how vmm_data based objects are compared
+// and copied.  These arguments should be or'ed in to the third argument of
+// the object field macros.
+`define SVT_HOW_NOCOPY      'h001
+`define SVT_HOW_REFCOPY     'h002
+`define SVT_HOW_DEEPCOPY    'h004
+`define SVT_HOW_TO_COPY     'h007
+`define SVT_HOW_NOCOMPARE   'h008
+`define SVT_HOW_REFCOMPARE  'h010
+`define SVT_HOW_DEEPCOMPARE 'h020
+`define SVT_HOW_TO_COMPARE  'h038
+`define SVT_HOW_NONE        'h009
+`define SVT_HOW_REF         'h012
+`define SVT_HOW_DEEP        'h024
+
+// Conversion to VMM automation flags
+`define SVT_MAP_TO_VMM_AUTOMATION_FLAGS(value) \
+ (DO_ALL & \
+  (((value) & `SVT_NOPRINT) ? ~DO_PRINT : DO_ALL) & \
+  (((value) & `SVT_NOCOPY) ? ~DO_COPY : DO_ALL) & \
+  (((value) & `SVT_NOCOMPARE) ? ~DO_COMPARE : DO_ALL) & \
+  (((value) & `SVT_NOPACK) ? ~(DO_PACK|DO_UNPACK) : DO_ALL))
+
+
+// -------------------------------------------------------------------------
+// Mapping of the UVM automation macros to a common SVT macro
+// -------------------------------------------------------------------------
+
+`define svt_data_member_begin(class_type) \
+/** @cond SVDOC */ \
+  `uvm_object_utils_begin(class_type)
+ 
+`define svt_data_param_member_begin(class_type) \
+/** @cond SVDOC */ \
+  `uvm_object_param_utils_begin(class_type)
+ 
+/**
+ * Macro combining the uvm_object_utils_begin and uvm_object_param_utils_begin
+ * macro features. Mostly modeled after uvm_object_utils_begin but also
+ * designed to provide a 'non-parameterized' type name when registering the
+ * object with the factory. This type name, and the type it is associated
+ * with, corresponds to the 'default' parameterized object.
+ */
+`define svt_data_param_member_w_type_name_begin(class_type,class_type_no_params) \
+/** @cond SVDOC */ \
+  `m_uvm_object_registry_internal(class_type_no_params,class_type_no_params) \
+  `m_uvm_object_create_func(class_type) \
+  `m_uvm_get_type_name_func(class_type) \
+  `uvm_field_utils_begin(class_type)
+ 
+`define svt_data_member_end(class_type) \
+  `uvm_object_utils_end \
+/** @endcond */
+
+`define svt_field_real_begin \
+`ifdef SVT_MULTI_SIM_REAL_COMPARE_TOO_PRECISE \
+  if (what__ == UVM_COMPARE) begin \
+    svt_sequence_item_base seq_item_base; \
+    if ($cast(seq_item_base, this)) begin \
+      seq_item_base.substitute_fuzzy_real_comparer(__m_uvm_status_container); \
+    end \
+  end \
+`endif
+
+`define svt_field_real_end \
+`ifdef SVT_MULTI_SIM_REAL_COMPARE_TOO_PRECISE \
+  if (what__ == UVM_COMPARE) begin \
+    svt_sequence_item_base seq_item_base; \
+    if ($cast(seq_item_base, this)) begin \
+      seq_item_base.restore_real_comparer(__m_uvm_status_container); \
+    end \
+  end \
+`endif
+
+`ifndef SVT_UVM_1800_2_2017_OR_HIGHER
+// Pre UVM 1800.2 solution to resolve real compare rounding errors involves swapping
+// the comparer policy with the fuzzy compare policy.
+`define svt_field_real(ARG,FLAG) \
+ `svt_field_real_begin \
+ `uvm_field_real(ARG,FLAG) \
+ `svt_field_real_end
+
+`else
+// Post UVM 1800.2 solution to resolve real compare rounding errors involves
+// defining SVT macros for UVM internal macro uvm_compare_named_real,uvm_field_real and uvm_compare_real  .
+`define svt_ieee_uvm_compare_named_real(NAME, LVALUE, RVALUE, COMPARER=comparer) \
+  `m_uvm_compare_threshold_begin(COMPARER) \
+    svt_fuzzy_real_comparer fuzzy_comp = new(); \
+    /* fuzzy_comp.set_miscompares(COMPARER.get_miscompares()); */ \
+    fuzzy_comp.set_result(COMPARER.get_result()); \
+    fuzzy_comp.set_recursion_policy(COMPARER.get_recursion_policy()); \
+    fuzzy_comp.set_check_type(COMPARER.get_check_type()); \
+    fuzzy_comp.set_show_max(COMPARER.get_show_max()); \
+    fuzzy_comp.set_verbosity(COMPARER.get_verbosity()); \
+    fuzzy_comp.set_severity(COMPARER.get_severity()); \
+    fuzzy_comp.set_threshold(COMPARER.get_threshold()); \
+    fuzzy_comp.set_check_type(COMPARER.get_check_type()); \
+    void'(fuzzy_comp.compare_field_real(NAME , LVALUE, RVALUE)); \
+    /* COMPARER.set_miscompares(fuzzy_comp.get_miscompares()); */ \
+    COMPARER.set_result(fuzzy_comp.get_result()); \
+    COMPARER.set_recursion_policy(fuzzy_comp.get_recursion_policy()); \
+    COMPARER.set_check_type(fuzzy_comp.get_check_type()); \
+    COMPARER.set_show_max(fuzzy_comp.get_show_max()); \
+    COMPARER.set_verbosity(fuzzy_comp.get_verbosity()); \
+    COMPARER.set_severity(fuzzy_comp.get_severity()); \
+    COMPARER.set_threshold(fuzzy_comp.get_threshold()); \
+    COMPARER.set_check_type(fuzzy_comp.get_check_type()); \
+  `m_uvm_compare_threshold_end
+
+// SVT macro for uvm_compare_real called svt_ieee_uvm_compare_named_real from it instead of uvm_compare_named_real
+`define svt_ieee_uvm_compare_real(LVALUE, RVALUE, COMPARER=comparer) \
+  `svt_ieee_uvm_compare_named_real(`"LVALUE`", LVALUE, RVALUE, COMPARER) 
+                              
+// SVT macro for uvm_field_real, called svt_ieee_uvm_compare_real from it instead of uvm_compare_real
+`define svt_ieee_uvm_field_real(ARG,FLAG=UVM_DEFAULT) \
+  `m_uvm_field_begin(ARG,FLAG) \
+    `m_uvm_field_op_begin(COPY,FLAG) \
+      ARG = local_rhs__.ARG; \
+    `m_uvm_field_op_end(COPY) \
+    `m_uvm_field_op_begin(COMPARE,FLAG) \
+      `svt_ieee_uvm_compare_real(ARG, local_rhs__.ARG, __local_comparer__) \
+    `m_uvm_field_op_end(COMPARE) \
+    `m_uvm_field_op_begin(PACK,FLAG) \
+      `uvm_pack_real(ARG, __local_packer__) \
+    `m_uvm_field_op_end(PACK) \
+    `m_uvm_field_op_begin(UNPACK,FLAG) \
+      `uvm_unpack_real(ARG, __local_packer__) \
+    `m_uvm_field_op_end(UNPACK) \
+    `m_uvm_field_op_begin(RECORD,FLAG) \
+      `uvm_record_real(`"ARG`", ARG, __local_recorder__) \
+    `m_uvm_field_op_end(RECORD) \
+    `m_uvm_field_op_begin(PRINT,FLAG) \
+      __local_printer__.print_real(`"ARG`", ARG); \
+    `m_uvm_field_op_end(PRINT) \
+    `m_uvm_field_op_begin(SET,FLAG) \
+      if(local_rsrc_name__ == `"ARG`") begin \
+         `uvm_resource_real_read(local_success__, \
+                                 local_rsrc__, \
+                                 ARG, \
+                                 this) \
+              /* TODO if(local_success__ && printing matches) */ \
+      end \
+    `m_uvm_field_op_end(SET) \
+  `m_uvm_field_end(ARG)
+
+`define svt_field_real(ARG,FLAG) \
+ `svt_ieee_uvm_field_real(ARG,FLAG) \
+
+`endif
+
+`define svt_field_int(ARG,FLAG) \
+ `uvm_field_int(ARG,FLAG)
+
+`define svt_field_enum(T,ARG,FLAG) \
+ `uvm_field_enum(T,ARG,FLAG)
+
+`define svt_field_object(ARG,FLAG,HOW) \
+ `uvm_field_object(ARG,FLAG)
+
+`define svt_field_event(ARG,FLAG) \
+ `uvm_field_event(ARG,FLAG)
+
+`define svt_field_string(ARG,FLAG) \
+ `uvm_field_string(ARG,FLAG)
+
+`define svt_field_array_enum(T,ARG,FLAG) \
+ `uvm_field_array_enum(T,ARG,FLAG)
+
+`define svt_field_array_real(ARG,FLAG) \
+ `uvm_field_array_real(ARG,FLAG)
+
+`define svt_field_sarray_real(ARG,FLAG) \
+ `uvm_field_sarray_real(ARG,FLAG)
+   
+`define svt_field_queue_real(ARG,FLAG) \
+ `M_UVM_FIELD_QDA_REAL(QUEUE,ARG,FLAG,da)
+  
+`define svt_field_array_int(ARG,FLAG) \
+ `uvm_field_array_int(ARG,FLAG)
+
+`define svt_field_sarray_int(ARG,FLAG) \
+ `uvm_field_sarray_int(ARG,FLAG)
+
+`define svt_field_sarray_enum(T,ARG,FLAG) \
+ `uvm_field_sarray_enum(T,ARG,FLAG)
+
+`define svt_field_sarray_object(ARG,FLAG,HOW) \
+ `uvm_field_sarray_object(ARG,FLAG)
+
+`define svt_field_array_string(ARG,FLAG) \
+ `uvm_field_array_string(ARG,FLAG)
+
+`define svt_field_sarray_string(ARG,FLAG) \
+ `uvm_field_sarray_string(ARG,FLAG)
+
+`define svt_field_queue_enum(T,ARG,FLAG) \
+ `uvm_field_queue_enum(T,ARG,FLAG)
+
+`define svt_field_queue_int(ARG,FLAG) \
+ `uvm_field_queue_int(ARG,FLAG)
+
+// The `uvm_field_queue_object macro provided in the 1800.2-2017-1.0 BCL has a bug that is
+// only exposed by Xcelium simulators.  Therefore, the the UVM macro is used when using
+// other UVM versions or other simulators, and a workaround is implemented for Xcelium when
+// using UVM 1800.2.  More details below.
+`ifndef SVT_UVM_1800_2_2017_OR_HIGHER
+`define svt_field_queue_object(ARG,FLAG,HOW) \
+ `uvm_field_queue_object(ARG,FLAG)
+
+`define svt_field_array_object(ARG,FLAG,HOW) \
+ `uvm_field_array_object(ARG,FLAG)
+
+`else
+`ifndef INCA
+`define svt_field_queue_object(ARG,FLAG,HOW) \
+ `uvm_field_queue_object(ARG,FLAG)
+
+`define svt_field_array_object(ARG,FLAG,HOW) \
+ `uvm_field_array_object(ARG,FLAG)
+
+`else
+// The bug is actually in the `uvm_compare_named_qda_object macro.  In the 1800.2 2017-1.0
+// BCL LVALUE.size() and RVALUE.size() are passed into the `m_uvm_compare_begin macro.
+// However, that macro calls $bits on these arguments which causes a compilation error
+// on Xcelium as it is expecting an argument of bit-stream type.  The workaround is to
+// assign the array size values to a local variable and pass that into the macro.
+`define svt_compare_named_qda_object_1800_2(NAME, LVALUE, RVALUE, POLICY=UVM_DEFAULT_POLICY, COMPARER=comparer) \
+  `m_uvm_compare_begin(LVALUE, RVALUE, COMPARER) \
+    int lsize = LVALUE.size(); \
+    int rsize = RVALUE.size(); \
+    `uvm_compare_named_int($sformatf("%s.size()", NAME), \
+                           lsize, \
+                           rsize, \
+                           UVM_DEC, \
+                           COMPARER) \
+    `uvm_compare_named_sarray_object(NAME, LVALUE, RVALUE, POLICY, COMPARER) \
+  `m_uvm_compare_end
+
+`define svt_compare_qda_object_1800_2(LVALUE, RVALUE, POLICY=UVM_DEFAULT_POLICY, COMPARER=comparer) \
+  `svt_compare_named_qda_object_1800_2(`"LVALUE`", LVALUE, RVALUE, POLICY, COMPARER)
+
+`define m_svt_field_qda_object_1800_2(TYPE,ARG,FLAG=UVM_DEFAULT) \
+  `m_uvm_field_begin(ARG,FLAG) \
+    `m_uvm_field_op_begin(COPY,FLAG) \
+      if ((`m_uvm_field_recursion(FLAG) == UVM_REFERENCE) || !local_rhs__.ARG.size()) \
+        ARG = local_rhs__.ARG; \
+      else begin \
+        `m_uvm_``TYPE``_resize(ARG, local_rhs__.ARG.size()) \
+        foreach (ARG[i]) \
+          `uvm_copy_object(ARG[i], local_rhs__.ARG[i], `m_uvm_field_recursion(FLAG), __local_copier__) \
+      end \
+    `m_uvm_field_op_end(COPY) \
+    `m_uvm_field_op_begin(COMPARE,FLAG) \
+      `svt_compare_qda_object_1800_2(ARG, local_rhs__.ARG, `m_uvm_field_recursion(FLAG), __local_comparer__) \
+    `m_uvm_field_op_end(COMPARE) \
+    `m_uvm_field_op_begin(PACK,FLAG) \
+      __local_packer__.pack_field_int(ARG.size(), 32); \
+      foreach (ARG[i]) \
+        `uvm_pack_object(ARG[i], __local_packer__) \
+    `m_uvm_field_op_end(PACK) \
+    `m_uvm_field_op_begin(UNPACK,FLAG) \
+      local_size__ = __local_packer__.unpack_field_int(32); \
+      `m_uvm_``TYPE``_resize(ARG, local_size__); \
+      foreach (ARG[i]) \
+        `uvm_unpack_object(ARG[i], __local_packer__) \
+    `m_uvm_field_op_end(UNPACK) \
+    `m_uvm_field_op_begin(RECORD,FLAG) \
+      `uvm_record_qda_object(ARG, __local_recorder__) \
+    `m_uvm_field_op_end(RECORD) \
+    `m_uvm_field_op_begin(PRINT,FLAG) \
+      `uvm_print_qda_object(TYPE, ARG, `m_uvm_field_recursion(FLAG),__local_printer__) \
+    `m_uvm_field_op_end(PRINT) \
+    `m_uvm_field_op_begin(SET,FLAG) \
+      if(local_rsrc_name__ == `"ARG`") begin \
+        `uvm_resource_builtin_int_read(local_success__, \
+                                       local_rsrc__, \
+                                       local_size__, \
+                                       this) \
+        if (local_success__) \
+          `m_uvm_``TYPE``_resize(ARG, local_size__) \
+      end \
+      else begin \
+        string local_name__ = {`"ARG`", "["}; \
+        if (local_rsrc_name__.len() && \
+            local_rsrc_name__[local_rsrc_name__.len()-1] == "]" && \
+            local_rsrc_name__.substr(0, local_name__.len()-1) == local_name__) begin \
+          string local_index_str__ = local_rsrc_name__.substr(local_name__.len(), \
+                                                              local_rsrc_name__.len()-2); \
+          int local_index__; \
+          /* TODO: Non-decimal indexes */ \
+          int local_code__ = $sscanf(local_index_str__, "%d", local_index__); \
+          if (local_code__ > 0) begin \
+            if (local_index__ < 0) begin \
+              `uvm_warning("UVM/FIELDS/QDA_IDX", $sformatf("Index '%0d' is not valid for field '%s.%s' of size '%0d'", \
+                                                              local_index__, \
+                                                              get_full_name(), \
+                                                              `"ARG`", \
+                                                              ARG.size() ) ) \
+            end \
+            else begin \
+              `uvm_resource_read(local_success__, \
+                                 local_rsrc__, \
+                                 uvm_object, \
+                                 local_obj__, \
+                                 this) \
+              if (local_success__) begin \
+                if (local_index__ >= ARG.size()) \
+                  `m_uvm_``TYPE``_resize(ARG, local_index__ + 1) \
+                if (local_obj__ == null) begin \
+                  ARG[local_index__] = null; \
+                end else if (!$cast(ARG[local_index__], local_obj__)) begin \
+                  `uvm_error("UVM/FIELDS/QDA_OBJ_TYPE", \
+                             $sformatf("Can't set field '%s[%0d]' on '%s' with '%s' type", \
+                                       `"ARG`", \
+                                       local_index__, \
+                                       this.get_full_name(), \
+                                       local_obj__.get_type_name())) \
+                end \
+              end \
+            end \
+          end \
+        end \
+      end \
+    `m_uvm_field_op_end(SET) \
+  `m_uvm_field_end(ARG)
+
+`define svt_field_queue_object_1800_2(ARG,FLAG=UVM_DEFAULT) \
+  `m_svt_field_qda_object_1800_2(queue,ARG,FLAG)
+
+`define svt_field_queue_object(ARG,FLAG,HOW) \
+ `svt_field_queue_object_1800_2(ARG,FLAG)
+
+`define svt_field_array_object(ARG,FLAG,HOW) \
+ `m_svt_field_qda_object_1800_2(da,ARG,FLAG)
+
+`endif
+`endif
+
+`define svt_field_queue_string(ARG,FLAG) \
+ `uvm_field_queue_string(ARG,FLAG)
+
+`define svt_field_queue_handle(ARG,FLAG) \
+ `uvm_field_queue_object(ARG, FLAG|UVM_REFERENCE)
+
+`define svt_field_aa_int_string(ARG, FLAG) \
+ `uvm_field_aa_int_string(ARG,FLAG)
+
+`define svt_field_aa_string_string(ARG, FLAG) \
+ `uvm_field_aa_string_string(ARG,FLAG)
+
+`define svt_field_aa_object_string(ARG, FLAG, HOW) \
+ `uvm_field_aa_object_string(ARG,FLAG)
+
+`define svt_field_aa_int_int(ARG, FLAG) \
+ `uvm_field_aa_int_int(ARG, FLAG)
+
+`define svt_field_aa_int_int_unsigned(ARG, FLAG) \
+ `uvm_field_aa_int_int_unsigned(ARG, FLAG)
+
+`define svt_field_aa_int_integer(ARG, FLAG) \
+ `uvm_field_aa_int_integer(ARG, FLAG)
+
+`define svt_field_aa_int_integer_unsigned(ARG, FLAG) \
+ `uvm_field_aa_int_integer_unsigned(ARG, FLAG)
+
+`define svt_field_aa_int_byte(ARG, FLAG) \
+ `uvm_field_aa_int_byte(ARG, FLAG)
+
+`define svt_field_aa_int_byte_unsigned(ARG, FLAG) \
+ `uvm_field_aa_int_byte_unsigned(ARG, FLAG)
+
+`define svt_field_aa_int_shortint(ARG, FLAG) \
+ `uvm_field_aa_int_shortint(ARG, FLAG)
+
+`define svt_field_aa_int_shortint_unsigned(ARG, FLAG) \
+ `uvm_field_aa_int_shortint_unsigned(ARG, FLAG)
+
+`define svt_field_aa_int_longint(ARG, FLAG) \
+ `uvm_field_aa_int_longint(ARG, FLAG)
+
+`define svt_field_aa_int_longint_unsigned(ARG, FLAG) \
+ `uvm_field_aa_string_int(ARG, FLAG)
+
+`define svt_field_aa_int_key(KEY, ARG, FLAG) \
+ `uvm_field_aa_int_key(KEY, ARG, FLAG)
+
+`define svt_field_aa_string_int(ARG, FLAG) \
+ `uvm_field_aa_string_int(ARG, FLAG)
+
+`define svt_field_aa_object_int(ARG, FLAG, HOW) \
+ `uvm_field_aa_object_int(ARG, FLAG)
+
+`define svt_field_handle(ARG,FLAG) \
+ `uvm_field_object(ARG,FLAG|UVM_REFERENCE)
+
+`define svt_field_handle_sarray(ARG,FLAG) \
+ `uvm_field_sarray_object(ARG,FLAG|UVM_REFERENCE)
+
+`define svt_field_handle_array(ARG,FLAG) \
+ `uvm_field_array_object(ARG,FLAG|UVM_REFERENCE)
+
+`define svt_field_handle_aa_int(ARG,FLAG) \
+ `uvm_field_aa_object_int(ARG, FLAG|UVM_REFERENCE)
+
+`define svt_field_handle_aa_string(ARG,FLAG) \
+ `uvm_field_aa_object_string(ARG, FLAG|UVM_REFERENCE)
+
+// -------------------------------------------------------------------------
+// Mapping of the UVM sequence macros to a common SVT macro
+// -------------------------------------------------------------------------
+
+// UVM Sequence Macros
+// The first set of macros rely solely on the UVM provided macros. The second set
+// collapse the UVM macros to improved the compile times.
+`ifdef SVT_UVM_UTIL_DISABLE_SEQ_MACRO_ACCEL
+  `ifndef SVT_UVM_1800_2_2017_OR_HIGHER
+    `define svt_xvm_create(SEQ_OR_ITEM) `uvm_create(SEQ_OR_ITEM)
+    `define svt_xvm_do(SEQ_OR_ITEM) `uvm_do(SEQ_OR_ITEM)
+    `define svt_xvm_do_pri(SEQ_OR_ITEM, PRIORITY) `uvm_do_pri(SEQ_OR_ITEM, PRIORITY)
+    `define svt_xvm_do_with(SEQ_OR_ITEM, CONSTRAINTS) `uvm_do_with(SEQ_OR_ITEM, CONSTRAINTS)
+    `define svt_xvm_do_pri_with(SEQ_OR_ITEM, PRIORITY, CONSTRAINTS) `uvm_do_pri_with(SEQ_OR_ITEM, PRIORITY, CONSTRAINTS)
+    `define svt_xvm_create_on(SEQ_OR_ITEM, SEQR) `uvm_create_on(SEQ_OR_ITEM, SEQR)
+    `define svt_xvm_do_on(SEQ_OR_ITEM, SEQR) `uvm_do_on(SEQ_OR_ITEM, SEQR)
+    `define svt_xvm_do_on_pri(SEQ_OR_ITEM, SEQR, PRIORITY) `uvm_do_on_pri(SEQ_OR_ITEM, SEQR, PRIORITY)
+    `define svt_xvm_do_on_with(SEQ_OR_ITEM, SEQR, CONSTRAINTS) `uvm_do_on_with(SEQ_OR_ITEM, SEQR, CONSTRAINTS)
+    `define svt_xvm_do_on_pri_with(SEQ_OR_ITEM, SEQR, PRIORITY, CONSTRAINTS) `uvm_do_on_pri_with(SEQ_OR_ITEM, SEQR, PRIORITY, CONSTRAINTS)
+    `define svt_xvm_send(SEQ_OR_ITEM) `uvm_send(SEQ_OR_ITEM)
+    `define svt_xvm_send_pri(SEQ_OR_ITEM, PRIORITY) `uvm_send_pri(SEQ_OR_ITEM, PRIORITY)
+    `define svt_xvm_rand_send(SEQ_OR_ITEM) `uvm_rand_send(SEQ_OR_ITEM)
+    `define svt_xvm_rand_send_pri(SEQ_OR_ITEM, PRIORITY) `uvm_rand_send_pri(SEQ_OR_ITEM, PRIORITY)
+    `define svt_xvm_rand_send_with(SEQ_OR_ITEM, CONSTRAINTS) `uvm_rand_send_with(SEQ_OR_ITEM, CONSTRAINTS)
+    `define svt_xvm_rand_send_pri_with(SEQ_OR_ITEM, PRIORITY, CONSTRAINTS) `uvm_rand_send_pri_with(SEQ_OR_ITEM, PRIORITY, CONSTRAINTS)
+  `else
+    //New Macro definition added as per uvm-ieee 1800.2-2017 section B.3.1 
+    `define svt_ieee_uvm_create(SEQ_OR_ITEM, SEQR) `uvm_create(SEQ_OR_ITEM, SEQR)
+    `define svt_ieee_uvm_do(SEQ_OR_ITEM, SEQR, PRIORITY, CONSTRAINTS) `uvm_do(SEQ_OR_ITEM, SEQR, PRIORITY, CONSTRAINTS)
+    `define svt_ieee_uvm_send(SEQ_OR_ITEM, PRIORITY) `uvm_send(SEQ_OR_ITEM, PRIORITY)
+    `define svt_ieee_uvm_rand_send(SEQ_OR_ITEM, PRIORITY, CONSTRAINTS) `uvm_rand_send(SEQ_OR_ITEM, PRIORITY, CONSTRAINTS)
+    //Old supported macros definition changed as per uvm-ieee 1800.2-2017 section B.3.1
+    `define svt_xvm_create(SEQ_OR_ITEM) `svt_ieee_uvm_create(SEQ_OR_ITEM,m_sequencer)
+    `define svt_xvm_do(SEQ_OR_ITEM) `svt_ieee_uvm_do(SEQ_OR_ITEM, m_sequencer, -1, {})
+    `define svt_xvm_send(SEQ_OR_ITEM) `svt_ieee_uvm_send(SEQ_OR_ITEM, -1)
+    `define svt_xvm_rand_send(SEQ_OR_ITEM)`svt_ieee_uvm_rand_send(SEQ_OR_ITEM, -1, {})
+    //Deprecated macros definition changed as per uvm-ieee 1800.2-2017 section B.3.1
+    `define svt_xvm_create_on(SEQ_OR_ITEM, SEQR) `svt_ieee_uvm_create(SEQ_OR_ITEM, SEQR)
+    `define svt_xvm_do_pri(SEQ_OR_ITEM, PRIORITY) `svt_ieee_uvm_do(SEQ_OR_ITEM, m_sequencer, PRIORITY, {})
+    `define svt_xvm_do_with(SEQ_OR_ITEM, CONSTRAINTS) `svt_ieee_uvm_do(SEQ_OR_ITEM, m_sequencer, -1,  CONSTRAINTS)
+    `define svt_xvm_do_pri_with(SEQ_OR_ITEM, PRIORITY, CONSTRAINTS) `svt_ieee_uvm_do(SEQ_OR_ITEM, m_sequencer, PRIORITY, CONSTRAINTS)
+    `define svt_xvm_do_on(SEQ_OR_ITEM, SEQR) `svt_ieee_uvm_do(SEQ_OR_ITEM, SEQR, -1, {})
+    `define svt_xvm_do_on_pri(SEQ_OR_ITEM, SEQR, PRIORITY)`svt_ieee_uvm_do(SEQ_OR_ITEM, SEQR, PRIORITY, {})
+    `define svt_xvm_do_on_with(SEQ_OR_ITEM, SEQR, CONSTRAINTS) `svt_ieee_uvm_do(SEQ_OR_ITEM, SEQR, -1, CONSTRAINTS)
+    `define svt_xvm_do_on_pri_with(SEQ_OR_ITEM, SEQR, PRIORITY, CONSTRAINTS) `svt_ieee_uvm_do(SEQ_OR_ITEM, SEQR, PRIORITY, CONSTRAINTS)
+    `define svt_xvm_send_pri(SEQ_OR_ITEM, PRIORITY) `svt_ieee_uvm_send(SEQ_OR_ITEM, PRIORITY)
+    `define svt_xvm_rand_send_pri(SEQ_OR_ITEM, PRIORITY)`svt_ieee_uvm_rand_send(SEQ_OR_ITEM, PRIORITY, {})
+    `define svt_xvm_rand_send_with(SEQ_OR_ITEM, CONSTRAINTS)`svt_ieee_uvm_rand_send(SEQ_OR_ITEM,-1, CONSTRAINTS)
+    `define svt_xvm_rand_send_pri_with(SEQ_OR_ITEM, PRIORITY, CONSTRAINTS) `svt_ieee_uvm_rand_send(SEQ_OR_ITEM, PRIORITY, CONSTRAINTS)
+  `endif
+`else
+  `ifndef SVT_UVM_1800_2_2017_OR_HIGHER
+    `define svt_xvm_create(SEQ_OR_ITEM) \
+      `svt_xvm_create_on(SEQ_OR_ITEM, m_sequencer)
+    `define svt_xvm_do(SEQ_OR_ITEM) \
+      `svt_xvm_do_on_pri(SEQ_OR_ITEM, m_sequencer, -1)
+    `define svt_xvm_do_pri(SEQ_OR_ITEM, PRIORITY) \
+      `svt_xvm_do_on_pri(SEQ_OR_ITEM, m_sequencer, PRIORITY)
+    `define svt_xvm_do_with(SEQ_OR_ITEM, CONSTRAINTS) \
+      `svt_xvm_do_on_pri_with(SEQ_OR_ITEM, m_sequencer, -1, CONSTRAINTS)
+    `define svt_xvm_do_pri_with(SEQ_OR_ITEM, PRIORITY, CONSTRAINTS) \
+      `svt_xvm_do_on_pri_with(SEQ_OR_ITEM, m_sequencer, PRIORITY, CONSTRAINTS)
+    `define svt_xvm_create_on(SEQ_OR_ITEM, SEQR) \
+      $cast(SEQ_OR_ITEM, create_item(SEQ_OR_ITEM.get_type(), SEQR, `"SEQ_OR_ITEM`"));
+    `define svt_xvm_do_on(SEQ_OR_ITEM, SEQR) \
+      `svt_xvm_do_on_pri(SEQ_OR_ITEM, SEQR, -1)
+    `define svt_xvm_do_on_pri(SEQ_OR_ITEM, SEQR, PRIORITY) \
+      begin \
+        `svt_xvm_create_on(SEQ_OR_ITEM, SEQR) \
+        SEQ_OR_ITEM.priority_start(this, PRIORITY); \
+        if (!SEQ_OR_ITEM.get_do_not_randomize() && !SEQ_OR_ITEM.randomize()) \
+          `svt_xvm_warning("RNDFLD", "Randomization failed in uvm_do_on action") \
+        SEQ_OR_ITEM.priority_finish(this, PRIORITY); \
+      end
+    `define svt_xvm_do_on_with(SEQ_OR_ITEM, SEQR, CONSTRAINTS) \
+      `svt_xvm_do_on_pri_with(SEQ_OR_ITEM, SEQR, -1, CONSTRAINTS)
+    `define svt_xvm_do_on_pri_with(SEQ_OR_ITEM, SEQR, PRIORITY, CONSTRAINTS) \
+      begin \
+        `svt_xvm_create_on(SEQ_OR_ITEM, SEQR) \
+        SEQ_OR_ITEM.priority_start(this, PRIORITY); \
+        if (!SEQ_OR_ITEM.get_do_not_randomize() && !SEQ_OR_ITEM.randomize() with CONSTRAINTS ) \
+          `svt_xvm_warning("RNDFLD", "Randomization failed in uvm_do_with action") \
+        SEQ_OR_ITEM.priority_finish(this, PRIORITY); \
+      end
+    `define svt_xvm_send(SEQ_OR_ITEM) \
+      `svt_xvm_send_pri(SEQ_OR_ITEM, -1)
+    `define svt_xvm_send_pri(SEQ_OR_ITEM, PRIORITY) \
+      SEQ_OR_ITEM.priority_start(this, PRIORITY); \
+      SEQ_OR_ITEM.priority_finish(this, PRIORITY);
+    `define svt_xvm_rand_send(SEQ_OR_ITEM) \
+      `svt_xvm_rand_send_pri(SEQ_OR_ITEM, -1)
+    `define svt_xvm_rand_send_pri(SEQ_OR_ITEM, PRIORITY) \
+      begin \
+        SEQ_OR_ITEM.priority_start(this, PRIORITY); \
+        if (!SEQ_OR_ITEM.get_do_not_randomize() && !SEQ_OR_ITEM.randomize()) \
+          `svt_xvm_warning("RNDFLD", "Randomization failed in uvm_rand_send action") \
+        SEQ_OR_ITEM.priority_finish(this, PRIORITY); \
+      end
+    `define svt_xvm_rand_send_with(SEQ_OR_ITEM, CONSTRAINTS) \
+      `svt_xvm_rand_send_pri_with(SEQ_OR_ITEM, -1, CONSTRAINTS)
+    `define svt_xvm_rand_send_pri_with(SEQ_OR_ITEM, PRIORITY, CONSTRAINTS) \
+      begin \
+        SEQ_OR_ITEM.priority_start(this, PRIORITY); \
+        if (!SEQ_OR_ITEM.get_do_not_randomize() && !SEQ_OR_ITEM.randomize() with CONSTRAINTS ) \
+          `svt_xvm_warning("RNDFLD", "Randomization failed in uvm_rand_send_with action") \
+        SEQ_OR_ITEM.priority_finish(this, PRIORITY); \
+      end
+  `else
+    //New Macro definition added as per uvm-ieee 1800.2-2017 section B.3.1 
+    `define svt_ieee_uvm_create(SEQ_OR_ITEM, SEQR) \
+      $cast(SEQ_OR_ITEM, create_item(SEQ_OR_ITEM.get_type(), SEQR, `"SEQ_OR_ITEM`"));
+    `define svt_ieee_uvm_do(SEQ_OR_ITEM, SEQR, PRIORITY, CONSTRAINTS) \
+      begin \
+        `svt_ieee_uvm_create(SEQ_OR_ITEM, SEQR) \
+        SEQ_OR_ITEM.priority_start(this, PRIORITY); \
+        if (!SEQ_OR_ITEM.get_do_not_randomize() && !SEQ_OR_ITEM.randomize() with CONSTRAINTS) \
+          `svt_xvm_warning("RNDFLD", "Randomization failed in uvm_do action") \
+        SEQ_OR_ITEM.priority_finish(this, PRIORITY); \
+      end
+    `define svt_ieee_uvm_send(SEQ_OR_ITEM, PRIORITY) \
+        SEQ_OR_ITEM.priority_start(this, PRIORITY); \
+        SEQ_OR_ITEM.priority_finish(this, PRIORITY); 
+    `define svt_ieee_uvm_rand_send(SEQ_OR_ITEM, PRIORITY, CONSTRAINTS) \
+      begin \
+        SEQ_OR_ITEM.priority_start(this, PRIORITY); \
+        if (!SEQ_OR_ITEM.get_do_not_randomize() && !SEQ_OR_ITEM.randomize() with CONSTRAINTS ) \
+          `svt_xvm_warning("RNDFLD", "Randomization failed in uvm_rand_send action") \
+        SEQ_OR_ITEM.priority_finish(this, PRIORITY); \
+      end
+    //Old supported macros definition changed as per uvm-ieee 1800.2-2017 section B.3.1
+    `define svt_xvm_create(SEQ_OR_ITEM) \
+      `svt_ieee_uvm_create(SEQ_OR_ITEM, m_sequencer)
+    `define svt_xvm_do(SEQ_OR_ITEM) \
+      `svt_ieee_uvm_do(SEQ_OR_ITEM, m_sequencer, -1, {})
+    `define svt_xvm_send(SEQ_OR_ITEM) \
+      `svt_ieee_uvm_send(SEQ_OR_ITEM, -1)
+    `define svt_xvm_rand_send(SEQ_OR_ITEM) \
+      `svt_ieee_uvm_rand_send(SEQ_OR_ITEM, -1, {})
+    //Deprecated macros definition changed as per uvm-ieee 1800.2-2017 section B.3.1
+    `define svt_xvm_create_on(SEQ_OR_ITEM, SEQR) \
+      `svt_ieee_uvm_create(SEQ_OR_ITEM, SEQR)
+    `define svt_xvm_do_pri(SEQ_OR_ITEM, PRIORITY) \
+      `svt_ieee_uvm_do(SEQ_OR_ITEM, m_sequencer, PRIORITY, {})
+    `define svt_xvm_do_with(SEQ_OR_ITEM, CONSTRAINTS) \
+      `svt_ieee_uvm_do(SEQ_OR_ITEM, m_sequencer, -1, CONSTRAINTS)
+    `define svt_xvm_do_pri_with(SEQ_OR_ITEM, PRIORITY, CONSTRAINTS) \
+      `svt_ieee_uvm_do(SEQ_OR_ITEM, m_sequencer, PRIORITY, CONSTRAINTS)
+    `define svt_xvm_do_on(SEQ_OR_ITEM, SEQR) \
+      `svt_ieee_uvm_do(SEQ_OR_ITEM, SEQR, -1, {})
+    `define svt_xvm_do_on_pri(SEQ_OR_ITEM, SEQR, PRIORITY) \
+      `svt_ieee_uvm_do(SEQ_OR_ITEM, SEQR, PRIORITY, {})
+    `define svt_xvm_do_on_with(SEQ_OR_ITEM, SEQR, CONSTRAINTS) \
+      `svt_ieee_uvm_do(SEQ_OR_ITEM, SEQR, -1, CONSTRAINTS)
+    `define svt_xvm_do_on_pri_with(SEQ_OR_ITEM, SEQR, PRIORITY, CONSTRAINTS) \
+      `svt_ieee_uvm_do(SEQ_OR_ITEM, SEQR, PRIORITY, CONSTRAINTS)
+    `define svt_xvm_send_pri(SEQ_OR_ITEM, PRIORITY) \
+      `svt_ieee_uvm_send(SEQ_OR_ITEM, PRIORITY)
+    `define svt_xvm_rand_send_pri(SEQ_OR_ITEM, PRIORITY) \
+      `svt_ieee_uvm_send(SEQ_OR_ITEM, PRIORITY)
+    `define svt_xvm_rand_send_with(SEQ_OR_ITEM, CONSTRAINTS) \
+      `svt_ieee_uvm_rand_send(SEQ_OR_ITEM, -1, CONSTRAINTS)
+    `define svt_xvm_rand_send_pri_with(SEQ_OR_ITEM, PRIORITY, CONSTRAINTS) \
+      `svt_ieee_uvm_rand_send(SEQ_OR_ITEM, PRIORITY, CONSTRAINTS)
+  `endif
+`endif
+
+// For these two macros, since they are only called in situations where there are no
+// fields to be copied, compared, etc., we exclude the field utility macros from
+// what we provide. Clients needing field utility macro support should use the
+// begin/end macros instead of the combined macros.
+`define svt_xvm_object_utils(T) \
+   `m_uvm_object_registry_internal(T,T) \
+   `m_uvm_object_create_func(T) \
+ `ifndef SVT_UVM_1800_2_2017_OR_HIGHER \
+   `m_uvm_get_type_name_func(T) \
+ `else \
+   `uvm_type_name_decl(`"T`") \
+ `endif
+
+`define svt_xvm_object_param_utils(T) \
+   `m_uvm_object_registry_param(T) \
+   `m_uvm_object_create_func(T)
+
+// Common UVM Macros used by data objects, sequences, and other structures shared with OVM
+`define svt_xvm_object_utils_begin(T) `uvm_object_utils_begin(T)
+`define svt_xvm_object_param_utils_begin(T) `uvm_object_param_utils_begin(T) 
+`define svt_xvm_object_utils_end `uvm_object_utils_end
+`define svt_xvm_component_utils(T) `uvm_component_utils(T)
+`define svt_xvm_component_param_utils(T) `uvm_component_param_utils(T)
+`define svt_xvm_component_utils_begin(T) `uvm_component_utils_begin(T)
+`define svt_xvm_component_param_utils_begin(T) `uvm_component_param_utils_begin(T)
+`define svt_xvm_component_utils_end `uvm_component_utils_end
+`define svt_xvm_declare_p_sequencer(SEQUENCER) `uvm_declare_p_sequencer(SEQUENCER)
+`define svt_xvm_field_int(ARG,FLAG) `uvm_field_int(ARG,FLAG)
+`define svt_xvm_field_queue_int(ARG,FLAG) `uvm_field_queue_int(ARG,FLAG)
+`define svt_xvm_field_object(ARG,FLAG) `uvm_field_object(ARG,FLAG)
+`define svt_xvm_field_array_object(ARG,FLAG) `uvm_field_array_object(ARG,FLAG)
+`define SVT_XVM_ALL_ON UVM_ALL_ON
+`define SVT_XVM_REFERENCE UVM_REFERENCE
+
+// -------------------------------------------------------------------------
+// Useful TLM Macros
+// -------------------------------------------------------------------------
+
+/**
+ * Macro used to declare a blocking put imp that supports an 'index' argument to the 'write'.
+ * The implementation object must provide the 'put_<SFX>' method, which must include the
+ * additional 'ix' parameter. The client constructing the '_imp' instance must set the 'imp_ix'
+ * value post construction and prior to any 'put' attempt.
+ * Modeled after 'uvm_blocking_put_imp_decl'.
+ */
+`define svt_xvm_ix_blocking_put_imp_decl(SFX) \
+class uvm_blocking_put_imp``SFX #(type T=int, type IMP=int) \
+  extends uvm_port_base #(uvm_tlm_if_base #(T,T)); \
+  int imp_ix = 0; \
+  `UVM_IMP_COMMON(`UVM_TLM_BLOCKING_PUT_MASK,`"uvm_blocking_put_imp``SFX`",IMP) \
+  task put(input T t); \
+    m_imp.put``SFX(imp_ix, t); \
+  endtask \
+  \
+endclass
+
+/**
+ * Macro used to declare an analysis imp that supports an 'index' argument to the 'write'.
+ * The implementation object must provide the 'write_<SFX>' method, which must include the
+ * additional 'ix' parameter. The client constructing the '_imp' instance must set the 'imp_ix'
+ * value post construction and prior to any 'write' attempt.
+ * Modeled after 'uvm_analysis_imp_decl'.
+ */
+`define svt_xvm_ix_analysis_imp_decl(SFX) \
+class uvm_analysis_imp``SFX #(type T=int, type IMP=int) \
+  extends uvm_port_base #(uvm_tlm_if_base #(T,T)); \
+  int imp_ix = 0; \
+  `UVM_IMP_COMMON(`UVM_TLM_ANALYSIS_MASK,`"uvm_analysis_imp``SFX`",IMP) \
+  function void write( input T t); \
+    m_imp.write``SFX(imp_ix, t); \
+  endfunction \
+  \
+endclass
+
+// -------------------------------------------------------------------------
+// Common Event/Notify Macros
+// -------------------------------------------------------------------------
+
+/** Macro used to declare a notification event instance for the current methodology */
+`define svt_decl_event(evname) \
+  uvm_event evname;
+
+/** Macro used to create a notification event instance for the current methodology */
+`define svt_create_event(evname,evtype) \
+  /* Just drop the evtype */ \
+  evname = new(`SVT_DATA_UTIL_ARG_TO_STRING(evname));
+
+/** Macro used to create a notification event instance in the indicated pool for the current methodology */
+`define svt_create_pool_event(evpool,evname,evtype) \
+  /* Just drop the evtype */ \
+  evname = evpool.get(`SVT_DATA_UTIL_ARG_TO_STRING(evname));
+
+/** Macro used to signal a notification event for the current methodology */
+`define svt_trigger_event(evowner,evname) \
+  evowner.evname.trigger();
+
+/** Macro used to signal a notification event and corresponding data for the current methodology */
+`define svt_trigger_data_event(evowner,evname,evdata) \
+  evowner.evname.trigger(evdata);
+
+/** Macro used to signal a notification event and corresponding data for the current methodology, but with a 'copy' of the original data */
+`define svt_trigger_copy_data_event(evowner,evname,evdata) \
+  evowner.evname.trigger(evdata.clone());
+
+/** Macro used to check the is_on state for a notification event in the current methodology. */
+`define svt_event_is_on(evowner,evname) \
+  evowner.evname.is_on()
+
+/** Macro used to wait for a notification event in the current methodology */
+`define svt_wait_event_trigger(evowner,evname) \
+  evowner.evname.wait_trigger();
+
+/** Macro used to wait for a 'persistent' notification event in the current methodology */
+`define svt_wait_event_ptrigger(evowner,evname) \
+  evowner.evname.wait_ptrigger();
+
+/** Macro used to wait for an 'on' notification event in the current methodology */
+`define svt_wait_event_on(evowner,evname) \
+  evowner.evname.wait_on();
+
+/** Macro used to wait for an 'off' notification event in the current methodology */
+`define svt_wait_event_off(evowner,evname) \
+  evowner.evname.wait_off();
+
+/** Macro used to use the notification event accessor function for the current methodology to retrieve the status for the notification event */
+`define svt_event_status(evowner,evname) \
+  evowner.evname.get_trigger_data()
+
+/** Macro used to get the notification event status */
+`define svt_get_event_status(evowner,evname,evstatus) \
+  evstatus = `svt_event_status(evowner,evname);
+
+/** Macro used to reset a notification event in the current methodology */
+`define svt_reset_event(evowner,evname) \
+  /* Only request the wakeup if the event is currently on */ \
+  evowner.evname.reset(evowner.evname.is_on());
+
+// -------------------------------------------------------------------------
+// Common Event/Notify Macros for working with named events
+// -------------------------------------------------------------------------
+
+/** Macro used to create a named notification event instance for the current methodology */
+`define svt_create_named_event(evowner,evname,evtype) \
+  evowner.evname = evowner.event_pool.get(`SVT_DATA_UTIL_ARG_TO_STRING(evname));
+
+/** Macro used to signal a named notification event for the current methodology */
+`define svt_trigger_named_event(evowner,evname) \
+  svt_event_pool::trigger_event(evowner.event_pool, `SVT_DATA_UTIL_ARG_TO_STRING(evname));
+
+/** Macro used to signal a named notification event and corresponding data for the current methodology */
+`define svt_trigger_named_data_event(evowner,evname,evdata) \
+  svt_event_pool::trigger_event(evowner.event_pool, `SVT_DATA_UTIL_ARG_TO_STRING(evname), evdata);
+
+/** Macro used to signal a named notification event and corresponding data for the current methodology, but with a 'copy' of the original data */
+`define svt_trigger_named_copy_data_event(evowner,evname,evdata) \
+  svt_event_pool::trigger_event(evowner.event_pool, `SVT_DATA_UTIL_ARG_TO_STRING(evname), evdata.clone());
+
+/** Macro used to check the is_on state for a named notification event in the current methodology. */
+`define svt_get_named_event_is_on(evowner,evname,ison) \
+  ison = svt_event_pool::get_event_is_on(evowner.event_pool, `SVT_DATA_UTIL_ARG_TO_STRING(evname));
+
+/** Macro used to wait for a named notification event in the current methodology */
+`define svt_wait_named_event_trigger(evowner,evname) \
+  svt_event_pool::wait_event_trigger(evowner.event_pool, `SVT_DATA_UTIL_ARG_TO_STRING(evname));
+
+/** Macro used to wait for an 'on' named notification event in the current methodology */
+`define svt_wait_named_event_on(evowner,evname) \
+  svt_event_pool::wait_event_on(evowner.event_pool, `SVT_DATA_UTIL_ARG_TO_STRING(evname));
+
+/** Macro used to wait for an 'off' named notification event in the current methodology */
+`define svt_wait_named_event_off(evowner,evname) \
+  svt_event_pool::wait_event_off(evowner.event_pool, `SVT_DATA_UTIL_ARG_TO_STRING(evname));
+
+/** Macro used to get the named notification event status */
+`define svt_get_named_event_status(evowner,evname,evstatus) \
+  evstatus = svt_event_pool::get_event_trigger_data(evowner.event_pool, `SVT_DATA_UTIL_ARG_TO_STRING(evname));
+
+/** Macro used to reset a named notification event in the current methodology */
+`define svt_reset_named_event(evowner,evname) \
+  svt_event_pool::reset_event(evowner.event_pool, `SVT_DATA_UTIL_ARG_TO_STRING(evname));
+
+`endif // GUARD_SVT_UVM_UTIL_SVI

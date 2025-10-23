@@ -1,0 +1,849 @@
+// =============================================================================
+// 
+//    This  confidential  and  proprietary software  may  be used only
+//    as  authorized  by  a  licensing  agreement  from  Synopsys  Inc.
+//    In the event of publications, the following notice is applicable:
+// 
+//                   (C) COPYRIGHT 2009-2011 SYNOPSYS INC.
+//                          ALL RIGHTS RESERVED
+// 
+//   The entire notice above must be reproduced on all authorized copies.
+// 
+// -----------------------------------------------------------------------------
+
+// This include file is intended to be included in hdl model wrappers to 
+// implement common command wrapping.  This is really code to be included in class 
+// definitions.  Therefore, guarding the file is inappropriate.
+
+// =============================================================================
+// HDL TASK EXPORTS: This file 'exports' the model methods which will be
+// available to an HDL testbench, as tasks called on an instance of the model
+// (which is encapsulated in a shell file). These tasks are declared in the
+// interface of the shell file (it is the shell module that is instantiated as
+// a VIP model component in the HDL testbench). Except for the initialization
+// usage of set_data_prop(), these tasks simply call their counterparts in the
+// internal model instance.
+//
+// The first call made in an HDL CMD test should be to program the "instance"
+// value, and in VMM based environments the "stream_id" value.  These properties
+// contribute to the message string, so until these are set messages won't
+// contain enough information to track the message back to the component which
+// issued it.
+
+`ifndef SVT_UVM_TECHNOLOGY
+//------------------------------------------------------------------------------
+/**
+ * @groupname logmessage
+ * <b>DEPRECATED</b>: Please use the alternate method of using get_data_prop()
+ * <br><br>
+ * Command Support:
+ * Retrieves the name value associated with the log object.
+ *
+ * @param name Returns the name value for the log in a bit array that can
+ * hold up to 80 characters.
+ */
+task log_get_name(output bit [80*8-1:0] name);
+  begin
+    bit is_valid;
+    model.get_data_prop(is_valid, `SVT_CMD_NULL_HANDLE, "name", name, 0);
+    model.send_deprecated_command_message(`SVT_CMD_NORMAL_SEVERITY, "log_get_name", "  Please use alternate method of using get_data_prop() with \"name\" as the prop_name");
+  end
+endtask
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname logmessage
+ * <b>DEPRECATED</b>: Please use the alternate method of using get_data_prop()
+ * <br><br>
+ * Command Support:
+ * Retrieves the instance value associated with the log object.
+ *
+ * @param inst Returns the instance value for the log in a bit array that can
+ * hold up to 80 characters.
+ */
+task log_get_instance(output bit [80*8-1:0] inst);
+  begin
+    bit is_valid;
+    model.get_data_prop(is_valid, `SVT_CMD_NULL_HANDLE, "instance", inst, 0);
+    model.send_deprecated_command_message(`SVT_CMD_NORMAL_SEVERITY, "log_get_instance", "  Please use alternate method of using get_data_prop() with \"instance\" as the prop_name");
+  end
+endtask
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname logmessage
+ * <b>DEPRECATED</b>
+ * <br><br>
+ * Command Support:
+ * Enables specified message types from the log object (and any log object
+ * hierarchically below it).
+ *
+ * @param types Indicates which message types are to be enabled. log_msg_val()
+ * must be used to obtain a setting for this parameter.
+ */
+task log_enable_types(int types);
+  begin
+    model.log_enable_types(types);
+    model.send_deprecated_command_message(`SVT_CMD_NORMAL_SEVERITY, "log_enable_types");
+  end
+endtask 
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname logmessage
+ * <b>DEPRECATED</b>
+ * <br><br>
+ * Command Support:
+ * Disables specified message types from the log object (and any log object
+ * hierarchically below it). FAILURE_TYP messages cannot be disabled using
+ * this method. But all other message types can be disabled.
+ *
+ * @param types Integer representing which types of messages to disable. log_msg_val()
+ * must be used to obtain a setting for this parameter.
+ */
+task log_disable_types(int types);
+  begin
+    model.log_disable_types(types);
+    model.send_deprecated_command_message(`SVT_CMD_NORMAL_SEVERITY, "log_disable_types");
+  end
+endtask 
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname logmessage
+ * <b>DEPRECATED</b>: Please use the alternate method of using set_data_prop()
+ * <br><br>
+ * Command Support:
+ * Modifies the verbosity of this log object (and any log objects hierarchically
+ * below it).
+ *
+ * NOTE: The argument name 'msg_severity' is used in this task declaration instead
+ * of 'severity' (which is a VHDL keyword) to support VHDL shell creation using
+ * this file.
+ *
+ * @param msg_severity Indicates the minimum message severity to be displayed, in
+ * accordance with the severity definitions.
+ */
+task log_set_verbosity(int msg_severity);
+  begin
+    // Note: using the old command since the input value for the set_data_prop() command
+    //       is different.
+    model.log_set_verbosity(msg_severity);
+    model.send_deprecated_command_message(`SVT_CMD_NORMAL_SEVERITY, "log_set_verbosity", "  Please use alternate method of using set_data_prop() with \"verbosity\" as the prop_name");
+  end
+endtask 
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname logmessage 
+ * <b>DEPRECATED</b>: Please use the alternate method of using get_data_prop()
+ * <br><br>
+ * Command Support:
+ * Retrieves the current verbosity setting of this log object.
+ *
+ * NOTE: The argument name 'msg_severity' is used in this task declaration instead
+ * of 'severity' (which is a VHDL keyword) to support VHDL shell creation using
+ * this file.
+ *
+ * @param msg_severity Retrieves the current 'minimum message severity to be displayed'
+ * setting for the log.
+ */
+task log_get_verbosity(output int msg_severity);
+  begin
+    // Note: using the old command since the input value for the set_data_prop() command
+    //       is different.
+    model.log_get_verbosity(msg_severity);
+    model.send_deprecated_command_message(`SVT_CMD_NORMAL_SEVERITY, "log_get_verbosity", "  Please use alternate method of using get_data_prop() with \"verbosity\" as the prop_name");
+  end
+endtask 
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname logmessage
+ * <b>DEPRECATED</b>: Please use the alternate method of using set_data_prop()
+ * <br><br>
+ * Command Support:
+ * Modifies the error limit that has been setup to automatically cause an exit
+ * of the simulation.
+ *
+ * @param n Number of errors that should be allowed prior to exit. This value
+ * is global, and all error messages from any VIP count towards this limit. A
+ * zero or nagative value specifies no maximum. The default setting is 10.
+ */
+task log_stop_after_n_errors(int n);
+  begin
+    bit is_valid;
+    model.set_data_prop(is_valid, `SVT_CMD_NULL_HANDLE, "max_error_count", n, 0);
+    model.send_deprecated_command_message(`SVT_CMD_NORMAL_SEVERITY, "log_stop_after_n_errors", "  Please use alternate method of using set_data_prop() with \"max_error_count\" as the prop_name");
+  end
+endtask 
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname logmessage
+ * <b>DEPRECATED</b>: Please use the alternate method of using set_data_prop()
+ * <br><br>
+ * Command Support:
+ * Modifies the treatment of a message or messages produced by the log object
+ * (and any log objects hierarchically below it). log_msg_val() must be used
+ * to obtain settings for several of these parameters.
+ *
+ * @param mod_id This is an identifier for the modification. It can be used
+ * with log_unmodify later to remove the modification.
+ * 
+ * @param types Indicates which types to match when doing the modification.
+ * 
+ * @param msg_severity Indicates which severities to match when doing the modification.
+ * 
+ * @param text Indicates what test to match when doing the modification.
+ * 
+ * @param new_type The new type after the modification.
+ * 
+ * @param new_severity The new severity after the modification.
+ * 
+ * @param handling The new handling to be used after the modification.
+ */
+`ifdef SVT_MULTI_SIM_STRING_ARG_IN_EXPORTED_METHODS
+task log_modify(inout int mod_id, int types, int msg_severity, bit[80*8-1:0] _text, int new_type, int new_severity, int handling);
+  begin
+    string text;
+    text = $sformatf("%0s", _text);
+`else
+task log_modify(inout int mod_id, int types, int msg_severity, string text, int new_type, int new_severity, int handling);
+  begin
+`endif
+    model.log_modify(mod_id, types, msg_severity, text, new_type, new_severity, handling);
+    model.send_deprecated_command_message(`SVT_CMD_NORMAL_SEVERITY, "log_modify", "  Please use alternate method of using set_data_prop() with \"filter(<message_text>)\" as the prop_name");
+  end
+endtask 
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname logmessage
+ * <b>DEPRECATED</b>: Please use the alternate method of using set_data_prop()
+ * <br><br>
+ * Command Support:
+ * Removes a message handling modification previously applied using the
+ * <b><i>log_modify</i></b> method. The <b>mod_id</b> argument supplied
+ * should be the same one retrieved from the <b>mod_id</b> argument of
+ * that method.
+ * 
+ * @param mod_id This is an identifier for the modification to remove.
+ */
+task log_unmodify(int mod_id);
+  begin
+    model.log_unmodify(mod_id);
+    model.send_deprecated_command_message(`SVT_CMD_NORMAL_SEVERITY, "log_unmodify", "  Please use alternate method of using set_data_prop() with \"filter(<message_text>)\" as the prop_name");
+  end
+endtask 
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname logmessage
+ * <b>DEPRECATED</b>: Please use the alternate method of using get_data_prop()
+ * <br><br>
+ * Command Support:
+ * Determines how many messages of the specified severities have been issued by
+ * the log object.
+ *
+ * @param count Functions as the <i>return</i> value. When the method returns,
+ * this argument holds the total message count for the indicated severities.
+ * 
+ * @param msg_severities Identifies which message severities to tabulate.
+ */
+task log_get_message_count(output int count, input int msg_severities);
+  begin
+    // Note: using the old command since the input value for the get_data_prop() command
+    //       is different.
+    model.log_get_message_count(count, msg_severities);
+    model.send_deprecated_command_message(`SVT_CMD_NORMAL_SEVERITY, "log_get_message_count", "  Please use alternate method of using get_data_prop() with \"fatal_count\", \"error_count\", or \"warning_count\" as the prop_name");
+  end
+endtask 
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname logmessage
+ * <b>DEPRECATED</b>: Please use the alternate method of using display_data()
+ * <br><br>
+ * Command Support:
+ * Reports current message counts for the log object (and any log objects
+ * hierarchically below it). Following the report, a Pass/Fail indication
+ * is given. Pass is reported if no (unfiltered) ERROR messages have been
+ * reported.
+ */
+task log_report();
+  begin
+    bit is_valid;
+    model.display_data(is_valid, `SVT_CMD_NULL_HANDLE, "");
+    model.send_deprecated_command_message(`SVT_CMD_NORMAL_SEVERITY, "log_report", "  Please use alternate method of using display_data().");
+  end
+endtask 
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname logmessage
+ * <b>DEPRECATED</b>
+ * <br><br>
+ * Command Support:
+ * Used to get an int value associated with a symbolic kind/name
+ * pair that represents message <i>type</i>, <i>severity</i>, or <i>handling</i>
+ * by the log object.
+ *
+ * @param is_valid Functions as a <i>return</i> value ('0' if the <b>kind</b> :
+ * <b>name</b> pair does not represent a valid combination). If '0' is returned
+ * an error message is also reported.
+ * 
+ * @param val Functions as a <i>return</i> value. When this method returns
+ * (assuming <b>is_valid</b> is '1') this argument holds the int value
+ * corresponding to the <b>kind</b> : <b>name</b> pair.
+ * 
+ * @param kind Identifies the kind of value being requested. Legal values are
+ * "type" (for message <i>type</i>), "severity" (for message <i>severity</i>),
+ * or "handling" (for message <i>handling</i>).
+ * 
+ * @param name Identifies the symbolic name of the value being requested.
+ * Valid values depend on the supplied <b>kind</b>, as follows. <b>"type"</b>: 
+ * {"FAILURE_TYP", "NOTE_TYP", "DEBUG_TYP", "DEFAULT_TYP", "ALL_TYPS"}
+ * <b>"severity"</b>: {"FATAL_SEV", "ERROR_SEV", "WARNING_SEV", "NORMAL_SEV",
+ * "TRACE_SEV", "DEBUG_SEV", "VERBOSE_SEV", "DEFAULT_SEV", "ALL_SEVS"}
+ * <b>"handling"</b>: {"ABORT_SIM", "COUNT_ERROR", "STOP_PROMPT", "DEBUGGER", "DUMP_STACK", "CONTINUE"}
+ */
+`ifdef SVT_MULTI_SIM_STRING_ARG_IN_EXPORTED_METHODS
+task log_msg_val(output bit is_valid, output int val, input bit[80*8-1:0] _kind, bit[80*8-1:0] _name);
+  begin
+    string kind, name;
+    kind = $sformatf("%0s", _kind);
+    name = $sformatf("%0s", _name);
+`else
+task log_msg_val(output bit is_valid, output int val, input string kind, string name);
+  begin
+`endif
+    model.log_msg_val(is_valid, val, kind, name);
+    model.send_deprecated_command_message(`SVT_CMD_NORMAL_SEVERITY, "log_msg_val");
+  end
+endtask
+
+`endif // SVT_UVM_TECHNOLOGY
+
+//----------------------------------------------------------------------------
+/**
+ * @groupname datamanipulation
+ * Command Support:
+ * Used to create a new data instance.
+ * 
+ * @param is_valid Functions as a <i>return</i> value ('0' only if the
+ * <b>data_class</b> argument is not recognized).
+ * 
+ * @param handle Assigned with a pointer to the new data object resulting from
+ * the new_data operation.
+ * 
+ * @param data_class String identifier of the new data instance
+ */
+`ifdef SVT_MULTI_SIM_STRING_ARG_IN_EXPORTED_METHODS
+task new_data(output bit is_valid, output int handle, input bit[80*8-1:0] _data_class);
+  begin
+    string data_class;
+    data_class = $sformatf("%0s", _data_class);
+`else
+task new_data(output bit is_valid, output int handle, input string data_class);
+  begin
+`endif
+    model.new_data(is_valid, handle, data_class);
+  end
+endtask
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname datamanipulation
+ * Command Support:
+ * Used to accept the contents of a data object and have them applied by the model.
+ * 
+ * @param is_valid Functions as a <i>return</i> value ('0' only if the
+ * <b>handle</b> argument is not valid).
+ * 
+ * @param handle The pointer of the data object to be applied.
+ * 
+ * @param delete_handle Flag that determines if the handle should be automatically
+ * deleted once the object is submitted to the model.
+ */
+task apply_data(output bit is_valid, input int handle, bit delete_handle = 1);
+  begin
+    model.apply_data(is_valid, handle, delete_handle);
+  end
+endtask
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname datamanipulation
+ * Command Support:
+ * Used to delete the handle associated with an active data object.
+ * 
+ * @param is_valid Functions as a <i>return</i> value ('0' only if the
+ * <b>handle</b> argument does not point to a valid data object).
+ * 
+ * @param handle The pointer of the data object to be deleted.
+ */
+task delete_data(output bit is_valid, input int handle);
+  begin
+    model.delete_data(is_valid, handle);
+  end
+endtask
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname datamanipulation
+ * Command Support: 
+ * Instructs the model to make a (deep) copy of the data object referenced
+ * by the <b>src_handle</b> argument, store it as a new data object,
+ * and assign the the <b>handle</b> <i>var</i> argument with a pointer to the
+ * new copy.
+ *
+ * @param is_valid Functions as a <i>return</i> value ('0' only if the
+ * <b>src_handle</b> argument does not point to a valid data object).
+ * 
+ * @param handle Assigned with a pointer to the new data object
+ * resulting from the copy operation.
+ * 
+ * @param src_handle The pointer to the data object to be copied.
+ */
+task copy_data(output bit is_valid, output int handle, input int src_handle);
+  begin
+    model.copy_data(is_valid, handle, src_handle);
+  end
+endtask
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname datamanipulation
+ * Command Support: 
+ * Instructs the transactor to display (to log or transcript) the contents
+ * of the data object associated with the given handle. If there is no valid
+ * data object associated with the handle, the <b>is_valid</b> argument is
+ * assigned to <b>0</b>, and the task returns without further action.
+ *
+ * @param is_valid Functions as a <i>return</i> value ('0' only if the
+ * <b>handle</b> argument does not point to a valid data object).
+ * 
+ * @param handle Identifies the data object to be displayed.
+ * 
+ * @param prefix This string prepended to each line of the resulting display.
+ */
+`ifdef SVT_MULTI_SIM_STRING_ARG_IN_EXPORTED_METHODS
+task display_data(output bit is_valid, input int handle, bit[80*8-1:0] _prefix);
+  begin
+    string prefix;
+    prefix = $sformatf("%0s", _prefix);
+`else
+task display_data(output bit is_valid, input int handle, string prefix);
+  begin
+`endif
+    model.display_data(is_valid, handle, prefix);
+  end
+endtask
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname datamanipulation
+ * Command Support: 
+ * Retrieves the value (into the <b>prop_val</b> <i>var</i> argument) of a
+ * specified public property, in the data object pointed to by the
+ * <b>handle</b> argument.
+ *
+ * If the <i>prop_name</i> represents a sub-object, this task stores a reference
+ * to that sub-object as an data object, and assigns the <b>prop_val</b> argument
+ * with an int that is a <i>handle</i> to that sub-object. It is the user's
+ * responsibility to manage references to such sub-objects.
+ * 
+ * If the value passed in to the <i>handle</i> argument is equal to
+ * \`SVT_CMD_NULL_HANDLE then the <i>prop_name</i> argument represents a property
+ * that is handled by the component that is the target of the get_data_prop()
+ * call.  The following properties are recognized by all components:
+ * 
+ * <dl></b>
+ *  <dt><b>"name"</b></dt>
+ *  <dd>
+ *   Returns the class name of the target component.
+ *  </dd>
+ *  <dt><b>"instance"</b></dt>
+ *  <dd>
+ *   Returns the fully qualified instance name of the target component.
+ *  </dd>
+ *  <dt><b>"verbosity"</b></dt>
+ *  <dd>
+ *   Returns the configured verbosity value.  The values that are returned
+ *   correspond to the following macro constants:
+ *   <dl>
+ *    <dt>\`SVT_CMD_NONE_VERBOSITY</dt>
+ *    <dt>\`SVT_CMD_NORMAL_VERBOSITY</dt>
+ *    <dt>\`SVT_CMD_TRACE_VERBOSITY</dt>
+ *    <dt>\`SVT_CMD_DEBUG_VERBOSITY</dt>
+ *    <dt>\`SVT_CMD_VERBOSE_VERBOSITY</dt>
+ *   </dl>
+ *  </dd>
+ *  <dt><b>"max_error_count"</b></dt>
+ *  <dd>
+ *   Returns the configured number of errors allowed before the test automatically
+ *   shuts down.
+ *  </dd>
+ *  <dt><b>"fatal_count"</b></dt>
+ *  <dd>
+ *   Returns the number of fatal severity messages issued.
+ *  </dd>
+ *  <dt><b>"error_count"</b></dt>
+ *  <dd>
+ *   Returns the number of error severity messages issued.
+ *  </dd>
+ *  <dt><b>"warning_count"</b></dt>
+ *  <dd>
+ *   Returns the number of warning severity messages issued.
+ *  </dd>
+ * </dl>
+ *
+ * @param is_valid Functions as a <i>return</i> value ('0' if the <b>handle</b>
+ * argument does not point to a data object that is currently active,
+ * or if the property specified by the <b>prop_name</b> argument does
+ * not exist in that object, or if the property is an array but the
+ * index specified by the <b>array_ix</b> argument is out of bounds).
+ * 
+ * @param handle Identifies the data object whose property is to be accessed.
+ * 
+ * @param prop_name Identifies the property name whose value is to be retrieved.
+ * 
+ * @param prop_val Functions as the <i>return</i> value (the value of the specified
+ * property). <b>Note:</b> Regardless of its actual type in the data object, the
+ * property value is converted to a 1Kb bit-vector. This return value must be
+ * dealt with in a manner applicable to the actual property type by the command code.
+ * For instance, the command code must understand the int equivalents of enumerated
+ * type values in the data object.
+ * 
+ * @param array_ix Specifies the array element to be accessed if the property is
+ * an array. This argument is <i>required</i>, but is ignored if the property is
+ * not an array. If this argument is out of the array bounds in the object, an
+ * error is reported.
+ */
+`ifdef SVT_MULTI_SIM_STRING_ARG_IN_EXPORTED_METHODS
+task get_data_prop(output bit is_valid, input int handle, bit[80*8-1:0] _prop_name, output bit [1023:0] prop_val, input int array_ix);
+  begin
+    string prop_name;
+    prop_name = $sformatf("%0s", _prop_name);
+`else
+task get_data_prop(output bit is_valid, input int handle, string prop_name, output bit [1023:0] prop_val, input int array_ix);
+  begin
+`endif
+    // Make sure the model is alive before attempting the request
+    if (model.cmd_assist == null) begin
+      fork begin /* disable fork block */
+      fork
+        begin
+          while (model.cmd_assist == null) begin
+            @(model.cmd_assist);
+          end
+        end
+        begin
+          #1;
+`ifdef SVT_VMM_TECHNOLOGY
+         `vmm_fatal(model.log, "get_data_prop() - model.cmd_assist not setup properly. Unable to continue.");
+`else
+         `uvm_fatal("get_data_prop", "model.cmd_assist not setup properly. Unable to continue.");
+`endif
+        end
+      join_any
+      end join_any /* disable fork block */
+    end
+    model.get_data_prop(is_valid, handle, prop_name, prop_val, array_ix);
+  end
+endtask
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname datamanipulation
+ * Command Support: 
+ * Sets the value provided by the <b>prop_val</b> argument of a specified public
+ * property, in the data object pointed to by the <b>handle</b> argument.<br>
+ * 
+ * This command is used to first set up a model's Instance Name, and subsequently
+ * to set the value of a property in temporary data object currently available
+ * within the transactor.
+ * The first time this task is called by the testbench, it <b><i>must</i></b> be
+ * called with the <b>prop_name</b> argument of <b>"instance"</b> and a
+ * <b>prop_val</b> argument value representing the <b><i>Instance Name</i></b> of
+ * the model (component) for the model (component). It is based on this
+ * <i>first</i> call to this task, that the model is initialized.
+ * All subsequent calls to this task should be for the purpose of setting the values
+ * of properties in temporary data objects currently valid within the transactor.
+ * 
+ * If the value passed in to the <i>handle</i> argument is equal to
+ * \`SVT_CMD_NULL_HANDLE then the <i>prop_name</i> argument represents a property
+ * that is handled by the component that is the target of the set_data_prop()
+ * call.  The following properties are recognized by all components:
+ *
+ * <dl></b>
+ *  <dt><b>"instance"</b></dt>
+ *  <dd>
+ *   Sets the instance name of the target component.
+ *  </dd>
+ *  <dt><b>"verbosity"</b></dt>
+ *  <dd>
+ *   Sets the verbosity value.  The values that are accepted for the <b>prop_val</b>
+ *   argument correspond to the following macro constants:
+ *   <dl>
+ *    <dt>\`SVT_CMD_NONE_VERBOSITY</dt>
+ *    <dt>\`SVT_CMD_NORMAL_VERBOSITY</dt>
+ *    <dt>\`SVT_CMD_TRACE_VERBOSITY</dt>
+ *    <dt>\`SVT_CMD_DEBUG_VERBOSITY</dt>
+ *    <dt>\`SVT_CMD_VERBOSE_VERBOSITY</dt>
+ *   </dl>
+ *  </dd>
+ *  <dt><b>"max_error_count"</b></dt>
+ *  <dd>
+ *   Sets the number of errors allowed before the test automatically shuts down.
+ *  </dd>
+ *  <dt><b>"filter(&lt;message_text&gt;)"</b></dt>
+ *  <dd>
+ *   Sets up or clears a message filter.  The <b><i>message_text</i></b> string
+ *   is matched using regex against all messages issued by the targeted component.
+ *   The severity of the message will be changed to the provided severity if the
+ *   string matches.  The following values are recognized as the
+ *   <b><i>prop_val</i></b> value:
+ *   <dl>
+ *    <dt>\`SVT_CMD_FATAL_SEVERITY</dt>
+ *    <dt>\`SVT_CMD_ERROR_SEVERITY</dt>
+ *    <dt>\`SVT_CMD_WARNING_SEVERITY</dt>
+ *    <dt>\`SVT_CMD_NORMAL_SEVERITY</dt>
+ *    <dt>\`SVT_CMD_TRACE_SEVERITY</dt>
+ *    <dt>\`SVT_CMD_DEBUG_SEVERITY</dt>
+ *    <dt>\`SVT_CMD_VERBOSE_SEVERITY</dt>
+ *    <dt>\`SVT_CMD_CLEAR_SEVERITY</dt>
+ *   </dl>
+ *   <br>
+ *   \`SVT_CMD_CLEAR_SEVERITY is a special case value that will remove a previously
+ *   applied filter rather than establish a new filter.
+ *  </dd>
+ * </dl>
+ * 
+ * @param is_valid Functions as a <i>return</i> value ('0' if the <b>handle</b>
+ * argument does not point to a data object that is currently active,
+ * or if the property specified by the <b>prop_name</b> argument does
+ * not exist in that object, or if the property is an array but the
+ * index specified by the <b>array_ix</b> argument is out of bounds).
+ * 
+ * @param handle Identifies the data object whose property is to be modified.
+ * 
+ * @param prop_name Identifies the property name whose value is to be modified.
+ * 
+ * @param prop_val Value to be applied to the property.  <b>Note:</b> Regardless of
+ * its actual type in the data object, the property value must be set as a 1Kb
+ * bit-vector.  Macro constant values must be used for enumerated tyep values.
+ * 
+ * @param array_ix Specifies the array element to be modified if the property is
+ * an array. This argument is <i>required</i>, but is ignored if the property is
+ * not an array. If this argument is out of the array bounds in the object, an
+ * error is reported.
+ */
+`ifdef SVT_MULTI_SIM_STRING_ARG_IN_EXPORTED_METHODS
+task set_data_prop(output bit is_valid, input int handle, bit[80*8-1:0] _prop_name, bit [1023:0] prop_val, int array_ix);
+  begin
+    string prop_name;
+    prop_name = $sformatf("%0s", _prop_name);
+`else
+task set_data_prop(output bit is_valid, input int handle, string prop_name, bit [1023:0] prop_val, int array_ix);
+  begin
+`endif
+    // Make sure the model is alive before attempting the request
+    if (model.cmd_assist == null) begin
+      fork begin /* disable fork block */
+      fork
+        begin
+          while (model.cmd_assist == null) begin
+            @(model.cmd_assist);
+          end
+        end
+        begin
+          #1;
+`ifdef SVT_VMM_TECHNOLOGY
+         `vmm_fatal(model.log, "get_data_prop() - model.cmd_assist not setup properly. Unable to continue.");
+`else
+         `uvm_fatal("get_data_prop", "model.cmd_assist not setup properly. Unable to continue.");
+`endif
+        end
+      join_any
+      end join_any /* disable fork block */
+    end
+    model.set_data_prop(is_valid, handle, prop_name, prop_val, array_ix);
+  end
+endtask
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname operational
+ * Command Support:
+ * When called from the command, does not return until the specified <i>Notify</i>
+ * notification event occurs within the model. This happens when a specified
+ * notification point has been reached. At that time, the model indicates the
+ * notification by returning from this wait_for.
+ * 
+ * @param is_valid Functions as a <i>return</i> value ('0' if the
+ * <b>notify_name</b> argument does not specify a notification that is available
+ * for the command to use).
+ * 
+ * @param notify_name The name of an <i>vmm_notify</i> notification event
+ * configured in the transactor, and intended to be command accessible. The name
+ * should be of the form "NOTIFY_...".
+ */
+`ifdef SVT_MULTI_SIM_STRING_ARG_IN_EXPORTED_METHODS
+task notify_wait_for(output bit is_valid, input bit[80*8-1:0] _notify_name);
+  begin
+    string notify_name;
+    notify_name = $sformatf("%0s", _notify_name);
+`else
+task notify_wait_for(output bit is_valid, input string notify_name);
+  begin
+`endif
+    model.notify_wait_for(is_valid, notify_name);
+  end
+endtask
+
+`ifdef SVT_UVM_TECHNOLOGY
+//------------------------------------------------------------------------------
+/**
+ * @groupname modelcallback
+ * Command Support:
+ * When called from the command, does not return until the specified
+ * <i>Command Callback</i> notification event occurs within the model. This happens
+ * when a specified command accessible callback point has been reached. At that time,
+ * the model copies the data object of interest (at that callback point) to a command
+ * owned data object, and assigns the <b>handle</b> <i>inout</i> argument with a
+ * pointer to that object. The command code may then access the properties of that
+ * object using the handle.
+ * <p>
+ * <b>Note:</b> If the component is reset
+ * while this command is still blocking (waiting for the transactor to
+ * reach the callback point), this command will return immediately with
+ * <b>is_valid = 1</b> and <b>handle = SVT_CMD_RESET_HANDLE</b>. If a user's
+ * testbench can generate that type of behavior, they should check for
+ * those two values as an indication that a reset occurred while waiting, and respond
+ * appropriately.
+ * <p>
+ * <b>Note:</b> The Command code must complete all accesses to the object, and then
+ * call in zero simulation time either the <b><i>cmd_callback_proceed()</i></b>
+ * method or this method again, otherwise the model will report a
+ * <b><i>fatal error</i></b>.
+ * <p>
+ * If this method is called instead of <b><i>cmd_callback_proceed()</i></b>, it will
+ * instruct the model to proceed with processing after the specified callback point
+ * (potentially using the data object modified by the Command code), and then return
+ * when the specified <i>Command Callback</i> notification event occurs within the
+ * model again.
+ *
+ * @param is_valid Functions as a <i>return</i> value ('0' if the
+ * <b>cb_notify_name</b> argument does not specify a command callback notification
+ * that is available for the command to use).
+ * 
+ * @param handle Functions as a <i>return</i> value that <i>points to</i> 
+ * the data object for the specified callback. Additionaly,
+ * the input value may identify a handle that was returned by a previous call 
+ * to cmd_callback_wait_for for which to automatically issue a call to
+ * cmd_callback_proceed before blocking until the specified notification event
+ * occurs within the model. 
+ * 
+ * @param cb_notify_name The name of a notification event configured in the
+ * transactor, and intended to be command accessible. The name should be of the form
+ * "NOTIFY_CB_...".
+ */
+`else
+//------------------------------------------------------------------------------
+/**
+ * @groupname modelcallback
+ * Command Support:
+ * When called from the command, does not return until the specified
+ * <i>Command Callback</i> notification event occurs within the model. This happens
+ * when a specified command accessible callback point has been reached. At that time,
+ * the model copies the data object of interest (at that callback point) to a command
+ * owned data object, and assigns the <b>handle</b> <i>inout</i> argument with a
+ * pointer to that object. The command code may then access the properties of that
+ * object using the handle.
+ * <p>
+ * <b>Note:</b> If the transactor is reset (via the svt_xactor::reset_xactor()
+ * command) while this command is still blocking (waiting for the transactor to
+ * reach the callback point), this command will return immediately with
+ * <b>is_valid = 1</b> and <b>handle = SVT_CMD_RESET_HANDLE</b>. If a user's
+ * testbench can generate that type of behavior, they should check for
+ * those two values as an indication that a reset occurred while waiting, and respond
+ * appropriately.
+ * <p>
+ * <b>Note:</b> The Command code must complete all accesses to the object, and then
+ * call in zero simulation time either the <b><i>cmd_callback_proceed()</i></b>
+ * method or this method again, otherwise the model will report a
+ * <b><i>fatal error</i></b>.
+ * <p>
+ * If this method is called instead of <b><i>cmd_callback_proceed()</i></b>, it will
+ * instruct the model to proceed with processing after the specified callback point
+ * (potentially using the data object modified by the Command code), and then return
+ * when the specified <i>Command Callback</i> notification event occurs within the
+ * model again.
+ *
+ * @param is_valid Functions as a <i>return</i> value ('0' if the
+ * <b>cb_notify_name</b> argument does not specify a command callback notification
+ * that is available for the command to use).
+ * 
+ * @param handle Functions as a <i>return</i> value that <i>points to</i> 
+ * the data object for the specified callback. Additionaly,
+ * the input value may identify a handle that was returned by a previous call 
+ * to cmd_callback_wait_for for which to automatically issue a call to
+ * cmd_callback_proceed before blocking until the specified notification event
+ * occurs within the model. 
+ * 
+ * @param cb_notify_name The name of a notification event configured in the
+ * transactor, and intended to be command accessible. The name should be of the form
+ * "NOTIFY_CB_...".
+ */
+`endif
+`ifdef SVT_MULTI_SIM_STRING_ARG_IN_EXPORTED_METHODS
+task cmd_callback_wait_for(output bit is_valid, inout int handle, input bit[80*8-1:0] _cb_notify_name);
+  begin
+    string cb_notify_name;
+    cb_notify_name = $sformatf("%0s", _cb_notify_name);
+`else
+task cmd_callback_wait_for(output bit is_valid, inout int handle, input string cb_notify_name);
+  begin
+`endif
+    model.cmd_callback_wait_for(is_valid, handle, cb_notify_name);
+  end
+endtask
+
+//------------------------------------------------------------------------------
+/**
+ * @groupname modelcallback
+ * Command Support: 
+ * When called from the command, instructs the model to proceed with processing
+ * after the specified callback point (potentially using the data object modified
+ * by the command code).
+ *
+ * @param is_valid Functions as a <i>return</i> value ('0' if the
+ * <b>cb_notify_name</b> argument does not specify a command callback notification
+ * marking a callback at which the model is currently halted, pending this method).
+ * 
+ * @param handle Identifies the handle that was in use by the command for this
+ * callback, so the transactor can now get rid of the corresponding command owned
+ * data object.
+ * 
+ * @param cb_notify_name The name of a notification event configured in the
+ * transactor, and intended to be command accessible. The name should be of the form
+ * "NOTIFY_CB_...".
+ */
+`ifdef SVT_MULTI_SIM_STRING_ARG_IN_EXPORTED_METHODS
+task cmd_callback_proceed(output bit is_valid, input int handle, bit[80*8-1:0] _cb_notify_name);
+  begin
+    string cb_notify_name;
+    cb_notify_name = $sformatf("%0s", _cb_notify_name);
+`else
+task cmd_callback_proceed(output bit is_valid, input int handle, string cb_notify_name);
+  begin
+`endif
+    model.cmd_callback_proceed(is_valid, handle, cb_notify_name);
+  end
+endtask
+
+//------------------------------------------------------------------------------
+
+//==============================================================================

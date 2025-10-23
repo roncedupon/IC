@@ -1,0 +1,224 @@
+
+`ifndef GUARD_SVT_SPI_PORT_DEFINES_SVI
+`define GUARD_SVT_SPI_PORT_DEFINES_SVI
+
+
+/** I/O signals width. */
+`ifndef SVT_SPI_IO_WIDTH
+`define SVT_SPI_IO_WIDTH 16
+`endif
+
+/** Parallel Mode I/O signals width. */
+`ifndef SVT_SPI_PIO_WIDTH
+`define SVT_SPI_PIO_WIDTH 7
+`endif
+
+/** Max number of slaves. */
+`ifndef SVT_SPI_MAX_DQS_WIDTH
+`define SVT_SPI_MAX_DQS_WIDTH 2
+`endif
+
+/** Default setup time. */
+`ifndef SVT_SPI_MONITOR_IF_SETUP_TIME
+`define SVT_SPI_MONITOR_IF_SETUP_TIME 0
+`endif
+
+/** Default hold time. */
+`ifndef SVT_SPI_MONITOR_IF_HOLD_TIME
+`define SVT_SPI_MONITOR_IF_HOLD_TIME 0
+`endif
+
+/** Indicates width of data to be transmitted. */
+`ifndef SVT_SPI_DATA_WIDTH
+`define SVT_SPI_DATA_WIDTH 8
+`endif
+
+/** Indicates CRC bit width */
+`ifndef SVT_SPI_MAX_ADDR_CRC_BIT_WIDTH
+`define SVT_SPI_MAX_ADDR_CRC_BIT_WIDTH 32 
+`endif
+
+/** Indicates maximum width of control word to be transmitted. */
+`ifndef SVT_SPI_UWIRE_MAX_CONTROL_WORD_WIDTH
+`define SVT_SPI_UWIRE_MAX_CONTROL_WORD_WIDTH 16
+`endif
+
+//=======================================================================
+// Slave footprint infrastructure
+`define SVT_SPI_VALID_IDX_NUM_SLAVES_0 \
+ // Nothing to do
+
+`define SVT_SPI_VALID_IDX_NUM_SLAVES_1 \
+ `define SVT_SPI_VALID_SLAVE_IDX_0
+
+`define SVT_SPI_VALID_IDX_NUM_SLAVES_2 \
+ `SVT_SPI_VALID_IDX_NUM_SLAVES_1 \
+ `define SVT_SPI_VALID_SLAVE_IDX_1
+
+`define SVT_SPI_VALID_IDX_NUM_SLAVES_3 \
+ `SVT_SPI_VALID_IDX_NUM_SLAVES_2 \
+ `define SVT_SPI_VALID_SLAVE_IDX_2
+
+`define SVT_SPI_VALID_IDX_NUM_SLAVES_4 \
+ `SVT_SPI_VALID_IDX_NUM_SLAVES_3 \
+ `define SVT_SPI_VALID_SLAVE_IDX_3
+
+`define SVT_SPI_VALID_IDX_NUM_SLAVES_5 \
+ `SVT_SPI_VALID_IDX_NUM_SLAVES_4 \
+ `define SVT_SPI_VALID_SLAVE_IDX_4
+
+`define SVT_SPI_VALID_IDX_NUM_SLAVES_6 \
+ `SVT_SPI_VALID_IDX_NUM_SLAVES_5 \
+ `define SVT_SPI_VALID_SLAVE_IDX_5
+
+`define SVT_SPI_VALID_IDX_NUM_SLAVES_7 \
+ `SVT_SPI_VALID_IDX_NUM_SLAVES_6 \
+ `define SVT_SPI_VALID_SLAVE_IDX_6
+
+`define SVT_SPI_VALID_IDX_NUM_SLAVES_8 \
+ `SVT_SPI_VALID_IDX_NUM_SLAVES_7 \
+ `define SVT_SPI_VALID_SLAVE_IDX_7
+
+
+//=======================================================================
+// MASTER footprint infrastructure
+`define SVT_SPI_VALID_IDX_NUM_MASTERS_0 \
+ // Nothing to do
+
+`define SVT_SPI_VALID_IDX_NUM_MASTERS_1 \
+ `define SVT_SPI_VALID_MASTER_IDX_0
+
+`define SVT_SPI_VALID_IDX_NUM_MASTERS_2 \
+  `SVT_SPI_VALID_IDX_NUM_MASTERS_1 \
+  `define SVT_SPI_VALID_MASTER_IDX_1
+
+`define SVT_SPI_VALID_IDX_NUM_MASTERS_3 \
+  `SVT_SPI_VALID_IDX_NUM_MASTERS_2 \
+  `define SVT_SPI_VALID_MASTER_IDX_2
+
+`define SVT_SPI_VALID_IDX_NUM_MASTERS_4 \
+  `SVT_SPI_VALID_IDX_NUM_MASTERS_3 \
+  `define SVT_SPI_VALID_MASTER_IDX_3
+
+`define SVT_SPI_VALID_IDX_NUM_MASTERS_5 \
+  `SVT_SPI_VALID_IDX_NUM_MASTERS_4 \
+  `define SVT_SPI_VALID_MASTER_IDX_4
+
+`define SVT_SPI_VALID_IDX_NUM_MASTERS_6 \
+  `SVT_SPI_VALID_IDX_NUM_MASTERS_5 \
+  `define SVT_SPI_VALID_MASTER_IDX_5
+
+`define SVT_SPI_VALID_IDX_NUM_MASTERS_7 \
+  `SVT_SPI_VALID_IDX_NUM_MASTERS_6 \
+  `define SVT_SPI_VALID_MASTER_IDX_6
+
+`define SVT_SPI_VALID_IDX_NUM_MASTERS_8 \
+  `SVT_SPI_VALID_IDX_NUM_MASTERS_7 \
+  `define SVT_SPI_VALID_MASTER_IDX_7
+
+//=======================================================================
+/** Max number of slaves. */
+`ifdef SVT_SPI_MAX_NUM_SLAVES_0
+ `SVT_SPI_VALID_IDX_NUM_SLAVES_0
+ `define SVT_SPI_MAX_NUM_SLAVES 0
+`else
+ `ifdef SVT_SPI_MAX_NUM_SLAVES_1
+  `SVT_SPI_VALID_IDX_NUM_SLAVES_1
+  `define SVT_SPI_MAX_NUM_SLAVES 1
+ `else
+  `ifdef SVT_SPI_MAX_NUM_SLAVES_2
+   `SVT_SPI_VALID_IDX_NUM_SLAVES_2
+   `define SVT_SPI_MAX_NUM_SLAVES 2
+  `else
+   `ifdef SVT_SPI_MAX_NUM_SLAVES_3
+     `SVT_SPI_VALID_IDX_NUM_SLAVES_3
+     `define SVT_SPI_MAX_NUM_SLAVES 3
+   `else
+    `ifdef SVT_SPI_MAX_NUM_SLAVES_4
+      `SVT_SPI_VALID_IDX_NUM_SLAVES_4
+      `define SVT_SPI_MAX_NUM_SLAVES 4
+    `else
+     `ifdef SVT_SPI_MAX_NUM_SLAVES_5
+       `SVT_SPI_VALID_IDX_NUM_SLAVES_5
+       `define SVT_SPI_MAX_NUM_SLAVES 5
+      `else
+       `ifdef SVT_SPI_MAX_NUM_SLAVES_6
+         `SVT_SPI_VALID_IDX_NUM_SLAVES_6
+         `define SVT_SPI_MAX_NUM_SLAVES 6
+        `else
+         `ifdef SVT_SPI_MAX_NUM_SLAVES_7
+           `SVT_SPI_VALID_IDX_NUM_SLAVES_7
+           `define SVT_SPI_MAX_NUM_SLAVES 7
+          `else
+           `ifdef SVT_SPI_MAX_NUM_SLAVES_8
+             `SVT_SPI_VALID_IDX_NUM_SLAVES_8
+             `define SVT_SPI_MAX_NUM_SLAVES 8
+           `endif
+         `endif
+       `endif
+     `endif
+    `endif  
+   `endif  
+  `endif  
+ `endif  
+`endif 
+
+//=======================================================================
+/** Max number of Masters. */
+`ifdef SVT_SPI_MAX_NUM_MASTERS_0
+ `SVT_SPI_VALID_IDX_NUM_MASTERS_0
+ `define SVT_SPI_MAX_NUM_MASTERS 0
+`else
+ `ifdef SVT_SPI_MAX_NUM_MASTERS_1
+  `SVT_SPI_VALID_IDX_NUM_MASTERS_1
+  `define SVT_SPI_MAX_NUM_MASTERS 1
+ `else
+  `ifdef SVT_SPI_MAX_NUM_MASTERS_2
+   `SVT_SPI_VALID_IDX_NUM_MASTERS_2
+   `define SVT_SPI_MAX_NUM_MASTERS 2
+  `else
+   `ifdef SVT_SPI_MAX_NUM_MASTERS_3
+     `SVT_SPI_VALID_IDX_NUM_MASTERS_3
+     `define SVT_SPI_MAX_NUM_MASTERS 3
+   `else
+    `ifdef SVT_SPI_MAX_NUM_MASTERS_4
+      `SVT_SPI_VALID_IDX_NUM_MASTERS_4
+      `define SVT_SPI_MAX_NUM_MASTERS 4
+    `else
+     `ifdef SVT_SPI_MAX_NUM_MASTERS_5
+       `SVT_SPI_VALID_IDX_NUM_MASTERS_5
+       `define SVT_SPI_MAX_NUM_MASTERS 5
+      `else
+       `ifdef SVT_SPI_MAX_NUM_MASTERS_6
+         `SVT_SPI_VALID_IDX_NUM_MASTERS_6
+         `define SVT_SPI_MAX_NUM_MASTERS 6
+        `else
+         `ifdef SVT_SPI_MAX_NUM_MASTERS_7
+           `SVT_SPI_VALID_IDX_NUM_MASTERS_7
+           `define SVT_SPI_MAX_NUM_MASTERS 7
+          `else
+           `ifdef SVT_SPI_MAX_NUM_MASTERS_8
+             `SVT_SPI_VALID_IDX_NUM_MASTERS_8
+             `define SVT_SPI_MAX_NUM_MASTERS 8
+           `endif
+         `endif
+       `endif
+     `endif
+    `endif  
+   `endif  
+  `endif  
+ `endif  
+`endif 
+
+/** Max number of slaves. */
+`ifndef SVT_SPI_MAX_NUM_SLAVES
+`define SVT_SPI_MAX_NUM_SLAVES 1
+`endif
+
+/** Max number of Masters. */
+`ifndef SVT_SPI_MAX_NUM_MASTERS
+`define SVT_SPI_MAX_NUM_MASTERS 1
+`endif
+
+`endif // GUARD_SVT_SPI_PORT_DEFINES_SVI
+

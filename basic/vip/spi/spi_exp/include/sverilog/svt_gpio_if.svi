@@ -1,0 +1,28 @@
+//=======================================================================
+// COPYRIGHT (C) 2016 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+// The entire notice above must be reproduced on all authorized copies.
+//-----------------------------------------------------------------------
+
+`ifndef GUARD_SVT_VIP_GPIO_IF_SVI
+`define GUARD_SVT_VIP_GPIO_IF_SVI
+
+interface svt_gpio_if(input  logic        iClk,
+                      input  logic        iSysRstz,
+                      input  logic [63:0] iGPi,
+                      output logic [63:0] oGPo);
+
+`ifdef __SVDOC__
+  bit __dummy;
+`endif
+
+endinterface: svt_gpio_if
+
+`endif // GUARD_SVT_VIP_GPIO_IF_SVI
+

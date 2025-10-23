@@ -1,0 +1,226 @@
+
+**************************************************************************
+Basic SVT UVM Testbench Example for Synopsys Discovery SPI VIP
+*************************************************************************
+
+CONTENTS:
+A. Introduction
+B. Running the Example Testbench
+C. Files in the Example
+D. SystemVerilog Testbench Description
+E. UVM Verification Environment 
+F. How to Contact Support
+
+-------------------------------------------------------------------------
+A. Introduction
+-------------------------------------------------------------------------
+
+This example shows how to implement a basic functioning UVM testbench using SPI
+Verification IP. A quickstart navigation guide can be found at:
+    
+The example consists of the following:
+
+- A top-level testbench in SystemVerilog
+- A hdl_interconnect representing the SPI in the testbench and SPI MASTER 
+  and SPI SLAVE interfaces are connected to hdl_interconnect
+- UVM verification environment
+- SPI MASTER and SLAVE agents are instantiated in the UVM verification environment
+- test files illustrating 
+  i.   Basic random test with default sequence
+
+The UVM Synopsys Discovery SPI VIP agents are connected in the following manner:
+
+                                     (SPI Env)
+    ==================================================================================
+  ||     (SPI MASTER Agent)                                      (SPI SLAVE Agent)     ||
+  ||   ---------------------                                    -------------------   ||
+  ||  |  ------    -------  |                                  |  -----   -------  |  ||
+  ||  | | MASTER| |Monitor| |        ------------------        | | SLAVE| |Monitor| | ||
+  ||  |  ------    -------  |<=====>| hdl_interconnect |<=====>|  -----   -------  |  ||
+  ||  |    *Active Mode*    |        ------------------        |   *Active Mode*   |  ||
+  ||   \___________________/                                    \_________________/   ||
+  ||                                                                                  ||
+    ==================================================================================
+
+
+In the remainder of this description, <design_dir> refers to the directory where
+the example was installed using script dw_vip_setup. The example source files
+would then exist at two locations:
+
+- "$DESIGNWARE_HOME/vip/svt/spi_svt/latest/examples/sverilog/tb_spi_svt_uvm_basic_1m_1s_sys" 
+- "<design_dir>/examples/sverilog/spi_svt/tb_spi_svt_uvm_basic_1m_1s_sys" 
+
+Complete class reference HTML documentation of SPI UVM Verification 
+IP is available at:
+  
+$DESIGNWARE_HOME/vip/svt/spi_svt/latest/doc/spi_svt_uvm_class_reference/html/index.html
+
+------------------------------------------------------------------------
+B. Running the Example Testbench
+------------------------------------------------------------------------
+
+1. Install the example using the following command line:
+
+   % cd <location where example is to be installed>
+   % mkdir design_dir <provide any name of your choice>
+   % $DESIGNWARE_HOME/bin/dw_vip_setup -path ./design_dir  -e spi_svt/tb_spi_svt_uvm_basic_1m_1s_sys -svtb 
+
+2. Use either one of the following to run the testbench:
+
+   a) Use the Makefile:
+
+      Three tests are provided in the "tests" directory.
+      The tests are: 
+      1. ts.base_test.sv
+
+      For example, to run test ts.base_test.sv, do following:
+      
+      gmake USE_SIMULATOR=vcsvlog base_test WAVES=1
+
+      Invoke "gmake help" to show more options.
+   
+   b) Use the sim script:
+
+     For example, to run test ts.base_test.sv, do following:
+
+     ./run_spi_svt_uvm_basic_1m_1s_sys -w base_test vcsvlog-svlog 
+
+      Invoke "./run_spi_svt_uvm_basic_1m_1s_sys -help" to show more options.
+
+
+-------------------------------------------------------------------------
+C. Files in the Example
+-------------------------------------------------------------------------
+
+The following lists all the code files in this example.
+
+<tb_spi_svt_uvm_basic_1m_1s_sys>
+      |
+      |
+      |-> hdl_interconnect
+      |     -> hdl_interconnect.v
+      |     -> spi_svt_interconnect_sv_wrapper.sv
+      |-> env
+      |     -> cust_svt_spi_agent_configuration.sv
+      |     -> cust_svt_spi_transaction.sv
+      |     -> spi_basic_env.sv
+      |     -> spi_base_test.sv
+      |     -> spi_default_sequence.sv
+      |     -> spi_default_virtual_sequence.sv
+      |     -> spi_null_virtual_sequence.sv
+      |     -> spi_virtual_sequencer.sv
+      |     -> spi_reset_if.sv
+      |     -> spi_simple_reset_sequence.sv
+      |-> tests
+      |     -> ts.base_test.sv
+      |     -> ts.master_tx_slave_rx_test.sv
+      |     -> ts.master_rx_slave_tx_test.sv
+      |     -> ts.eeprom_test.sv
+      |     -> ts.reset_test.sv
+      |     -> ts.eeprom_mode_with_reconfigurable_data_frame_width_test.sv
+      |     -> ts.master_rx_slave_tx_with_reconfigurable_data_frame_width_test.sv
+      |     -> ts.master_txrx_slave_txrx_with_reconfigurable_data_frame_width_test.sv
+      |     -> ts.master_tx_slave_rx_with_reconfigurable_data_frame_width_test.sv
+      |     -> ts.exception_idle_phase_clock_toggle_master_txrx_slave_txrx_test.sv
+      |     -> ts.exception_override_data_phase_tristate_master_rx_slave_tx_test.sv
+      |     -> ts.exception_override_data_phase_tristate_master_tx_slave_rx_test.sv
+      |     -> ts.exception_override_idle_phase_tristate_master_txrx_slave_txrx_test.sv
+      |     -> ts.baud_rate_mismatch_error_test.sv
+      |-> top.sv
+      |-> top_test.sv
+      |-> README 
+      |-> waves.tcl
+      |-> Makefile
+      |-> modellist
+      |-> sim_build_options
+      |-> sim_run_options
+
+The interface definition file is originally located at:
+ 
+ Port interface  : $DESIGNWARE_HOME/vip/svt/spi_svt/latest/sverilog/include/svt_spi_if.svi 
+ 
+When you run dw_vip_setup (above), the interface file will be installed at:
+
+  ./design_dir/include/sverilog/svt_spi_if.svi 
+
+
+-------------------------------------------------------------------------
+D. SystemVerilog Testbench Description
+-------------------------------------------------------------------------
+
+The  top-level testbench is written in SystemVerilog. The SPI interfaces 
+are represented as instances of 'interface' objects. The hdl_interconnect 
+is represented as a SPI model with 'interface' connections as its ports.
+The UVM verification environment is represented as an spi_basic_env instance.
+The test file is created as a class which extends spi_base_test.
+
+The file containing the top-level testbench in the example is "top.sv".  
+This file which encapsulates individual tests is "top_test.sv".
+
+The SPI model used in the example is defined as a hdl_interconnect, within a SystemVerilog
+wrapper. The intent is to demonstrate how a legacy core may be integrated into
+the SystemVerilog testbench.
+
+
+The SystemVerilog wrapper for the SPI model defines a module that takes 'interface'
+references as its port connections. The SystemVerilog wrapper instantiates
+the Verilog SPI bus model, and connects SPI MASTER and SLAVE interfaces to the SPI model.
+
+The example SPI bus model is found in the file "hdl_interconnect.v". The example wrapper
+is found in the file "spi_svt_interconnect_sv_wrapper.sv".
+
+The entire UVM test environment is encapsulated in spi_basic_env.sv, which is
+instantiated in the UVM tests.  The tests gets included in 'top.sv',
+which eventually triggers the specific test by the use of run_test().
+
+-------------------------------------------------------------------------
+E. UVM Verification Environment Description
+-------------------------------------------------------------------------
+
+A complete description of the UVM environment (ENV) is beyond the scope of this
+README. Please refer to the UVM manual for details of a UVM environment.
+
+Following is a summary of the files used by the ENV:
+
+  - spi_svt_interconnect_sv_wrapper.sv.  A SystemVerilog module that wraps the
+    verilog RTL Interconnect.  This will be instantiated in the top-level SystemVerilog
+    file.
+  
+  - spi_basic_env.sv
+    This file serves as environment class.  The top-level environment is
+    implemented by extending uvm_env base class.  This class instantiates the
+    SPI MASTER and SLAVE agents and a virtual sequencer.
+
+  - cust_svt_spi_agent_configuration.sv
+    This file extends agent configuration (svt_spi_agent_configuration).
+    All the necessary configuration parameters are set up for the environment
+    in this class.
+
+  - cust_svt_spi_transaction.sv
+    This file extends the transaction (svt_spi_transaction).
+    Customized constraints are defined by this class.
+
+  - spi_simple_reset_sequence.sv
+    This file shows a virtual sequence that generates a simple sequence
+    to drive the reset pins.  This sequence is registered with the TB
+    virtual sequencer as the default sequence for the reset phase.
+
+  - spi_default_virtual_sequence.sv
+    This file implements a virtual sequence executes an
+    spi_default_sequence on MASTER and SLAVE agent sequencer.  This sequence is registered with the 
+    SPI ENV virtual sequencer as the default sequence for the main
+    phase.
+
+  - spi_null_virtual_sequence.sv
+    This file implements a virtual sequence with an empty body method.  This
+    sequence can be used by extended tests to disable the default sequence.
+
+  - spi_default_sequence.sv
+    This file shows a sequence (extending from uvm_sequence)
+    that generates a default random svt_spi_transaction.
+
+--------------------------------------------------------------------------
+F. Contacting Customer Support
+--------------------------------------------------------------------------
+Please contact Synopsys Support Center or local CAE for support.
+

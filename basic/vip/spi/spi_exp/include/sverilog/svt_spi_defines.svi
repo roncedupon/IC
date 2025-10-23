@@ -1,0 +1,32 @@
+
+
+// DESCRIPTION: This file is simply a convenience to allow the inclusion of both
+// the common define symbols, and the port define symbols, from a single file.
+// Also there is a `include to read in any user-overrides defined in a
+// user-specified file, whose path has been assigned to the `SVT_SPI_USER_DEFINES
+// symbol.
+
+`ifndef GUARD_SVT_SPI_DEFINES_SVI
+`define GUARD_SVT_SPI_DEFINES_SVI
+
+`ifndef SVT_SPI_VERSION
+`define SVT_SPI_VERSION R-2020.12
+`endif
+
+`ifndef DESIGNWARE_INCDIR
+  `include "svt_defines.svi"
+`endif
+
+// First read in the user-specified defines (if any), that may take precedence
+// over some of the following defaults...
+`ifdef SVT_SPI_INCLUDE_USER_DEFINES
+`include "svt_spi_user_defines.svi"
+`endif // SVT_SPI_INCLUDE_USER_DEFINES
+
+// Read in the symbolic constants that control signal widths.
+`include "svt_spi_port_defines.svi"
+
+// Read in the symbolic constants for common values used by the OCP VIP.
+`include "svt_spi_common_defines.svi"
+
+`endif // GUARD_SVT_SPI_DEFINES_SVI

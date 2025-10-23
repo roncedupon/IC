@@ -1,0 +1,27 @@
+//=======================================================================
+//
+// COPYRIGHT (C) 2005, 2006, 2007 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+`ifndef GUARD_SVT_SOURCE_SVI
+`define GUARD_SVT_SOURCE_SVI
+
+`ifdef SVT_UVM_TECHNOLOGY
+`include `SVT_SOURCE_MAP_LIB_INCLUDE_SVI(R-2020.12,svt_source.uvm)
+`elsif SVT_OVM_TECHNOLOGY
+`include `SVT_SOURCE_MAP_LIB_INCLUDE_SVI(R-2020.12,svt_source.ovm)
+`else
+`include `SVT_SOURCE_MAP_LIB_INCLUDE_SVI(R-2020.12,svt_source.vmm)
+`endif
+
+`endif //GUARD_SVT_SOURCE_SVI

@@ -1,0 +1,35 @@
+//=======================================================================
+//
+// COPYRIGHT (C) 2010,2012 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+`ifndef GUARD_SVT_UVM_CMD_DEFINES_SVI
+`define GUARD_SVT_UVM_CMD_DEFINES_SVI
+
+`include `SVT_SOURCE_MAP_LIB_INCLUDE_SVI(R-2020.12,svt_cmd_defines)
+
+/**
+ * Null handle which can be used to indicate that a data search
+ * should take place at the top level object, and not a contained
+ * object
+ */
+`define SVT_UVM_CMD_NULL_HANDLE   -1
+
+/**
+ * Reset handle which can be used to indicate that a reset has
+ * taken place and that the testbench should update in accordance
+ * with this event.
+ */
+`define SVT_UVM_CMD_RESET_HANDLE   -2
+
+`endif // GUARD_SVT_UVM_CMD_DEFINES_SVI

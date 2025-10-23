@@ -1,0 +1,531 @@
+//=======================================================================
+//
+// COPYRIGHT (C) 2012-2016 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+`ifndef GUARD_SVT_BFM_VRT_SHELL_DEFINES_SVI
+`define GUARD_SVT_BFM_VRT_SHELL_DEFINES_SVI
+
+`ifdef NTB
+`define SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE automatic reg
+`define SVT_BFM_VRT_SHELL_BOOL_EXCHANGE_TYPE automatic integer
+`define SVT_BFM_VRT_SHELL_INT_EXCHANGE_TYPE automatic integer
+`else
+`define SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE automatic bit
+`define SVT_BFM_VRT_SHELL_BOOL_EXCHANGE_TYPE automatic bit
+`define SVT_BFM_VRT_SHELL_INT_EXCHANGE_TYPE automatic int
+`ifndef SVT_BFM_VRT_SHELL_CAST_STRING_TO_PACKED_ARRAY
+`define SVT_BFM_VRT_SHELL_CAST_STRING_TO_PACKED_ARRAY
+`include `SVT_SOURCE_MAP_LIB_INCLUDE_SVI(R-2020.12,svt_defines)
+`ifndef GUARD_SVT_LOADER_UTIL_SVI
+`include `SVT_SOURCE_MAP_LIB_INCLUDE_SVI(R-2020.12,svt_loader_util)
+`endif
+`include `SVT_SOURCE_MAP_LIB_SRC_SVI(R-2020.12,svt_data_util)
+`endif
+`endif
+
+/**
+ * This macro is used to define the extern entries in the interface, identifying the interface elements which are supplied via export.
+ *
+ * @param comp The component that will be the source of these commands.
+ */
+`define SVT_BFM_VRT_SHELL_IF_CMD_EXTERN(comp) \
+  extern task comp``_start_xactor_exp(); \
+  extern task comp``_stop_xactor_exp(); \
+  extern task comp``_reset_xactor_exp(int rst_type); \
+  extern task automatic comp``_log_get_name_exp(ref bit [80*8-1:0] name); \
+  extern task comp``_log_enable_types_exp(int types); \
+  extern task comp``_log_disable_types_exp(int types); \
+  extern task comp``_log_set_verbosity_exp(int msg_severity); \
+  extern task automatic comp``_log_get_verbosity_exp(ref int msg_severity); \
+  extern task automatic comp``_log_modify_exp(ref int mod_id, input int types, int msg_severity, string text, int new_type, int new_severity, int handling); \
+  extern task comp``_log_unmodify_exp(int mod_id); \
+  extern task comp``_log_stop_after_n_errors_exp(int n_errors); \
+  extern task automatic comp``_log_get_message_count_exp(ref int count, input int msg_severities); \
+  extern task automatic comp``_log_msg_val_exp(ref bit is_valid, ref int val, input string kind, string name); \
+  extern task comp``_log_report_exp(); \
+  extern task automatic comp``_log_msg_wait_for_t_exp(ref bit is_valid, ref int outcome_handle, ref int msg_severity, ref bit [128*8-1:0] msg); \
+  extern task automatic comp``_get_cfg_exp(ref bit is_valid, ref int handle); \
+  extern task automatic comp``_load_cfg_exp(ref bit is_valid, input int handle, bit [512*8-1:0] bv_file_name, int kind); \
+  extern task automatic comp``_save_cfg_exp(ref bit is_valid, input int handle, bit [512*8-1:0] bv_file_name, int kind); \
+  extern task automatic comp``_new_data_exp(ref bit is_valid, ref int handle, input string data_class); \
+  extern task automatic comp``_copy_data_exp(ref bit is_valid, ref int handle, input int src_handle); \
+  extern task automatic comp``_display_data_exp(ref bit is_valid, input int handle, string prefix); \
+  extern task automatic comp``_apply_data_exp(ref bit is_valid, input int handle); \
+  extern task automatic comp``_apply_data_no_delete_exp(ref bit is_valid, input int handle); \
+  extern task automatic comp``_delete_data_exp(ref bit is_valid, input int handle); \
+  extern task automatic comp``_get_data_prop_exp(ref bit is_valid, input int handle, string prop_name, ref bit [1023:0] prop_val, input int array_ix); \
+  extern task automatic comp``_set_data_prop_exp(ref bit is_valid, input int handle, string prop_name, bit [1023:0] prop_val, int array_ix); \
+  extern task automatic comp``_notify_wait_for_t_exp(ref bit is_valid, input string notify_name); \
+  extern task automatic comp``_notify_wait_for_off_t_exp(ref bit is_valid, input string notify_name); \
+  extern task automatic comp``_hdl_callback_wait_for_t_exp(ref bit is_valid, ref int handle, input string cb_notify_name); \
+  extern task automatic comp``_hdl_callback_proceed_exp(ref bit is_valid, input int handle, string cb_notify_name, bit drop);
+
+/**
+ * This macro is used to define a command export modport, which can be connected to a VRT model to export its commands to SV.
+ *
+ * @param comp The component that will be the source of these commands.
+ */
+`define SVT_BFM_VRT_SHELL_IF_CMD_EXPORT(comp) \
+  export task comp``_start_xactor_exp(), \
+  export task comp``_stop_xactor_exp(), \
+  export task comp``_reset_xactor_exp(int rst_type), \
+  export task comp``_log_get_name_exp(ref bit [80*8-1:0] name), \
+  export task comp``_log_enable_types_exp(int types), \
+  export task comp``_log_disable_types_exp(int types), \
+  export task comp``_log_set_verbosity_exp(int msg_severity), \
+  export task comp``_log_get_verbosity_exp(ref int msg_severity), \
+  export task comp``_log_modify_exp(ref int mod_id, input int types, int msg_severity, string text, int new_type, int new_severity, int handling), \
+  export task comp``_log_unmodify_exp(int mod_id), \
+  export task comp``_log_stop_after_n_errors_exp(int n_errors), \
+  export task comp``_log_get_message_count_exp(ref int count, input int msg_severities), \
+  export task comp``_log_msg_val_exp(ref bit is_valid, ref int val, input string kind, string name), \
+  export task comp``_log_report_exp(), \
+  export task comp``_log_msg_wait_for_t_exp(ref bit is_valid, ref int outcome_handle, ref int msg_severity, ref bit [128*8-1:0] msg), \
+  export task comp``_get_cfg_exp(ref bit is_valid, ref int handle), \
+  export task comp``_load_cfg_exp(ref bit is_valid, input int handle, bit [512*8-1:0] bv_file_name, int kind), \
+  export task comp``_save_cfg_exp(ref bit is_valid, input int handle, bit [512*8-1:0] bv_file_name, int kind), \
+  export task comp``_new_data_exp(ref bit is_valid, ref int handle, input string data_class), \
+  export task comp``_copy_data_exp(ref bit is_valid, ref int handle, input int src_handle), \
+  export task comp``_display_data_exp(ref bit is_valid, input int handle, string prefix), \
+  export task comp``_apply_data_exp(ref bit is_valid, input int handle), \
+  export task comp``_apply_data_no_delete_exp(ref bit is_valid, input int handle), \
+  export task comp``_delete_data_exp(ref bit is_valid, input int handle), \
+  export task comp``_get_data_prop_exp(ref bit is_valid, input int handle, string prop_name, ref bit [1023:0] prop_val, input int array_ix), \
+  export task comp``_set_data_prop_exp(ref bit is_valid, input int handle, string prop_name, bit [1023:0] prop_val, int array_ix), \
+  export task comp``_notify_wait_for_t_exp(ref bit is_valid, input string notify_name), \
+  export task comp``_notify_wait_for_off_t_exp(ref bit is_valid, input string notify_name), \
+  export task comp``_hdl_callback_wait_for_t_exp(ref bit is_valid, ref int handle, input string cb_notify_name), \
+  export task comp``_hdl_callback_proceed_exp(ref bit is_valid, input int handle, string cb_notify_name, bit drop)
+
+/**
+ * This macro is used to define a command import modport, which can be connected to a VRT model to export its commands to SV.
+ *
+ * @param comp The component that will be the source of these commands.
+ */
+`define SVT_BFM_VRT_SHELL_IF_CMD_IMPORT(comp) \
+  import task comp``_start_xactor(), \
+  import task comp``_stop_xactor(), \
+  import task comp``_reset_xactor(int rst_type), \
+  import task comp``_log_get_name(ref bit [80*8-1:0] name), \
+  import task comp``_log_enable_types(int types), \
+  import task comp``_log_disable_types(int types), \
+  import task comp``_log_set_verbosity(int msg_severity), \
+  import task comp``_log_get_verbosity(ref int msg_severity), \
+  import task comp``_log_modify(ref int mod_id, input int types, int msg_severity, string text, int new_type, int new_severity, int handling), \
+  import task comp``_log_unmodify(int mod_id), \
+  import task comp``_log_stop_after_n_errors(int n_errors), \
+  import task comp``_log_get_message_count(ref int count, input int msg_severities), \
+  import task comp``_log_msg_val(ref bit is_valid, ref int val, input string kind, string name), \
+  import task comp``_log_report(), \
+  import task comp``_log_msg_wait_for_t(ref bit is_valid, ref int outcome_handle, ref int msg_severity, ref bit [128*8-1:0] msg), \
+  import task comp``_get_cfg(ref bit is_valid, ref int handle), \
+  import task comp``_load_cfg(ref bit is_valid, input int handle, bit [512*8-1:0] bv_file_name, int kind), \
+  import task comp``_save_cfg(ref bit is_valid, input int handle, bit [512*8-1:0] bv_file_name, int kind), \
+  import task comp``_new_data(ref bit is_valid, ref int handle, input string data_class), \
+  import task comp``_copy_data(ref bit is_valid, ref int handle, input int src_handle), \
+  import task comp``_display_data(ref bit is_valid, input int handle, string prefix), \
+  import task comp``_apply_data(ref bit is_valid, input int handle), \
+  import task comp``_apply_data_no_delete(ref bit is_valid, input int handle), \
+  import task comp``_delete_data(ref bit is_valid, input int handle), \
+  import task comp``_get_data_prop(ref bit is_valid, input int handle, string prop_name, ref bit [1023:0] prop_val, input int array_ix), \
+  import task comp``_set_data_prop(ref bit is_valid, input int handle, string prop_name, bit [1023:0] prop_val, int array_ix), \
+  import task comp``_notify_wait_for_t(ref bit is_valid, input string notify_name), \
+  import task comp``_notify_wait_for_off_t(ref bit is_valid, input string notify_name), \
+  import task comp``_hdl_callback_wait_for_t(ref bit is_valid, ref int handle, input string cb_notify_name), \
+  import task comp``_hdl_callback_proceed(ref bit is_valid, input int handle, string cb_notify_name, bit drop)
+
+/**
+ * This macro is used to make the connection between a model and the indicated 'export' modport on the interface.
+ */
+`define SVT_BFM_VRT_SHELL_IF_CMD_MODEL_EXPORT(comp, inst, if) \
+  task automatic if.comp``_start_xactor_exp(); \
+    inst.start_xactor(); \
+  endtask \
+  task automatic if.comp``_stop_xactor_exp(); \
+    inst.stop_xactor(); \
+  endtask \
+  task automatic if.comp``_reset_xactor_exp(int rst_type); \
+    inst.reset_xactor(rst_type); \
+  endtask \
+  task automatic if.comp``_log_get_name_exp(ref bit [80*8-1:0] name); \
+    `SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE [80*8-1:0] _name = name; \
+    inst.log_get_name(_name); \
+    name = _name; \
+  endtask \
+  task automatic if.comp``_log_enable_types_exp(int types); \
+    inst.log_enable_types(types); \
+  endtask \
+  task automatic if.comp``_log_disable_types_exp(int types); \
+    inst.log_disable_types(types); \
+  endtask \
+  task automatic if.comp``_log_set_verbosity_exp(int msg_severity); \
+    inst.log_set_verbosity(msg_severity); \
+  endtask \
+  task automatic if.comp``_log_get_verbosity_exp(ref int msg_severity); \
+    `SVT_BFM_VRT_SHELL_INT_EXCHANGE_TYPE _msg_severity = msg_severity; \
+    inst.log_get_verbosity(_msg_severity); \
+    msg_severity = _msg_severity; \
+  endtask \
+  task automatic if.comp``_log_modify_exp(ref int mod_id, input int types, int msg_severity, string text, int new_type, int new_severity, int handling); \
+    `SVT_BFM_VRT_SHELL_INT_EXCHANGE_TYPE _mod_id = mod_id; \
+`ifdef SVT_BFM_VRT_SHELL_CAST_STRING_TO_PACKED_ARRAY \
+    bit [1023:0] _text; \
+    `SVT_DATA_UTIL_MOVE_STR_TO_PACKED_ARRAY(text,_text) \
+    inst.log_modify(_mod_id, types, msg_severity, _text, new_type, new_severity, handling); \
+`else \
+    inst.log_modify(_mod_id, types, msg_severity, text, new_type, new_severity, handling); \
+`endif \
+    mod_id = _mod_id; \
+  endtask \
+  task automatic if.comp``_log_unmodify_exp(int mod_id); \
+    inst.log_unmodify(mod_id); \
+  endtask \
+  task automatic if.comp``_log_stop_after_n_errors_exp(int n_errors); \
+    inst.log_stop_after_n_errors(n_errors); \
+  endtask \
+  task automatic if.comp``_log_get_message_count_exp(ref int count, input int msg_severities); \
+    `SVT_BFM_VRT_SHELL_INT_EXCHANGE_TYPE _count = count; \
+    inst.log_get_message_count(_count, msg_severities); \
+    count = _count; \
+  endtask \
+  task automatic if.comp``_log_msg_val_exp(ref bit is_valid, ref int val, input string kind, string name); \
+    `SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE _is_valid = is_valid; \
+    `SVT_BFM_VRT_SHELL_INT_EXCHANGE_TYPE _val = val; \
+`ifdef SVT_BFM_VRT_SHELL_CAST_STRING_TO_PACKED_ARRAY \
+    bit [1023:0] _kind; \
+    bit [1023:0] _name; \
+    `SVT_DATA_UTIL_MOVE_STR_TO_PACKED_ARRAY(kind,_kind) \
+    `SVT_DATA_UTIL_MOVE_STR_TO_PACKED_ARRAY(name,_name) \
+    inst.log_msg_val(_is_valid, _val, _kind, _name); \
+`else \
+    inst.log_msg_val(_is_valid, _val, kind, name); \
+`endif \
+    is_valid = _is_valid; \
+    val = _val; \
+  endtask \
+  task automatic if.comp``_log_report_exp(); \
+    inst.log_report(); \
+  endtask \
+  task automatic if.comp``_log_msg_wait_for_t_exp(ref bit is_valid, ref int outcome_handle, ref int msg_severity, ref bit [128*8-1:0] msg); \
+    `SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE _is_valid = is_valid; \
+    `SVT_BFM_VRT_SHELL_INT_EXCHANGE_TYPE _outcome_handle = outcome_handle; \
+    `SVT_BFM_VRT_SHELL_INT_EXCHANGE_TYPE _msg_severity = msg_severity; \
+    `SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE [128*8-1:0] _msg = msg; \
+    inst.log_msg_wait_for_t(_is_valid, _outcome_handle, _msg_severity, _msg); \
+    is_valid = _is_valid; \
+    outcome_handle = _outcome_handle; \
+    msg_severity = _msg_severity; \
+    msg = _msg; \
+  endtask \
+  task automatic if.comp``_get_cfg_exp(ref bit is_valid, ref int handle); \
+    `SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE _is_valid = is_valid; \
+    `SVT_BFM_VRT_SHELL_INT_EXCHANGE_TYPE _handle = handle; \
+    inst.get_cfg(_is_valid, _handle); \
+    is_valid = _is_valid; \
+    handle = _handle; \
+  endtask \
+  task automatic if.comp``_load_cfg_exp(ref bit is_valid, input int handle, bit [512*8-1:0] bv_file_name, int kind); \
+    `SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE _is_valid = is_valid; \
+    inst.load_cfg(_is_valid, handle, bv_file_name, kind); \
+    is_valid = _is_valid; \
+  endtask \
+  task automatic if.comp``_save_cfg_exp(ref bit is_valid, input int handle, bit [512*8-1:0] bv_file_name, int kind); \
+    `SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE _is_valid = is_valid; \
+    inst.save_cfg(_is_valid, handle, bv_file_name, kind); \
+    is_valid = _is_valid; \
+  endtask \
+  task automatic if.comp``_new_data_exp(ref bit is_valid, ref int handle, input string data_class); \
+    `SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE _is_valid = is_valid; \
+    `SVT_BFM_VRT_SHELL_INT_EXCHANGE_TYPE _handle = handle; \
+`ifdef SVT_BFM_VRT_SHELL_CAST_STRING_TO_PACKED_ARRAY \
+    bit [1023:0] _data_class; \
+    `SVT_DATA_UTIL_MOVE_STR_TO_PACKED_ARRAY(data_class,_data_class) \
+    inst.new_data(_is_valid, _handle, _data_class); \
+`else \
+    inst.new_data(_is_valid, _handle, data_class); \
+`endif \
+    is_valid = _is_valid; \
+    handle = _handle; \
+  endtask \
+  task automatic if.comp``_copy_data_exp(ref bit is_valid, ref int handle, input int src_handle); \
+    `SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE _is_valid = is_valid; \
+    `SVT_BFM_VRT_SHELL_INT_EXCHANGE_TYPE _handle = handle; \
+    inst.copy_data(_is_valid, _handle, src_handle); \
+    is_valid = _is_valid; \
+    handle = _handle; \
+  endtask \
+  task automatic if.comp``_display_data_exp(ref bit is_valid, input int handle, string prefix); \
+    `SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE _is_valid = is_valid; \
+`ifdef SVT_BFM_VRT_SHELL_CAST_STRING_TO_PACKED_ARRAY \
+    bit [1023:0] _prefix; \
+    `SVT_DATA_UTIL_MOVE_STR_TO_PACKED_ARRAY(prefix,_prefix) \
+    inst.display_data(_is_valid, handle, _prefix); \
+`else \
+    inst.display_data(_is_valid, handle, prefix); \
+`endif \
+    is_valid = _is_valid; \
+  endtask \
+  task automatic if.comp``_apply_data_exp(ref bit is_valid, input int handle); \
+    `SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE _is_valid = is_valid; \
+    inst.apply_data(_is_valid, handle); \
+    is_valid = _is_valid; \
+  endtask \
+  task automatic if.comp``_apply_data_no_delete_exp(ref bit is_valid, input int handle); \
+    `SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE _is_valid = is_valid; \
+    inst.apply_data_no_delete(_is_valid, handle); \
+    is_valid = _is_valid; \
+  endtask \
+  task automatic if.comp``_delete_data_exp(ref bit is_valid, input int handle); \
+    `SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE _is_valid = is_valid; \
+    inst.delete_data(_is_valid, handle); \
+    is_valid = _is_valid; \
+  endtask \
+  task automatic if.comp``_get_data_prop_exp(ref bit is_valid, input int handle, string prop_name, ref bit [1023:0] prop_val, input int array_ix); \
+    `SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE _is_valid = is_valid; \
+    `SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE [1023:0] _prop_val = prop_val; \
+`ifdef SVT_BFM_VRT_SHELL_CAST_STRING_TO_PACKED_ARRAY \
+    bit [1023:0] _prop_name; \
+    `SVT_DATA_UTIL_MOVE_STR_TO_PACKED_ARRAY(prop_name,_prop_name) \
+    inst.get_data_prop(_is_valid, handle, _prop_name, _prop_val, array_ix); \
+`else \
+    inst.get_data_prop(_is_valid, handle, prop_name, _prop_val, array_ix); \
+`endif \
+    is_valid = _is_valid; \
+    prop_val = _prop_val; \
+  endtask \
+  task automatic if.comp``_set_data_prop_exp(ref bit is_valid, input int handle, string prop_name, bit [1023:0] prop_val, int array_ix); \
+    `SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE _is_valid = is_valid; \
+`ifdef SVT_BFM_VRT_SHELL_CAST_STRING_TO_PACKED_ARRAY \
+    bit [1023:0] _prop_name; \
+    `SVT_DATA_UTIL_MOVE_STR_TO_PACKED_ARRAY(prop_name,_prop_name) \
+    inst.set_data_prop(_is_valid, handle, _prop_name, prop_val, array_ix); \
+`else \
+    inst.set_data_prop(_is_valid, handle, prop_name, prop_val, array_ix); \
+`endif \
+    is_valid = _is_valid; \
+  endtask \
+  task automatic if.comp``_notify_wait_for_t_exp(ref bit is_valid, input string notify_name); \
+    `SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE _is_valid = is_valid; \
+`ifdef SVT_BFM_VRT_SHELL_CAST_STRING_TO_PACKED_ARRAY \
+    bit [1023:0] _notify_name; \
+    `SVT_DATA_UTIL_MOVE_STR_TO_PACKED_ARRAY(notify_name,_notify_name) \
+    inst.notify_wait_for_t(_is_valid, _notify_name); \
+`else \
+    inst.notify_wait_for_t(_is_valid, notify_name); \
+`endif \
+    is_valid = _is_valid; \
+  endtask \
+  task automatic if.comp``_notify_wait_for_off_t_exp(ref bit is_valid, input string notify_name); \
+`ifdef SVT_BFM_VRT_SHELL_INCLUDE_NOTIFY_WAIT_FOR_OFF_T \
+    `SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE _is_valid = is_valid; \
+`ifdef SVT_BFM_VRT_SHELL_CAST_STRING_TO_PACKED_ARRAY \
+    bit [1023:0] _notify_name; \
+    `SVT_DATA_UTIL_MOVE_STR_TO_PACKED_ARRAY(notify_name,_notify_name) \
+    inst.notify_wait_for_off_t(_is_valid, _notify_name); \
+`else \
+    inst.notify_wait_for_off_t(_is_valid, notify_name); \
+`endif \
+    is_valid = _is_valid; \
+`else \
+    is_valid = 0; \
+`endif \
+  endtask \
+  task automatic if.comp``_hdl_callback_wait_for_t_exp(ref bit is_valid, ref int handle, input string cb_notify_name); \
+    `SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE _is_valid = is_valid; \
+    `SVT_BFM_VRT_SHELL_INT_EXCHANGE_TYPE _handle = handle; \
+`ifdef SVT_BFM_VRT_SHELL_CAST_STRING_TO_PACKED_ARRAY \
+    bit [1023:0] _cb_notify_name; \
+    `SVT_DATA_UTIL_MOVE_STR_TO_PACKED_ARRAY(cb_notify_name,_cb_notify_name) \
+    inst.hdl_callback_wait_for_t(_is_valid, _handle, _cb_notify_name); \
+`else \
+    inst.hdl_callback_wait_for_t(_is_valid, _handle, cb_notify_name); \
+`endif \
+    is_valid = _is_valid; \
+    handle = _handle; \
+  endtask \
+  task automatic if.comp``_hdl_callback_proceed_exp(ref bit is_valid, input int handle, string cb_notify_name, bit drop); \
+    `SVT_BFM_VRT_SHELL_BIT_EXCHANGE_TYPE _is_valid = is_valid; \
+`ifdef SVT_BFM_VRT_SHELL_CAST_STRING_TO_PACKED_ARRAY \
+    bit [1023:0] _cb_notify_name; \
+    `SVT_DATA_UTIL_MOVE_STR_TO_PACKED_ARRAY(cb_notify_name,_cb_notify_name) \
+    inst.hdl_callback_proceed(_is_valid, handle, _cb_notify_name, drop); \
+`else \
+    inst.hdl_callback_proceed(_is_valid, handle, cb_notify_name, drop); \
+`endif \
+    is_valid = _is_valid; \
+  endtask
+
+/**
+ * This macro is used to connect no-op method implementations to the indicated 'export' modport on the interface.
+ */
+`define SVT_BFM_VRT_SHELL_IF_CMD_NOP_EXPORT(comp, if) \
+  task automatic if.comp``_start_xactor_exp(); \
+  endtask \
+  task automatic if.comp``_stop_xactor_exp(); \
+  endtask \
+  task automatic if.comp``_reset_xactor_exp(int rst_type); \
+  endtask \
+  task automatic if.comp``_log_get_name_exp(ref bit [80*8-1:0] name); \
+  endtask \
+  task automatic if.comp``_log_enable_types_exp(int types); \
+  endtask \
+  task automatic if.comp``_log_disable_types_exp(int types); \
+  endtask \
+  task automatic if.comp``_log_set_verbosity_exp(int msg_severity); \
+  endtask \
+  task automatic if.comp``_log_get_verbosity_exp(ref int msg_severity); \
+  endtask \
+  task automatic if.comp``_log_modify_exp(ref int mod_id, input int types, int msg_severity, string text, int new_type, int new_severity, int handling); \
+  endtask \
+  task automatic if.comp``_log_unmodify_exp(int mod_id); \
+  endtask \
+  task automatic if.comp``_log_stop_after_n_errors_exp(int n_errors); \
+  endtask \
+  task automatic if.comp``_log_get_message_count_exp(ref int count, input int msg_severities); \
+  endtask \
+  task automatic if.comp``_log_msg_val_exp(ref bit is_valid, ref int val, input string kind, string name); \
+  endtask \
+  task automatic if.comp``_log_report_exp(); \
+  endtask \
+  task automatic if.comp``_log_msg_wait_for_t_exp(ref bit is_valid, ref int outcome_handle, ref int msg_severity, ref bit [128*8-1:0] msg); \
+  endtask \
+  task automatic if.comp``_get_cfg_exp(ref bit is_valid, ref int handle); \
+  endtask \
+  task automatic if.comp``_load_cfg_exp(ref bit is_valid, input int handle, bit [512*8-1:0] bv_file_name, int kind); \
+  endtask \
+  task automatic if.comp``_save_cfg_exp(ref bit is_valid, input int handle, bit [512*8-1:0] bv_file_name, int kind); \
+  endtask \
+  task automatic if.comp``_new_data_exp(ref bit is_valid, ref int handle, input string data_class); \
+  endtask \
+  task automatic if.comp``_copy_data_exp(ref bit is_valid, ref int handle, input int src_handle); \
+  endtask \
+  task automatic if.comp``_display_data_exp(ref bit is_valid, input int handle, string prefix); \
+  endtask \
+  task automatic if.comp``_apply_data_exp(ref bit is_valid, input int handle); \
+  endtask \
+  task automatic if.comp``_apply_data_no_delete_exp(ref bit is_valid, input int handle); \
+  endtask \
+  task automatic if.comp``_delete_data_exp(ref bit is_valid, input int handle); \
+  endtask \
+  task automatic if.comp``_get_data_prop_exp(ref bit is_valid, input int handle, string prop_name, ref bit [1023:0] prop_val, input int array_ix); \
+  endtask \
+  task automatic if.comp``_set_data_prop_exp(ref bit is_valid, input int handle, string prop_name, bit [1023:0] prop_val, int array_ix); \
+  endtask \
+  task automatic if.comp``_notify_wait_for_t_exp(ref bit is_valid, input string notify_name); \
+  endtask \
+  task automatic if.comp``_notify_wait_for_off_t_exp(ref bit is_valid, input string notify_name); \
+  endtask \
+  task automatic if.comp``_hdl_callback_wait_for_t_exp(ref bit is_valid, ref int handle, input string cb_notify_name); \
+  endtask \
+  task automatic if.comp``_hdl_callback_proceed_exp(ref bit is_valid, input int handle, string cb_notify_name, bit drop); \
+  endtask
+
+/**
+ * This macro is used to make the connection between the indicated 'export' modport and 'import' modports on the interface.
+ *
+ * @param comp The component that will be the source of these commands.
+ */
+`define SVT_BFM_VRT_SHELL_IF_CMD_EXPORT_IMPORT(comp) \
+  task automatic comp``_start_xactor(); \
+    comp``_start_xactor_exp(); \
+  endtask \
+  task automatic comp``_stop_xactor(); \
+    comp``_stop_xactor_exp(); \
+  endtask \
+  task automatic comp``_reset_xactor(int rst_type); \
+    comp``_reset_xactor_exp(rst_type); \
+  endtask \
+  task automatic comp``_log_get_name(ref bit [80*8-1:0] name); \
+    comp``_log_get_name_exp(name); \
+  endtask \
+  task automatic comp``_log_enable_types(int types); \
+    comp``_log_enable_types_exp(types); \
+  endtask \
+  task automatic comp``_log_disable_types(int types); \
+    comp``_log_disable_types_exp(types); \
+  endtask \
+  task automatic comp``_log_set_verbosity(int msg_severity); \
+    comp``_log_set_verbosity_exp(msg_severity); \
+  endtask \
+  task automatic comp``_log_get_verbosity(ref int msg_severity); \
+    comp``_log_get_verbosity_exp(msg_severity); \
+  endtask \
+  task automatic comp``_log_modify(ref int mod_id, input int types, int msg_severity, string text, int new_type, int new_severity, int handling); \
+    comp``_log_modify_exp(mod_id, types, msg_severity, text, new_type, new_severity, handling); \
+  endtask \
+  task automatic comp``_log_unmodify(int mod_id); \
+    comp``_log_unmodify_exp(mod_id); \
+  endtask \
+  task automatic comp``_log_stop_after_n_errors(int n_errors); \
+    comp``_log_stop_after_n_errors_exp(n_errors); \
+  endtask \
+  task automatic comp``_log_get_message_count(ref int count, input int msg_severities); \
+    comp``_log_get_message_count_exp(count, msg_severities); \
+  endtask \
+  task automatic comp``_log_msg_val(ref bit is_valid, ref int val, input string kind, string name); \
+    comp``_log_msg_val_exp(is_valid, val, kind, name); \
+  endtask \
+  task automatic comp``_log_report(); \
+    comp``_log_report_exp(); \
+  endtask \
+  task automatic comp``_log_msg_wait_for_t(ref bit is_valid, ref int outcome_handle, ref int msg_severity, ref bit [128*8-1:0] msg); \
+    comp``_log_msg_wait_for_t_exp(is_valid, outcome_handle, msg_severity, msg); \
+  endtask \
+  task automatic comp``_get_cfg(ref bit is_valid, ref int handle); \
+    comp``_get_cfg_exp(is_valid, handle); \
+  endtask \
+  task automatic comp``_load_cfg(ref bit is_valid, input int handle, bit [512*8-1:0] bv_file_name, int kind); \
+    comp``_load_cfg_exp(is_valid, handle, bv_file_name, kind); \
+  endtask \
+  task automatic comp``_save_cfg(ref bit is_valid, input int handle, bit [512*8-1:0] bv_file_name, int kind); \
+    comp``_save_cfg_exp(is_valid, handle, bv_file_name, kind); \
+  endtask \
+  task automatic comp``_new_data(ref bit is_valid, ref int handle, input string data_class); \
+    comp``_new_data_exp(is_valid, handle, data_class); \
+  endtask \
+  task automatic comp``_copy_data(ref bit is_valid, ref int handle, input int src_handle); \
+    comp``_copy_data_exp(is_valid, handle, src_handle); \
+  endtask \
+  task automatic comp``_display_data(ref bit is_valid, input int handle, string prefix); \
+    comp``_display_data_exp(is_valid, handle, prefix); \
+  endtask \
+  task automatic comp``_apply_data(ref bit is_valid, input int handle); \
+    comp``_apply_data_exp(is_valid, handle); \
+  endtask \
+  task automatic comp``_apply_data_no_delete(ref bit is_valid, input int handle); \
+    comp``_apply_data_no_delete_exp(is_valid, handle); \
+  endtask \
+  task automatic comp``_delete_data(ref bit is_valid, input int handle); \
+    comp``_delete_data_exp(is_valid, handle); \
+  endtask \
+  task automatic comp``_get_data_prop(ref bit is_valid, input int handle, string prop_name, ref bit [1023:0] prop_val, input int array_ix); \
+    comp``_get_data_prop_exp(is_valid, handle, prop_name, prop_val, array_ix); \
+  endtask \
+  task automatic comp``_set_data_prop(ref bit is_valid, input int handle, string prop_name, bit [1023:0] prop_val, int array_ix); \
+    comp``_set_data_prop_exp(is_valid, handle, prop_name, prop_val, array_ix); \
+  endtask \
+  task automatic comp``_notify_wait_for_t(ref bit is_valid, input string notify_name); \
+    comp``_notify_wait_for_t_exp(is_valid, notify_name); \
+  endtask \
+  task automatic comp``_notify_wait_for_off_t(ref bit is_valid, input string notify_name); \
+    comp``_notify_wait_for_off_t_exp(is_valid, notify_name); \
+  endtask \
+  task automatic comp``_hdl_callback_wait_for_t(ref bit is_valid, ref int handle, input string cb_notify_name); \
+    comp``_hdl_callback_wait_for_t_exp(is_valid, handle, cb_notify_name); \
+  endtask \
+  task automatic comp``_hdl_callback_proceed(ref bit is_valid, input int handle, string cb_notify_name, bit drop); \
+    comp``_hdl_callback_proceed_exp(is_valid, handle, cb_notify_name, drop); \
+  endtask
+
+`endif // GUARD_SVT_BFM_VRT_SHELL_DEFINES_SVI

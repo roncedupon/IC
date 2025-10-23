@@ -1,0 +1,76 @@
+//=======================================================================
+// COPYRIGHT (C) 2013-2016 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+// This include file is intended to be included in hdl UVM memory model wrappers
+// to implement command wrapping.  This file should be used by either svt_env
+// or svt_agent extensions.  This code to be included in class definitions.
+// Therefore, guarding the file is inappropriate.
+
+// =============================================================================
+// HDL TASK EXPORTS: This file 'exports' the model methods which will be
+// available to an HDL testbench, as tasks called on an instance of the model
+// (which is encapsulated in a shell file). These tasks are declared in the
+// interface of the shell file (it is the shell module that is instantiated as
+// a VIP model component in the HDL testbench). Except for the initialization
+// usage of set_data_prop(), these tasks simply call their counterparts in the
+// internal model instance.
+//
+`include `SVT_SOURCE_MAP_LIB_INCLUDE_SVI(R-2020.12,svt_uvm_component_export)
+
+//---------------------------------------------------------------------------
+/**
+ * @groupname memcatalog
+ * Loads a part number from the specified catalog.
+ * 
+ * @param is_valid Functions as a <i>return</i> value that indicates the success
+ * of the cmd_mem_load_part_cfg operation.
+ * 
+ * @param mem_class Determines which memory class to select the part number from
+ * 
+ * @param mem_package Determines which package category to select the part number from
+ * 
+ * @param mem_vendor Determines which vendor category to selct the part number from
+ * 
+ * @param part_name Specifies the part name to load
+ */
+`ifdef SVT_MULTI_SIM_STRING_ARG_IN_EXPORTED_METHODS
+task cmd_mem_load_part_cfg(output bit is_valid, input int mem_class, input int mem_package, input int mem_vendor, input bit[80*8-1:0] _part_name);
+  string part_name;
+  part_name = $sformatf("%0s", _part_name);
+`else
+task cmd_mem_load_part_cfg(output bit is_valid, input int mem_class, input int mem_package, input int mem_vendor, input string part_name);
+`endif
+  begin
+    svt_env env;
+    svt_agent agent;
+    svt_mem_cmd_assistant assist;
+    if ($cast(agent, model)) begin
+      void'($cast(assist, agent.get_cmd_assist()));
+    end
+    else if ($cast(env, model)) begin
+      void'($cast(assist, env.get_cmd_assist()));
+    end
+
+    if (assist != null) begin
+      assist.cmd_mem_load_part_cfg(is_valid, mem_class, mem_package, mem_vendor, part_name);
+    end
+    else begin
+      is_valid = 0;
+      `uvm_error("cmd_mem_load_part_cfg", "Command not supported by this model");
+    end
+  end
+
+endtask
+
+//==============================================================================

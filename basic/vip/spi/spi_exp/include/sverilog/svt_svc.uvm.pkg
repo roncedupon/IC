@@ -1,0 +1,36 @@
+//=======================================================================
+// COPYRIGHT (C) 2013-2016 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+`ifndef GUARD_SVT_SVC_UVM_PKG
+`define GUARD_SVT_SVC_UVM_PKG
+
+`ifdef DESIGNWARE_INCDIR
+  `define SVT_BOOTLOADER_FILE `"`DESIGNWARE_INCDIR/vip/svt/common/latest/sverilog/include/svt_bootloader.svi`"
+  `include `SVT_BOOTLOADER_FILE 
+`else
+  `include "svt_bootloader.svi"
+`endif
+
+`include `SVT_SOURCE_MAP_LIB_INCLUDE_PKG(R-2020.12,svt.uvm)
+
+`include "uvm_macros.svh"
+
+package svt_svc_uvm_pkg;
+  import uvm_pkg::*;
+  import svt_uvm_pkg::*;
+
+  `include `SVT_SOURCE_MAP_LIB_INCLUDE_SVI(R-2020.12,svt_svc_source.uvm)
+endpackage
+
+`endif // GUARD_SVT_SVC_UVM_PKG

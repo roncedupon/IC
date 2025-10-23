@@ -1,0 +1,1 @@
+`define SVT_SOURCE_QUOTE_DESIGNWARE_HOME(leafname) `"/mnt/disk_0/softwares/vips/designware/leafname`"

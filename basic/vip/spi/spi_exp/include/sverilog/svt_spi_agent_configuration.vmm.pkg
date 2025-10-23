@@ -1,0 +1,74 @@
+//-----------------------------------------------------------------------------
+// COPYRIGHT (C) 2014-2020 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//-----------------------------------------------------------------------------
+
+`ifndef GUARD_SVT_SPI_AGENT_CONFIGURATION_VMM_PKG
+`define GUARD_SVT_SPI_AGENT_CONFIGURATION_VMM_PKG
+
+`include "svt_mem.vmm.pkg"
+`include "svt_spi_if.svi"
+`include "svt_spi_sys_if.svi"
+`include "svt_spi_empspi_if.svi"
+
+package svt_spi_agent_configuration_vmm_pkg;
+  import `SVT_VMM_PKG::*;
+  import svt_vmm_pkg::*;
+  import svt_mem_vvm_pkg::*;
+
+`ifndef __SVDOC__
+  typedef virtual svt_spi_if svt_spi_vif; 
+  typedef virtual svt_spi_empspi_if svt_spi_empspi_vif;
+  typedef class svt_spi_mem_timing_configuration;
+  typedef class svt_spi_mem_mode_register_configuration;
+`endif
+
+  `include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_types)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_mem_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_s25fl_ddr_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_s25fl_sdr_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_s25fs_ddr_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_s25fs_sdr_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_is25_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_aps_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_mt35x_sdr_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_mt35x_ddr_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_w25q_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_mx25r_low_power_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_mx25r_high_performance_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_mx25l_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_mx25l_parallel_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_mx25u_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_mx25um_mx25lm_sdr_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_mx25um_mx25lm_ddr_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_mt25q_sdr_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_mt25q_ddr_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_mr10q_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_atxp_xSPI_sdr_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_atxp_xSPI_ddr_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_jesd251_xSPI_sdr_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_flash_jesd251_xSPI_ddr_ac_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_xSPI_command_list)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_xSPI_profile_2_0_command_list)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_xSPI_register_pack)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_xSPI_flash_command_register_map)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_xSPI_reg_field_register_map)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_xSPI_register_field_list)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_mem_timing_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_mem_mode_register_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_agent_configuration)
+  `include `SVT_SOURCE_MAP_SUITE_MODULE(spi_svt,R-2020.12,svt_spi_system_configuration)
+
+endpackage
+
+`endif // GUARD_SVT_SPI_AGENT_CONFIGURATION_VMM_PKG

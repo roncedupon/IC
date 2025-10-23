@@ -1,0 +1,426 @@
+//--------------------------------------------------------------------------
+// COPYRIGHT (C) 2012-2016 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//--------------------------------------------------------------------------
+`ifndef GUARD_SVT_MEM_SA_DEFS_SVI
+`define GUARD_SVT_MEM_SA_DEFS_SVI
+
+`include `SVT_SOURCE_MAP_LIB_INCLUDE_SVI(R-2020.12,svt_defines)
+
+//----------------------------------------------------------------------
+// 
+// System Verilog to C/C++ sparse array server
+//
+//   typedefs for the sparse array backdoor interface
+//
+//----------------------------------------------------------------------
+
+/**
+ * Maximum width of data the memserver System Verilog component will handle 
+ */
+`ifndef SVT_MEM_MAX_DATA_WIDTH
+`define SVT_MEM_MAX_DATA_WIDTH 64
+`endif
+
+/**
+ * Maximum number of physical addressing dimensions the memserver System Verilog component will handle
+ * Set to the maximum currently required by all known memserver clients 
+ */
+`define SVT_MEM_SA_CORE_PHYSICAL_DIMENSIONS_MAX 6
+
+//`define SVT_MEM_SA_CORE_MAX_DATA_BITS 512
+
+
+`define SVT_MEM_SA_4STATE 1
+`define SVT_MEM_SA_2STATE 0
+
+// Declare a physical address variable (unsigned int array)
+`define SVT_MEM_SA_PHYSICAL_ADDRESS(ADDR) int unsigned ADDR [`SVT_MEM_SA_CORE_PHYSICAL_DIMENSIONS_MAX]
+
+//----------------------------------------------------------------------
+// svt_mem_sa_core constructor MODES defs
+//----------------------------------------------------------------------
+
+// Write protect entire instance
+`define SVT_MEM_SA_MODE_READ_ONLY          'h00000001
+
+// Don't allocate a write protect attribute bit
+`define SVT_MEM_SA_MODE_NO_WPE_ATTR        'h00000002
+
+// Don't allocate an access lock marking attribute bit 
+`define SVT_MEM_SA_MODE_NO_ACCESS_ATTR     'h00000004
+
+// Don't allocate an access lock marking attribute bit
+`define SVT_MEM_SA_MODE_QUIET              'h00000008
+
+// 
+// Optimize for speed or memory efficiency?
+//  "0" defaults to "MEDIAN"
+// 1:fast 2:average 3:compact
+//
+`define SVT_MEM_SA_MODE_SPACE_MASK         'h00000030
+`define SVT_MEM_SA_MODE_OPT_SPACE_SET(val) (((val)&'h3)<<4)
+`define SVT_MEM_SA_MODE_OPT_SPACE_GET(m)   (((m)&SVT_MEM_SA_MODE_SPACE_MASK)>>4)
+
+//
+// Optimize for address coherance?
+//  "0" defaults to "MEDIAN"
+// 1:NO COHERENCY ...  3:VERY ADR COHERENT
+//
+`define SVT_MEM_SA_MODE_COHERENCE_MASK     'h000000c0
+`define SVT_MEM_SA_MODE_COHERENCE_SET(val) (((val)&'h3)<<6)
+`define SVT_MEM_SA_MODE_COHERENCE_GET(m)   (((m)&SVT_MEM_SA_MODE_COHERENCE_MASK)>>6)
+
+//
+// Optimize for simulation size?
+//  "0" defaults to "MEDIAN"
+// 1:TINY data footprint ...  3:HUGE data footprint
+//
+`define SVT_MEM_SA_MODE_SIM_SIZE_MASK     'h00000300
+`define SVT_MEM_SA_MODE_SIM_SIZE_SET(val) (((val)&'h3)<<8)
+`define SVT_MEM_SA_MODE_SIM_SIZE_GET(m)   (((m)&SVT_MEM_SA_MODE_SIM_SIZE_MASK)>>8)
+
+//----------------------------------------------------------------------
+// PATTERN SPEC - this struct contains the information needed to 
+// compute an address dependent data pattern.
+// 
+// It MUST match EXACTLY (except for base-data) the corresponding
+// struct in svt_mem_sa_types.h
+//----------------------------------------------------------------------
+typedef struct {
+  int                                      virtual_pattern;
+  int unsigned                             pat_type;
+  int                                      delta_value;
+  longint unsigned                         adr_lo;
+  longint unsigned                         adr_hi;
+  longint unsigned                         base_adr;
+} svt_mem_sa_patspec;
+
+`define SVT_MEM_SA_PATTERN_NON_VIRTUAL       0
+`define SVT_MEM_SA_PATTERN_VIRTUAL           1
+       
+`define SVT_MEM_SA_PATTERN_TYPE_CONST        0
+`define SVT_MEM_SA_PATTERN_TYPE_INCR         1
+`define SVT_MEM_SA_PATTERN_TYPE_DECR         2
+`define SVT_MEM_SA_PATTERN_TYPE_WALK_LEFT    3
+`define SVT_MEM_SA_PATTERN_TYPE_WALK_RIGHT   4
+`define SVT_MEM_SA_PATTERN_TYPE_RAND_DATA    5
+`define SVT_MEM_SA_PATTERN_TYPE_MASK         'h1f
+
+`define SVT_MEM_SA_PATTERN_TYPE_USE_BASE_ADR 'h80
+   
+
+//----------------------------------------------------------------------
+// BREAKPOINT SPEC - this struct contains the information needed to 
+// create a breakpoint. Not all fields must be filled out for all
+// types of breakpoints.
+//
+// It MUST match EXACTLY (except for data, data_hi, and data_mask) the
+// corresponding struct in svt_mem_sa_types.h
+//----------------------------------------------------------------------
+typedef struct {
+  int unsigned                           flags;
+  int                                    enabled; // is this breakpoint active
+  longint unsigned                       adr_lo;
+  longint unsigned                       adr_hi;
+  longint unsigned                       adr_mask;
+  int unsigned                           attr;
+  int unsigned                           attr_mask;
+  int                                    count;
+  int                                    notification;
+} svt_mem_sa_breakspec;
+
+
+//
+// Breakpoint triggers
+//
+`define SVT_MEM_SA_BREAK_FLAG_CMP_RD               32'h00000001
+`define SVT_MEM_SA_BREAK_FLAG_CMP_WR               32'h00000002
+
+`define SVT_MEM_SA_BREAK_FLAG_CMP_ADR              32'h00000010
+`define SVT_MEM_SA_BREAK_FLAG_CMP_DATA             32'h00000020
+`define SVT_MEM_SA_BREAK_FLAG_CMP_ATTRS            32'h00000040
+
+`define SVT_MEM_SA_BREAK_FLAG_ENA_ADR_MASKING      32'h00000100
+`define SVT_MEM_SA_BREAK_FLAG_ENA_DATA_MASKING     32'h00000200
+
+`define SVT_MEM_SA_BREAK_FLAG_WPE                  32'h00001000
+`define SVT_MEM_SA_BREAK_FLAG_RD_B4_WR             32'h00002000
+`define SVT_MEM_SA_BREAK_FLAG_WR_WR                32'h00004000
+`define SVT_MEM_SA_BREAK_FLAG_WR_SAME              32'h00008000
+`define SVT_MEM_SA_BREAK_FLAG_WR_LOSS              32'h00010000
+
+//
+// Breakpoint self disables after trigger event
+//
+`define SVT_MEM_SA_BREAK_FLAG_ONESHOT              32'h00020000
+
+//
+// Breakpoint self deletes after trigger event
+//
+`define SVT_MEM_SA_BREAK_FLAG_SELF_DELETING        32'h00040000
+
+//
+// Data compare types
+//
+`define SVT_MEM_SA_BREAK_FLAG_MASK_DATA_CMP_MASK   32'h00070000
+`define SVT_MEM_SA_BREAK_FLAG_MASK_EQ              32'h00010000
+`define SVT_MEM_SA_BREAK_FLAG_MASK_NE              32'h00020000
+`define SVT_MEM_SA_BREAK_FLAG_MASK_GT              32'h00030000
+`define SVT_MEM_SA_BREAK_FLAG_MASK_LT              32'h00040000
+`define SVT_MEM_SA_BREAK_FLAG_MASK_GTE             32'h00050000
+`define SVT_MEM_SA_BREAK_FLAG_MASK_LTE             32'h00060000
+
+// Is data within a range of values?
+`define SVT_MEM_SA_BREAK_FLAG_MASK_CMP_DATA_RANGE  32'h00070000
+
+// Address outside of range
+`define SVT_MEM_SA_BREAK_FLAG_MASK_CMP_ADR_OUT     32'h00080000
+
+//
+// break points that don't stop also don't send events to the PA
+//
+`define SVT_MEM_SA_BREAK_FLAG_NO_STOP              32'h00100000
+
+//
+// breakpoint events write to simulation log
+//
+`define SVT_MEM_SA_BREAK_FLAG_TEXT                 32'h00200000
+
+
+
+//----------------------------------------------------------------------
+// BREAKPOINT INFO - this struct contains information describing what
+// triggered a breakpoint event.
+//
+// It MUST match EXACTLY (except for data) the
+// corresponding struct in svt_mem_sa_types.h
+//----------------------------------------------------------------------
+typedef struct {
+  int unsigned                           break_type;
+  int unsigned                           id;
+  longint unsigned                       adr;
+  int unsigned                           attrs;
+  int unsigned                           status;
+} svt_mem_sa_breakinfo;
+
+`define SVT_MEM_SA_BREAK_EVENT_TYPE_WR           'h0001
+`define SVT_MEM_SA_BREAK_EVENT_TYPE_RD           'h0002 
+`define SVT_MEM_SA_BREAK_EVENT_TYPE_RD_B4_WR     'h0003
+`define SVT_MEM_SA_BREAK_EVENT_TYPE_RD_RD_NO_WR  'h0004
+`define SVT_MEM_SA_BREAK_EVENT_TYPE_WR_WR        'h0005
+`define SVT_MEM_SA_BREAK_EVENT_TYPE_WR_SAME      'h0006
+`define SVT_MEM_SA_BREAK_EVENT_TYPE_WR_LOST      'h0007
+`define SVT_MEM_SA_BREAK_EVENT_TYPE_WR_PROT      'h0008
+
+
+
+
+//----------------------------------------------------------------------
+// STATISTICS - this struct contains the information collected by 
+// instance anaylisis
+//
+// THIS STRUCT MUST EXACTLY MATCH THE svt_mem_sa_statdata STRUCTURE
+// IN THE SVT_MEM_SA_TYPES.H 
+//
+//----------------------------------------------------------------------
+typedef struct {
+  int unsigned     pagesCreated;
+  int unsigned     pagesDestroyed;
+  int unsigned     numPages;
+  int unsigned     numPageNodes;          // current page node count
+  int unsigned     addrsAllocated;        // # page locations allocated
+  int unsigned     numAddrs;              // current # page locations
+  int unsigned     numUsedAddrs;          // current # page locations with data (no uninitialized)
+  int unsigned     numHashBuckets;        // current # of hash buckets
+  int unsigned     hashBucketsInUse;      // current # of hash buckets with a page list
+  int unsigned     hashTableCacheHits;    // # times a cache page search succeeded
+  int unsigned     hashTableCacheMisses;  // # times a cache page search failed
+  int unsigned     uncachedPages;         // # times a page was cleared from a hash bucket cache
+  int unsigned     minPageSearch;         // min # of steps for a page search
+  int unsigned     maxPageSearch;         // max # of steps for a page search
+  longint unsigned avgPageSearch;         // total steps for all page searches (raw data)
+  int unsigned     numSearches;           // number of findPage calls
+  int unsigned     numSearchSteps;
+  int unsigned     numThisSearchSteps;
+  int unsigned     minPageSize;
+  longint unsigned avgPageSize;
+  int unsigned     maxPageSize;
+  int unsigned     pageMerges;
+  int unsigned     numOptimizations;
+  int unsigned     pagenodeSplits;
+  int unsigned     numWrites;
+  int unsigned     numReads;
+} svt_mem_sa_statdata;
+
+
+//----------------------------------------------------------------------
+// STATUS BIT VALUES
+//
+// MUST MATCH THE DEFINITIONS IN mem_svt_sa_inst.h and the decode
+// function mem_svt_sa_utils.cpp
+//----------------------------------------------------------------------
+`define  SVT_MEM_SA_STATUS_OK              32'h00000000
+`define  SVT_MEM_SA_STATUS_RD_RD_NO_WR     32'h00000001
+`define  SVT_MEM_SA_STATUS_WR_LOSS         32'h00000002
+`define  SVT_MEM_SA_STATUS_WR_SAME         32'h00000004
+`define  SVT_MEM_SA_STATUS_WR_WR           32'h00000008
+`define  SVT_MEM_SA_STATUS_RD_B4_WR        32'h00000010
+`define  SVT_MEM_SA_STATUS_WR_PROT         32'h00000020
+`define  SVT_MEM_SA_STATUS_ADR_ERR         32'h00000040
+`define  SVT_MEM_SA_STATUS_DATA_ERR        32'h00000080
+`define  SVT_MEM_SA_STATUS_ACCESS_LOCKED   32'h00000100
+`define  SVT_MEM_SA_STATUS_ACCESS_ERROR    32'h00000200
+`define  SVT_MEM_SA_STATUS_FORMAT_ERR      32'h00000400
+`define  SVT_MEM_SA_STATUS_PARTIAL_RD      32'h00000800
+`define  SVT_MEM_SA_STATUS_OPEN_FAILED     32'h00001000
+`define  SVT_MEM_SA_STATUS_IO_ERROR        32'h00002000
+`define  SVT_MEM_SA_STATUS_MISCOMPARE      32'h00004000
+
+`define  SVT_MEM_SA_STATUS_BREAK           32'h20000000
+
+`define  SVT_MEM_SA_STATUS_ERROR           32'h40000000
+`define  SVT_MEM_SA_STATUS_INTERNAL        32'h80000000
+  
+// write after write checks where before and after data are compared...
+
+`define SVT_MEM_SA_STATUS_WR_WR_COMPARE (`SVT_MEM_SA_STATUS_WR_LOSS|`SVT_MEM_SA_STATUS_WR_SAME)
+
+//All enables mask (all the op checking enables
+`define SVT_MEM_SA_STATUS_ENABLE_ALL (`SVT_MEM_SA_STATUS_RD_RD_NO_WR|`SVT_MEM_SA_STATUS_WR_LOSS|`SVT_MEM_SA_STATUS_WR_SAME|`SVT_MEM_SA_STATUS_WR_WR|`SVT_MEM_SA_STATUS_RD_B4_WR|`SVT_MEM_SA_STATUS_WR_PROT)
+
+
+//----------------------------------------------------------------------
+// CHECK BIT VALUES
+//
+// A subset of the STATUS bit values
+//----------------------------------------------------------------------
+`define  SVT_MEM_SA_CHECK_RD_RD_NO_WR     `SVT_MEM_SA_STATUS_RD_RD_NO_WR
+`define  SVT_MEM_SA_CHECK_WR_LOSS         `SVT_MEM_SA_STATUS_WR_LOSS
+`define  SVT_MEM_SA_CHECK_WR_SAME         `SVT_MEM_SA_STATUS_WR_SAME
+`define  SVT_MEM_SA_CHECK_WR_WR           `SVT_MEM_SA_STATUS_WR_WR
+`define  SVT_MEM_SA_CHECK_RD_B4_WR        `SVT_MEM_SA_STATUS_RD_B4_WR
+`define  SVT_MEM_SA_CHECK_WR_PROT         `SVT_MEM_SA_STATUS_WR_PROT
+`define  SVT_MEM_SA_CHECK_ADR_ERR         `SVT_MEM_SA_STATUS_ADR_ERR
+`define  SVT_MEM_SA_CHECK_DATA_ERR        `SVT_MEM_SA_STATUS_DATA_ERR
+`define  SVT_MEM_SA_CHECK_ACCESS_LOCKED   `SVT_MEM_SA_STATUS_ACCESS_LOCKED
+`define  SVT_MEM_SA_CHECK_ACCESS_ERROR    `SVT_MEM_SA_STATUS_ACCESS_ERROR
+`define  SVT_MEM_SA_CHECK_PARTIAL_RD      `SVT_MEM_SA_STATUS_PARTIAL_RD
+`define  SVT_MEM_SA_CHECK_MISCOMPARE      `SVT_MEM_SA_STATUS_MISCOMPARE
+
+`define  SVT_MEM_SA_CHECK_STD             (`SVT_MEM_SA_STATUS_RD_B4_WR | \
+                                           `SVT_MEM_SA_STATUS_PARTIAL_RD | \
+                                           `SVT_MEM_SA_STATUS_ADR_ERR | \
+                                           `SVT_MEM_SA_STATUS_DATA_ERR )
+
+`define  SVT_MEM_SA_CHECK_ALL             (`SVT_MEM_SA_STATUS_RD_RD_NO_WR | \
+                                           `SVT_MEM_SA_STATUS_WR_LOSS | \
+                                           `SVT_MEM_SA_STATUS_WR_SAME | \
+                                           `SVT_MEM_SA_STATUS_WR_WR | \
+                                           `SVT_MEM_SA_STATUS_RD_B4_WR | \
+                                           `SVT_MEM_SA_STATUS_WR_PROT | \
+                                           `SVT_MEM_SA_STATUS_ADR_ERR | \
+                                           `SVT_MEM_SA_STATUS_DATA_ERR | \
+                                           `SVT_MEM_SA_STATUS_ACCESS_LOCKED | \
+                                           `SVT_MEM_SA_STATUS_ACCESS_ERROR | \
+                                           `SVT_MEM_SA_STATUS_PARTIAL_RD | \
+                                           `SVT_MEM_SA_STATUS_MISCOMPARE )
+
+
+//----------------------------------------------------------------------
+// ATTRIBUTE BIT VALUES
+//
+// MUST match the definitions in mem_svt_sa_inst.h
+//----------------------------------------------------------------------
+`define   SVT_MEM_SA_ACCESS_STATUS_MASK     'hfffffffc
+`define   SVT_MEM_SA_ACCESS_STATUS          'h0003
+`define   SVT_MEM_SA_ACCESS_STATUS_UNINIT   `SVT_MEM_ATTRIBUTE_UNINIT
+`define   SVT_MEM_SA_ACCESS_STATUS_LAST_WR  `SVT_MEM_ATTRIBUTE_LAST_WR
+`define   SVT_MEM_SA_ACCESS_STATUS_INIT     `SVT_MEM_ATTRIBUTE_INIT
+`define   SVT_MEM_SA_ACCESS_STATUS_LAST_RD  `SVT_MEM_ATTRIBUTE_LAST_RD
+
+
+
+//----------------------------------------------------------------------
+// Message type defs
+//
+// WARNING! These must EXACTLY match the defines in svt_mem_sa_types.h
+//
+//----------------------------------------------------------------------
+`define  SVT_MEM_MSG_TYPE_FATAL   'h01
+`define  SVT_MEM_MSG_TYPE_ERROR   'h02
+`define  SVT_MEM_MSG_TYPE_WARN    'h04
+`define  SVT_MEM_MSG_TYPE_INFO    'h08
+`define  SVT_MEM_MSG_TYPE_DEBUG   'h10
+`define  SVT_MEM_MSG_TYPE_VERBOSE 'h20
+
+
+//----------------------------------------------------------------------
+// dump memory modes -- bits may be orred to create mode values
+//
+//----------------------------------------------------------------------
+
+// Write protect the memory locations in the load file
+// Uses attirbute bit write protection for the load file addresses
+// Defaults to no write protection
+`define  SVT_MEM_SA_LOAD_NO_PROTECT       'h0
+
+`define  SVT_MEM_SA_COMPARE_MODES         'h3
+`define  SVT_MEM_SA_COMPARE_SUBSET        'h0
+`define  SVT_MEM_SA_COMPARE_STRICT        'h1
+`define  SVT_MEM_SA_COMPARE_SUPERSET      'h2
+`define  SVT_MEM_SA_COMPARE_INTERSECT     'h3
+
+//
+// Types of errors returned by get_compare_error
+//
+`define  SVT_MEM_SA_COMPARE_MISCOMPARE    'h1
+`define  SVT_MEM_SA_COMPARE_NOT_IN_CORE   'h2
+`define  SVT_MEM_SA_COMPARE_NOT_IN_FILE   'h3
+`define  SVT_MEM_SA_COMPARE_NOT_IN_DEST   'h4
+`define  SVT_MEM_SA_COMPARE_NOT_IN_SRC    'h5
+
+`define  SVT_MEM_SA_COMPARE_MAX_FILE_COMPARE_ERRORS 200
+
+//----------------------------------------------------------------------
+// ACCESS operation defines
+//----------------------------------------------------------------------
+`define SVT_MEM_SA_ACCESS_READ_MODE      'h0
+`define SVT_MEM_SA_ACCESS_WRITE_MODE     'h1
+`ifdef NOT_DEFINED
+`define SVT_MEM_SA_ACCESS_LAX            'h2
+`define SVT_MEM_SA_ACCESS_STRICT         'h0
+`define SVT_MEM_SA_ACCESS_READS_OK       'h4
+`endif
+
+
+//----------------------------------------------------------------------
+// DATAARRAY type defs -- MUST CORRESPOND TO svt_mem_sa_dataarray_type
+// enumerations in svt_mem_sa_types.h
+//----------------------------------------------------------------------
+`define SVT_MEM_SA_DATAARRAY32            1
+`define SVT_MEM_SA_DATAARRAYS64           2
+`define SVT_MEM_SA_DATAARRAYPACKED        3
+`define SVT_MEM_SA_DATAARRAY8             4
+
+//----------------------------------------------------------------------
+// Deprecated defines, superceded by new SVT defines.
+//----------------------------------------------------------------------
+`define  SVT_MEM_SA_LOAD_PROTECT          `SVT_MEM_LOAD_PROTECT
+
+`define  SVT_MEM_SA_DUMP_ALL              `SVT_MEM_DUMP_ALL
+`define  SVT_MEM_SA_DUMP_NO_HEADER        `SVT_MEM_DUMP_NO_HEADER
+`define  SVT_MEM_SA_DUMP_APPEND           `SVT_MEM_DUMP_APPEND
+
+`endif // GUARD_SVT_MEM_SA_DEFS_SVI
+
+
+

@@ -50,8 +50,8 @@ class vrun(toolbox):
     def __init__(self):
 
         self.args       =self.cfg_args()
-        
         self.script_path=os.path.dirname(os.path.abspath(__file__))
+        self.script_dir=os.path.dirname(self.script_path)
         self.json_dict  =None
         self.CUR_PROJ_HOME  =os.getcwd()#current proj home
         self.simdir=self.CUR_PROJ_HOME+"/"+"simulation"+"/"+self.args.simdir if self.args.simdir else "simulation"+"/"+self.gettime()

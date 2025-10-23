@@ -1,0 +1,283 @@
+//=======================================================================
+// COPYRIGHT (C) 2016-2017 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+`ifndef GUARD_SVT_LOADER_UTIL_SVI
+`define GUARD_SVT_LOADER_UTIL_SVI
+
+`ifndef SVT_SOURCE_QUOTE_DESIGNWARE_HOME
+`ifdef DESIGNWARE_INCDIR
+`define SVT_SOURCE_QUOTE_DESIGNWARE_HOME(leafname) `"`DESIGNWARE_INCDIR/leafname`"
+`else
+`include "svt_source_defines.svi"
+`endif
+`endif
+
+`ifdef __SVDOC__
+`ifndef VIP_INTERNAL_BUILD
+`define VIP_INTERNAL_BUILD
+`endif
+`endif
+
+// -------------------------------------------------------------------------
+// Prevents the deprecated warning regarding INCA define from popping up.
+// -------------------------------------------------------------------------
+`ifdef XCELIUM
+   `undef INCA
+  `define INCA XCELIUM
+`endif
+
+// -------------------------------------------------------------------------
+// Macros used to module names to specific source files
+// -------------------------------------------------------------------------
+
+`ifdef VIP_INTERNAL_BUILD
+  `define SVT_SOURCE_MAP_SUITE_ROOT(suite,version)                  `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite)
+
+  `ifndef INCA
+    `define SVT_SOURCE_MAP_MODEL_MODULE(suite,model,version,module) `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/model/src/module.sv)
+    `define SVT_SOURCE_MAP_SUITE_MODULE(suite,version,module)       `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/src/module.sv)
+    `define SVT_SOURCE_MAP_LIB_MODULE(version,module)               `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/src/module.sv)
+
+    `define SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi)     `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/model/include/inclsvi.svi)
+    `define SVT_SOURCE_MAP_MODEL_CMD_INCLUDE_SVI(suite,model,version,inclsvi) `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/model/include/inclsvi.svi)
+    `define SVT_SOURCE_MAP_AGENT_INCLUDE_SVI(suite,model,version,inclsvi)     `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/model/include/inclsvi.svi)
+    `define SVT_SOURCE_MAP_AGENT_CMD_INCLUDE_SVI(suite,model,version,inclsvi) `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/model/include/inclsvi.svi)
+    `define SVT_SOURCE_MAP_ENV_INCLUDE_SVI(suite,model,version,inclsvi)       `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/model/include/inclsvi.svi)
+    `define SVT_SOURCE_MAP_ENV_CMD_INCLUDE_SVI(suite,model,version,inclsvi)   `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/model/include/inclsvi.svi)
+    `define SVT_SOURCE_MAP_MODEL_SRC_SVI(suite,model,version,srcsvi)          `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/model/src/srcsvi.svi)
+    `define SVT_SOURCE_MAP_SUITE_SRC_SVI(suite,version,srcsvi)                `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/src/srcsvi.svi)
+    `define SVT_SOURCE_MAP_LIB_SRC_SVI(version,srcsvi)                        `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/src/srcsvi.svi)
+    `define SVT_SOURCE_MAP_LIB_INCLUDE_SVI(version,inclsvi)                   `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/include/inclsvi.svi)
+    `define SVT_SOURCE_MAP_LIB_INCLUDE_PKG(version,incpkg)                            `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/include/incpkg.pkg)
+  `else
+    //Starting with Incisive 10.20-s016, IUS no longer displays the file line number
+    //when it generates simulator errors and warning if the SVT_SOURCE_QUOTE_DEIGNWARE_HOME
+    //macro is used. This is added as a working for that issue.
+    `define SVT_SOURCE_MAP_MODEL_MODULE(suite,model,version,module) `"module.sv`"
+    `define SVT_SOURCE_MAP_SUITE_MODULE(suite,version,module)       `"module.sv`"
+    `define SVT_SOURCE_MAP_LIB_MODULE(version,module)               `"module.sv`"
+
+    `define SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi) `"inclsvi.svi`"
+    // Within VME IUS 14.20.* cannot handle the same macro being used at multiple levels to
+    // include SVI files.  So we use agent and env versions of the model macro plus CMD
+    // versions of each of these to get past the issue and support IUS 14.20.*.
+    `define SVT_SOURCE_MAP_MODEL_CMD_INCLUDE_SVI(suite,model,version,inclsvi) `"inclsvi.svi`"
+    `define SVT_SOURCE_MAP_AGENT_INCLUDE_SVI(suite,model,version,inclsvi) `"inclsvi.svi`"
+    `define SVT_SOURCE_MAP_AGENT_CMD_INCLUDE_SVI(suite,model,version,inclsvi) `"inclsvi.svi`"
+    `define SVT_SOURCE_MAP_ENV_INCLUDE_SVI(suite,model,version,inclsvi)   `"inclsvi.svi`"
+    `define SVT_SOURCE_MAP_ENV_CMD_INCLUDE_SVI(suite,model,version,inclsvi)   `"inclsvi.svi`"
+    `define SVT_SOURCE_MAP_MODEL_SRC_SVI(suite,model,version,srcsvi)      `"srcsvi.svi`"
+    `define SVT_SOURCE_MAP_SUITE_SRC_SVI(suite,version,srcsvi)            `"srcsvi.svi`"
+    `define SVT_SOURCE_MAP_LIB_SRC_SVI(version,srcsvi)                    `"srcsvi.svi`"
+    `define SVT_SOURCE_MAP_LIB_INCLUDE_SVI(version,inclsvi)               `"inclsvi.svi`"
+    `define SVT_SOURCE_MAP_LIB_INCLUDE_PKG(version,incpkg)                        `"incpkg.pkg`"
+ `endif
+ `else // !`ifdef VIP_INTERNAL_BUILD
+  `ifdef SVT_BFM_SOURCE_VMT_SUITE_STRUCTURE
+     `ifdef SVT_ENABLE_COMMON_ENCRYPT
+       `undef SVT_ENABLE_COMMON_ENCRYPT
+     `endif
+  `endif
+  
+  `ifndef SVT_ENABLE_COMMON_ENCRYPT 
+    `ifdef INCA
+      `define SVT_INCA_ENCRYPT
+    `endif
+    `ifdef VCS
+      `define SVT_VCS_ENCRYPT
+    `endif
+    `ifdef MODELTECH
+      `define SVT_MODELTECH_ENCRYPT
+    `endif
+  `else
+     // IUS 15.*.* cannot handle the SUITE_SRC_SVI macros in combination with common encryption, 
+     // resulting in compile time error (NORECI errors occur). Hence not supporting common 
+     // encryption for IUS until this issue can be resolved.
+     `ifdef INCA
+       `define SVT_INCA_ENCRYPT
+     `else
+       `define SVT_COMMON_ENCRYPT
+    `endif
+  `endif
+  
+  `ifdef SVT_BFM_SOURCE_VMT_SUITE_STRUCTURE
+
+    `ifdef SVT_LOADER_UTIL_ENABLE_DWHOME_INCDIRS
+      //NYI
+    `else // !`ifdef SVT_LOADER_UTIL_ENABLE_DWHOME_INCDIRS  
+     `define SVT_SOURCE_MAP_SUITE_ROOT(suite,version)                      `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/version)
+     `ifdef SVT_INCA_ENCRYPT
+       // Within VME IUS 14.20.* cannot handle the same macro being used at multiple levels
+       // to include SVI files. So we use agent and env versions of the model macro plus
+       // CMD versions of each of these to get past the issue and support IUS 14.20.*.
+       // Within DW_HOME IUS 14.20.* cannot handle the [MODEL|AGENT|ENV]_INCLUDE_SVI macros
+       // being fully functional (NORECI errors occur).
+       // These issues are fixed in IUS 15.10.* and later releases. Since the fallback release 
+       // is IUS 15.10.* or a newer version, we now include these macros by default. 
+       // For safety, however, we support a DISABLE option to swap in the old "safe 
+       // with 14.20.*" implementation.
+       `ifndef SVT_LOADER_UTIL_DISABLE_MODEL_INCLUDE_SVI
+         `define SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi) `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/version/model/sverilog/include/inclsvi.svi)
+         `define SVT_SOURCE_MAP_MODEL_CMD_INCLUDE_SVI(suite,model,version,inclsvi) `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/version/model/sverilog/include/inclsvi.svi)
+         `define SVT_SOURCE_MAP_AGENT_INCLUDE_SVI(suite,model,version,inclsvi) `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/version/model/sverilog/include/inclsvi.svi)
+         `define SVT_SOURCE_MAP_AGENT_CMD_INCLUDE_SVI(suite,model,version,inclsvi) `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/version/model/sverilog/include/inclsvi.svi)
+         `define SVT_SOURCE_MAP_ENV_INCLUDE_SVI(suite,model,version,inclsvi)   `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/version/model/sverilog/include/inclsvi.svi)
+         `define SVT_SOURCE_MAP_ENV_CMD_INCLUDE_SVI(suite,model,version,inclsvi)   `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/version/model/sverilog/include/inclsvi.svi)
+       `else
+         `define SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi) `"inclsvi.svi`"
+         `define SVT_SOURCE_MAP_MODEL_CMD_INCLUDE_SVI(suite,model,version,inclsvi) `"inclsvi.svi`"
+         `define SVT_SOURCE_MAP_AGENT_INCLUDE_SVI(suite,model,version,inclsvi) `"inclsvi.svi`"
+         `define SVT_SOURCE_MAP_AGENT_CMD_INCLUDE_SVI(suite,model,version,inclsvi) `"inclsvi.svi`"
+         `define SVT_SOURCE_MAP_ENV_INCLUDE_SVI(suite,model,version,inclsvi)   `"inclsvi.svi`"
+         `define SVT_SOURCE_MAP_ENV_CMD_INCLUDE_SVI(suite,model,version,inclsvi)   `"inclsvi.svi`"
+       `endif
+      `else
+       `define SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi) `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/version/model/sverilog/include/inclsvi.svi)
+       `define SVT_SOURCE_MAP_MODEL_CMD_INCLUDE_SVI(suite,model,version,inclsvi) `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/version/model/sverilog/include/inclsvi.svi)
+       `define SVT_SOURCE_MAP_AGENT_INCLUDE_SVI(suite,model,version,inclsvi) `SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi)
+       `define SVT_SOURCE_MAP_AGENT_CMD_INCLUDE_SVI(suite,model,version,inclsvi) `SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi)
+       `define SVT_SOURCE_MAP_ENV_INCLUDE_SVI(suite,model,version,inclsvi)   `SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi)
+       `define SVT_SOURCE_MAP_ENV_CMD_INCLUDE_SVI(suite,model,version,inclsvi)   `SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi)
+      `endif // !`ifdef SVT_INCA_ENCRYPT
+    `endif // !`ifdef SVT_LOADER_UTIL_ENABLE_DWHOME_INCDIRS
+     
+   `else // !`ifdef SVT_BFM_SOURCE_VMT_SUITE_STRUCTURE
+  
+    `ifdef SVT_COMMON_ENCRYPT
+     `define SVT_VENDOR_LC com
+    `elsif VCS
+     `define SVT_VENDOR_LC vcs
+    `elsif MODELTECH
+     `define SVT_VENDOR_LC mti
+    `elsif INCA
+     `define SVT_VENDOR_LC ncv
+    `endif
+
+    `define SVT_SOURCE_MAP_SUITE_ROOT(suite,version)                      `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/suite/version)
+    `ifdef SVT_LOADER_UTIL_ENABLE_DWHOME_INCDIRS
+      `define SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi) `"../../model/sverilog/include/inclsvi.svi`"
+      `define SVT_SOURCE_MAP_MODEL_CMD_INCLUDE_SVI(suite,model,version,inclsvi) `"../../model/sverilog/include/inclsvi.svi`"
+      `define SVT_SOURCE_MAP_AGENT_INCLUDE_SVI(suite,model,version,inclsvi) `SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi)
+      `define SVT_SOURCE_MAP_AGENT_CMD_INCLUDE_SVI(suite,model,version,inclsvi) `SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi)
+      `define SVT_SOURCE_MAP_ENV_INCLUDE_SVI(suite,model,version,inclsvi)   `SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi)
+      `define SVT_SOURCE_MAP_ENV_CMD_INCLUDE_SVI(suite,model,version,inclsvi)   `SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi)
+    `else // !`ifdef SVT_LOADER_UTIL_ENABLE_DWHOME_INCDIRS
+      `ifdef SVT_INCA_ENCRYPT
+        // Within VME IUS 14.20.* cannot handle the same macro being used at multiple levels
+        // to include SVI files.  So we use agent and env versions of the model macro plus
+        // CMD versions of each of these to get past the issue and support IUS 14.20.*.
+        // Within DW_HOME IUS 14.20.* cannot handle the [MODEL|AGENT|ENV]_INCLUDE_SVI macros
+        // being fully functional (NORECI errors occur).
+        // These issues are fixed in IUS 15.10.* and later releases. Since the fallback release 
+        // is IUS 15.10.* or a newer version, we now include these macros by default. 
+        // For safety, however, we support a DISABLE option to swap in the old "safe 
+        // with 14.20.*" implementation.
+        `ifndef SVT_LOADER_UTIL_DISABLE_MODEL_INCLUDE_SVI
+          `define SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi) `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/suite/version/model/sverilog/include/inclsvi.svi)
+          `define SVT_SOURCE_MAP_MODEL_CMD_INCLUDE_SVI(suite,model,version,inclsvi) `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/suite/version/model/sverilog/include/inclsvi.svi)
+          `define SVT_SOURCE_MAP_AGENT_INCLUDE_SVI(suite,model,version,inclsvi) `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/suite/version/model/sverilog/include/inclsvi.svi)
+          `define SVT_SOURCE_MAP_AGENT_CMD_INCLUDE_SVI(suite,model,version,inclsvi) `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/suite/version/model/sverilog/include/inclsvi.svi)
+          `define SVT_SOURCE_MAP_ENV_INCLUDE_SVI(suite,model,version,inclsvi)   `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/suite/version/model/sverilog/include/inclsvi.svi)
+          `define SVT_SOURCE_MAP_ENV_CMD_INCLUDE_SVI(suite,model,version,inclsvi)   `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/suite/version/model/sverilog/include/inclsvi.svi)
+        `else
+          `define SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi) `"inclsvi.svi`"
+          `define SVT_SOURCE_MAP_MODEL_CMD_INCLUDE_SVI(suite,model,version,inclsvi) `"inclsvi.svi`"
+          `define SVT_SOURCE_MAP_AGENT_INCLUDE_SVI(suite,model,version,inclsvi) `"inclsvi.svi`"
+          `define SVT_SOURCE_MAP_AGENT_CMD_INCLUDE_SVI(suite,model,version,inclsvi) `"inclsvi.svi`"
+          `define SVT_SOURCE_MAP_ENV_INCLUDE_SVI(suite,model,version,inclsvi)   `"inclsvi.svi`"
+          `define SVT_SOURCE_MAP_ENV_CMD_INCLUDE_SVI(suite,model,version,inclsvi)   `"inclsvi.svi`"
+        `endif
+      `else // !`ifdef SVT_INCA_ENCRYPT  
+        `define SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi) `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/suite/version/model/sverilog/include/inclsvi.svi)
+        `define SVT_SOURCE_MAP_MODEL_CMD_INCLUDE_SVI(suite,model,version,inclsvi) `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/suite/version/model/sverilog/include/inclsvi.svi)
+        `define SVT_SOURCE_MAP_AGENT_INCLUDE_SVI(suite,model,version,inclsvi) `SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi)
+        `define SVT_SOURCE_MAP_AGENT_CMD_INCLUDE_SVI(suite,model,version,inclsvi) `SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi)
+        `define SVT_SOURCE_MAP_ENV_INCLUDE_SVI(suite,model,version,inclsvi)   `SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi)
+        `define SVT_SOURCE_MAP_ENV_CMD_INCLUDE_SVI(suite,model,version,inclsvi)   `SVT_SOURCE_MAP_MODEL_INCLUDE_SVI(suite,model,version,inclsvi)
+      `endif
+    `endif // !`ifdef SVT_LOADER_UTIL_ENABLE_DWHOME_INCDIRS
+   `endif // !`ifdef SVT_BFM_SOURCE_VMT_SUITE_STRUCTURE
+
+    `ifdef SVT_LOADER_UTIL_ENABLE_DWHOME_INCDIRS
+      `ifdef SVT_BFM_SOURCE_VMT_SUITE_STRUCTURE
+        `define SVT_SOURCE_MAP_MODEL_MODULE(suite,model,version,module)  `"../../model/sverilog/src/`SVT_VENDOR_LC/module.svp`"
+        `define SVT_SOURCE_MAP_SUITE_MODULE(suite,version,module)        `"../src/`SVT_VENDOR_LC/module.svp`"
+      
+        `define SVT_SOURCE_MAP_MODEL_SRC_SVI(suite,model,version,srcsvi) `"../../model/sverilog/src/`SVT_VENDOR_LC/srcsvi.svip`"
+        `define SVT_SOURCE_MAP_SUITE_SRC_SVI(suite,version,srcsvi)       `"../src/`SVT_VENDOR_LC/srcsvi.svip`"
+      `else
+        `define SVT_SOURCE_MAP_MODEL_MODULE(suite,model,version,module)  `"../../model/sverilog/src/`SVT_VENDOR_LC/module.svp`"
+        `define SVT_SOURCE_MAP_SUITE_MODULE(suite,version,module)         `"../src/`SVT_VENDOR_LC/module.svp`"
+      
+        `define SVT_SOURCE_MAP_MODEL_SRC_SVI(suite,model,version,srcsvi) `"../../model/sverilog/src/`SVT_VENDOR_LC/srcsvi.svip`"
+        `define SVT_SOURCE_MAP_SUITE_SRC_SVI(suite,version,srcsvi)       `"../src/`SVT_VENDOR_LC/srcsvi.svip`"
+      `endif
+       // Replacing the macro "version" argument with SVT_VERSION define. SVT_VERSION define is set in svt_bootloader.svi file from which this file is called.  
+      `define SVT_SOURCE_MAP_LIB_MODULE(version,module)               `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/common/`SVT_VERSION/sverilog/src/`SVT_VENDOR_LC/module.svp)      
+      `define SVT_SOURCE_MAP_LIB_SRC_SVI(version,srcsvi)              `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/common/`SVT_VERSION/sverilog/src/`SVT_VENDOR_LC/srcsvi.svip)
+      `define SVT_SOURCE_MAP_LIB_INCLUDE_SVI(version,inclsvi)         `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/common/`SVT_VERSION/sverilog/include/inclsvi.svi)
+      `define SVT_SOURCE_MAP_LIB_INCLUDE_PKG(version,incpkg)                  `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/common/`SVT_VERSION/sverilog/include/incpkg.pkg)            
+    `else // !`ifdef SVT_LOADER_UTIL_ENABLE_DWHOME_INCDIRS
+      `ifdef SVT_BFM_SOURCE_VMT_SUITE_STRUCTURE
+        `define SVT_SOURCE_MAP_MODEL_MODULE(suite,model,version,module)  `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/version/model/sverilog/src/`SVT_VENDOR_LC/module.svp)
+        `define SVT_SOURCE_MAP_SUITE_MODULE(suite,version,module)        `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/version/sverilog/src/`SVT_VENDOR_LC/module.svp)
+     
+       `define SVT_SOURCE_MAP_MODEL_SRC_SVI(suite,model,version,srcsvi) `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/version/model/sverilog/src/`SVT_VENDOR_LC/srcsvi.svip)
+       // Within DW_HOME IUS 14.20.* cannot handle the SUITE_SRC_SVI macros being fully functional (NORECI errors occur).
+       // Bypassing the use of this macro on incisiv until these issues can be resolved.
+       `ifndef SVT_LOADER_UTIL_DISABLE_SUITE_SRC_SVI
+         `define SVT_SOURCE_MAP_SUITE_SRC_SVI(suite,version,srcsvi)       `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/suite/version/sverilog/src/`SVT_VENDOR_LC/srcsvi.svip)
+       `else
+         `define SVT_SOURCE_MAP_SUITE_SRC_SVI(suite,version,srcsvi)       `"srcsvi.svi`"
+       `endif
+      `else // !`ifdef SVT_BFM_SOURCE_VMT_SUITE_STRUCTURE  
+       `define SVT_SOURCE_MAP_MODEL_MODULE(suite,model,version,module)  `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/suite/version/model/sverilog/src/`SVT_VENDOR_LC/module.svp)
+       `define SVT_SOURCE_MAP_SUITE_MODULE(suite,version,module)        `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/suite/version/sverilog/src/`SVT_VENDOR_LC/module.svp)
+     
+       `define SVT_SOURCE_MAP_MODEL_SRC_SVI(suite,model,version,srcsvi) `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/suite/version/model/sverilog/src/`SVT_VENDOR_LC/srcsvi.svip)
+        // Within DW_HOME IUS 14.20.* cannot handle the SUITE_SRC_SVI macros being fully functional (NORECI errors occur).
+        // Bypassing the use of this macro on incisiv until these issues can be resolved.
+        `ifndef SVT_LOADER_UTIL_DISABLE_SUITE_SRC_SVI
+          `define SVT_SOURCE_MAP_SUITE_SRC_SVI(suite,version,srcsvi)       `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/suite/version/sverilog/src/`SVT_VENDOR_LC/srcsvi.svip)
+        `else
+          `define SVT_SOURCE_MAP_SUITE_SRC_SVI(suite,version,srcsvi)       `"srcsvi.svi`"
+        `endif
+      `endif // !`ifdef SVT_BFM_SOURCE_VMT_SUITE_STRUCTURE
+
+      // Within DW_HOME IUS 14.20.* cannot handle the LIB_INCLUDE_SVI macros being fully functional (NORECI errors occur).
+      // Bypassing the use of this macro on incisiv until these issues can be resolved.
+      `ifndef SVT_LOADER_UTIL_LIB_INCLUDE_PKG
+        `define SVT_SOURCE_MAP_LIB_INCLUDE_PKG(version,incpkg)                   `"incpkg.pkg`"
+      `else
+        `define SVT_SOURCE_MAP_LIB_INCLUDE_PKG(version,incpkg)                  `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/common/`SVT_VERSION/sverilog/include/incpkg.pkg)
+      `endif
+      `define SVT_SOURCE_MAP_LIB_MODULE(version,module)               `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/common/version/sverilog/src/`SVT_VENDOR_LC/module.svp)
+      // Within DW_HOME IUS 14.20.* cannot handle the LIB_SRC_SVI macros being fully functional (NORECI errors occur).
+      // Bypassing the use of this macro on incisiv until these issues can be resolved.
+      `ifndef SVT_LOADER_UTIL_DISABLE_LIB_SRC_SVI
+        `define SVT_SOURCE_MAP_LIB_SRC_SVI(version,srcsvi)              `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/common/version/sverilog/src/`SVT_VENDOR_LC/srcsvi.svip)
+      `else
+        `define SVT_SOURCE_MAP_LIB_SRC_SVI(version,srcsvi)              `"srcsvi.svi`"
+      `endif
+      // Within DW_HOME IUS 14.20.* cannot handle the LIB_INCLUDE_SVI macros being fully functional (NORECI errors occur).
+      // Bypassing the use of this macro on incisiv until these issues can be resolved.
+      `ifndef SVT_LOADER_UTIL_LIB_SRC_SVI  
+        `define SVT_SOURCE_MAP_LIB_INCLUDE_SVI(version,inclsvi)         `"inclsvi.svi`" 
+      `else
+        `define SVT_SOURCE_MAP_LIB_INCLUDE_SVI(version,inclsvi)         `SVT_SOURCE_QUOTE_DESIGNWARE_HOME(vip/svt/common/version/sverilog/include/inclsvi.svi)  
+      `endif
+    `endif // !`ifdef SVT_LOADER_UTIL_ENABLE_DWHOME_INCDIRS
+  
+`endif // !`ifdef VIP_INTERNAL_BUILD    
+`endif // GUARD_SVT_LOADER_UTIL_SVI

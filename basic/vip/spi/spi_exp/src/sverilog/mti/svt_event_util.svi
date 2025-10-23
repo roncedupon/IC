@@ -1,0 +1,98 @@
+//=======================================================================
+// COPYRIGHT (C) 2010-2017 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+`ifndef GUARD_SVT_EVENT_UTIL_SVI
+`define GUARD_SVT_EVENT_UTIL_SVI
+
+//svt_vcs_lic_vip_protect
+`pragma protect begin_protected
+`pragma protect encrypt_agent = "Model Technology", encrypt_agent_info = "6.5b"
+`pragma protect data_method = "aes128-cbc"
+`pragma protect key_keyowner = "Mentor Graphics Corporation" , key_keyname = "MGC-VERIF-SIM-RSA-1" , key_method = "rsa"
+`pragma protect key_block encoding = (enctype = "base64")
+oFp9JMZ9CFwwymd3Px9Tm2hrGjQEND3/iA96T/3oHzulqwLus1reUuUZKu5h7h53
++lIYC00s+dk1lMjdQZWz3+sAfqkVGaBBjuDZz3YvNGpuwAOXne5TqwDgrM7GaYY5
+7X7HZN44aGy1TBXdq9f47KqFwlx4A5GNem8kSOkBaec=
+`pragma protect data_block encoding = ( enctype = "base64", bytes = 2641      )
+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
+dWQGWOmJFOpiyVQG7oa2VQ==
+`pragma protect end_protected
+
+`endif // GUARD_SVT_EVENT_UTIL_SVI
+`pragma protect begin_protected
+`pragma protect encrypt_agent = "Model Technology", encrypt_agent_info = "6.5b"
+`pragma protect data_method = "aes128-cbc"
+`pragma protect key_keyowner = "Mentor Graphics Corporation" , key_keyname = "MGC-VERIF-SIM-RSA-1" , key_method = "rsa"
+`pragma protect key_block encoding = (enctype = "base64")
+cvhYfNwoPR7EpG5F9R1KKK9t5Vixf33jzwYOqC9Xte6e0IzYh1MAUW0VYuNjhl+5
+aPMeLJQPalOpuWtyhNj0P/lYJPCKyaPYzqKp3Lqf3BMuX6xOitNfAHhLYqix2YSK
+3EdKCWnK69kWkqPCE1++QVBVOdCN/TF6NAtF62VI8RE=
+`pragma protect data_block encoding = ( enctype = "base64", bytes = 2724      )
+tck2QHkdugNNVnBKtUp1IKNDQcV8xPJrRWdST6ZQTLv4NlLToUenTbh/NoAlu2Ob
+eqPFH04GAZYid2qbL0KG/u5vJRC2WCDOo2sAbY7nA7WpCpkVwRj/Jn351OMPHu+W
+`pragma protect end_protected

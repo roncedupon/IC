@@ -1,0 +1,77 @@
+//=======================================================================
+// COPYRIGHT (C) 2016 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+// The entire notice above must be reproduced on all authorized copies.
+//-----------------------------------------------------------------------
+    
+`ifndef GUARD_SVT_GPIO_MP_DRIVER_SVI
+`define GUARD_SVT_GPIO_MP_DRIVER_SVI
+
+/**
+ *  Top-level GPIO  mp_driver used to connect a GPIO VIP to a DUT.
+ * 
+ *  If `SYNTHESIS is defined or is the USE_HW_XTOR parameter is TRUE,
+ *  the synthesizable xactor is instantiated in the mp_driver.
+ *  Otherwise, an instance of svt_gpio_if is instantiated.
+ */ 
+module svt_gpio_mp_driver #(USE_HW_XTOR = 0)
+(
+  input         ICLK,
+  input         ISYSRSTZ,
+  input  [63:0] IGPI,
+  output [63:0] OGPO
+);
+
+`ifdef SYNTHESIS
+if (1)
+`else
+if (USE_HW_XTOR)
+`endif
+begin: XTOR
+
+  svs_gpio_dpi_driver bfm
+  (
+    .iClk(ICLK),
+    .iSysRstz(IRSTZ),
+    .iGPi(IGPI),
+    .oGPo(OGPO)
+  );
+
+end
+
+`ifndef SYNTHESIS
+
+else begin: VIF
+  svt_gpio_if gpio_if
+  (
+    .iClk(ICLK),
+    .iSysRstz(ISYSRSTZ),
+    .iGPi(IGPI),
+    .oGPo(OGPO)
+  );
+
+  initial begin: init
+    string suffix;
+    string xmr;
+    $sformat(xmr, "%m");
+    suffix = ".VIF.init";
+    xmr = `SVT_DATA_UTIL_STRIP_SUFFIX(xmr,suffix);
+`ifdef SVT_UVM_TECHNOLOGY
+    svt_uvm_pkg::svt_config_vif_db#(virtual svt_gpio_if)::set(null, xmr, "vif", gpio_if);
+`elsif SVT_OVM_TECHNOLOGY
+    svt_ovm_pkg::svt_config_vif_db#(virtual svt_gpio_if)::set(null, "", {xmr, ".vif"}, gpio_if);
+`endif
+  end
+end
+
+`endif
+
+endmodule
+
+`endif // GUARD_SVT_GPIO_MP_DRIVER_SVI

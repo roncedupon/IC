@@ -1,0 +1,156 @@
+//=======================================================================
+// COPYRIGHT (C) 2011-2017 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+`ifndef GUARD_SVT_SOURCE_UVM_SVI
+`define GUARD_SVT_SOURCE_UVM_SVI
+
+// Enable UVM specific features in the SVT library
+`ifndef SVT_UVM_TECHNOLOGY
+`define SVT_UVM_TECHNOLOGY
+`endif
+
+`ifndef GUARD_SVT_LOADER_UTIL_SVI
+`include "svt_loader_util.svi"
+`endif
+
+// Disable VCAP for NCSIM
+`ifdef INCA
+`define SVT_EXCLUDE_VCAP
+`endif
+
+// For backwards compatibility make sure we force svt_mem_system_backdoor factory support
+`ifndef SVT_MEM_SYSTEM_BACKDOOR_ENABLE_FACTORY
+`define SVT_MEM_SYSTEM_BACKDOOR_ENABLE_FACTORY
+`endif
+
+// The internal source rules, etc., should be loaded next.
+`include `SVT_SOURCE_MAP_LIB_SRC_SVI(R-2020.12,svt_source_internal)
+
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_types)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_globals)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_toggle_cov_bit)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_pattern_data)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_compound_pattern_data)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_pa_object_data)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_debug_vip_descriptor)
+
+// NOTE: All files with UVM/OVM/VMM dependent choices should come AFTER
+// svt_debug_opts
+`include `SVT_SOURCE_MAP_LIB_SRC_SVI(R-2020.12,svt_uvm_util)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_debug_opts)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_data_writer)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_data_fsdb_writer)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_vip_writer_fsdb_util)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_vip_writer)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_toggle_cov_bit_vector)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_sequence_item_base)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_object_pattern_data)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_pattern_data_carrier)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_debug_opts_carrier)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_report_catcher)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_randomize_assistant)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_comparer)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_packer)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_fuzzy_real_comparer)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_sequence_item_base_iter)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_event_controller)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_controlled_event)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_data_converter)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_xml_writer)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_configuration)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_exception)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_exception_list)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_err_check_stats_cov)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_err_check_stats)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_err_check)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_logger)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_event_pool)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_sequence_item_base_queue_iter)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_pattern)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_pattern_sequence)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_status)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_timer)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_triggered_timer)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_phase)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_sequence_item)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_accept_begin_end_filter_port)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_sequence_item_iter)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_sequence_item_report)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_8b10b_data)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_uvm_cmd_assistant)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_config_db)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_dynamic_report_object)
+
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_debug_opts_intercept)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_debug_opts_port)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_debug_opts_imp_port)
+
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_component)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_driver)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_reactive_driver)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_monitor)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_sequencer)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_reactive_sequencer)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_agent)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_env)
+`ifndef UVM_FIX_REV_EA
+ // The following files rely on UVM 1.0 features
+ `include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_sequence)
+ `include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_dispatch_sequence)
+ `include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_reactive_sequence)
+ `include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_sequence_library)
+`endif
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_callback)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_dispatch)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_data_stream)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_downstream_imp)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_factory)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_factory_1arg)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_factory_2arg)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_factory_3arg)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_fsm)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_err_catcher)
+
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_mem_address_mapper)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_mem_address_mapper_stack)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_mem_backdoor_base)
+
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_mem_word)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_mem)
+
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_mem_system_backdoor)
+
+// GPIO
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_gpio_xtor_configuration)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_gpio_configuration)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_gpio_transaction)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_gpio_base_sequence)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_gpio_sequencer)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_gpio_driver_callback)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_gpio_driver_cb_exec)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_gpio_driver_common)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_gpio_driver)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_gpio_agent)
+
+// VCAP
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_fifo_rate_control_configuration)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_fifo_rate_control)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_traffic_profile_transaction)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_traffic_profile_event)
+`ifndef SVT_EXCLUDE_VCAP
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_vcap)
+`include `SVT_SOURCE_MAP_LIB_MODULE(R-2020.12,svt_traffic_arbiter)
+`endif
+    
+`endif // GUARD_SVT_SOURCE_UVM_SVI

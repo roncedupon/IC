@@ -1,0 +1,655 @@
+
+`ifndef GUARD_SVT_SPI_COMMON_DEFINES_SVI
+`define GUARD_SVT_SPI_COMMON_DEFINES_SVI
+
+`define svt_spi_print_int(STRING,VALUE,BIT_COUNT,RADIX)\
+  `ifdef SVT_UVM_TECHNOLOGY \
+  `ifndef SVT_UVM_1800_2_2017_OR_HIGHER \
+    printer.print_int(STRING,VALUE,BIT_COUNT,UVM_``RADIX);\
+  `else \
+    printer.print_field_int(STRING,VALUE,BIT_COUNT,UVM_``RADIX);\
+  `endif \
+  `elsif SVT_OVM_TECHNOLOGY \
+    printer.print_field(STRING,VALUE,BIT_COUNT,OVM_``RADIX);\
+  `else \
+   begin \
+    string radix; \
+    radix = "RADIX"; \
+    if(radix == "HEX") \
+     `print_int(STRING,VALUE,BIT_COUNT,0h) \
+    else \
+     `print_int(STRING,VALUE,BIT_COUNT,0d) \
+   end \
+  `endif
+
+`define svt_spi_print_real(STRING,VALUE)\
+  `ifdef SVT_OVM_TECHNOLOGY \
+    printer.print_field_real(STRING,VALUE); \
+  `elsif SVT_UVM_TECHNOLOGY \
+    printer.print_real(STRING,VALUE); \
+  `endif
+
+/** Indicates SPI Standard mode feature */
+`define SVT_SPI_STD 0
+
+/** @cond PRIVATE */
+/** Indicates EMPSPI mode */
+`define SVT_SPI_EMPSPI 1
+/** @endcond */
+
+/** Indicates SPI Multilane generic mode */
+`define SVT_SPI_MULTILANE 2
+
+/** Indicates Part specific SPI Flash Mode */
+`define SVT_SPI_FLASH 3
+
+/** Indicates SAFE SPI Mode */
+`define SVT_SPI_SAFE 4
+
+/** Indicates SPI Phase and polarity. Here CPHA = 0 , CPOL = 0 */
+`define SVT_SPI_MODE_0 0
+
+/** Indicates SPI Phase and polarity. Here CPHA = 1 , CPOL = 0 */
+`define SVT_SPI_MODE_1 1
+
+/** Indicates SPI Phase and polarity. Here CPHA = 0 , CPOL = 1 */
+`define SVT_SPI_MODE_2 2
+
+/** Indicates SPI Phase and polarity. Here CPHA = 1 , CPOL = 1 */
+`define SVT_SPI_MODE_3 3
+
+/** Indicates SPI LITTLE Endian Format */
+`define SVT_SPI_LITTLE_ENDIAN 0
+
+/** Indicates SPI BIG ENDIAN Format */
+`define SVT_SPI_BIG_ENDIAN 1
+
+/** Indicates SPI 8 BIT WORD Format */
+`define SVT_SPI_8B_WORD 0
+
+/** Indicates SPI 16 BIT WORD Format */
+`define SVT_SPI_16B_WORD 1
+
+/** Indicates SPI 32 BIT WORD Format */
+`define SVT_SPI_32B_WORD 2
+
+/** @cond PRIVATE */
+/** Indicates EMPSPI Negotiation Request */
+`define SVT_SPI_NEGOTIATION_REQUEST 0
+
+/** Indicates EMPSPI Negotiation Response */
+`define SVT_SPI_NEGOTIATION_RESPONSE 1
+
+/** Indicates EMPSPI Sleep Threshold Request */
+`define SVT_SPI_SLEEP_THRESHOLD_REQUEST 2
+
+/** Indicates EMPSPI Sleep Threshold Response */
+`define SVT_SPI_SLEEP_THRESHOLD_RESPONSE 3
+/** @endcond */
+
+/** Indicates Bluetooth HCI Read Messages */
+`define SVT_SPI_BLUETOOTH_HCI_READ 4
+
+/** Indicates Bluetooth HCI Write Messages */
+`define SVT_SPI_BLUETOOTH_HCI_WRITE 5
+
+/** Indicates SPI feature by Motorola. */
+`define SVT_SPI_FEATURE_OFFICIAL 0
+
+/** Indicates SSP feature by Texas. */
+`define SVT_SPI_FEATURE_SSP 1
+
+/** Indicates MicroWire feature by National Semiconductors. */
+`define SVT_SPI_FEATURE_UWIRE 2
+
+/** Indicates Instruction Frame width */
+`ifndef SVT_SPI_MAX_INST_FRAME_WIDTH
+`define SVT_SPI_MAX_INST_FRAME_WIDTH 32
+`endif
+
+/** Indicates Address Frame width */
+`ifndef SVT_SPI_MAX_ADDR_FRAME_WIDTH
+`define SVT_SPI_MAX_ADDR_FRAME_WIDTH 32
+`endif
+
+/** Indicates Wrap mode bit width */
+`ifndef SVT_SPI_MAX_WRAP_CFG_BIT_WIDTH
+`define SVT_SPI_MAX_WRAP_CFG_BIT_WIDTH 8 
+`endif
+
+/** Indicates Plane select bit width */
+`ifndef SVT_SPI_MAX_PLANE_SELECT_CFG_BIT_WIDTH
+`define SVT_SPI_MAX_PLANE_SELECT_CFG_BIT_WIDTH 32 
+`endif
+
+/** Indicates ECC bit width */
+`ifndef SVT_SPI_MAX_ECC_BIT_WIDTH
+`define SVT_SPI_MAX_ECC_BIT_WIDTH 32 
+`endif
+
+/** Indicates Attribute bit width */
+`ifndef SVT_SPI_ATTRIBUTE_BIT_WIDTH
+`define SVT_SPI_ATTRIBUTE_BIT_WIDTH 8 
+`endif
+
+/** Indicates Maximum Partial Program Partitions Count */
+`ifndef SVT_SPI_MAX_PAGE_PROGRAM_PARTITION
+`define SVT_SPI_MAX_PAGE_PROGRAM_PARTITION 32
+`endif
+
+/** Indicates Maximum SAFE SPI frame Width */
+`ifndef SVT_SPI_SAFE_MAX_FRAME_WIDTH
+`define SVT_SPI_SAFE_MAX_FRAME_WIDTH 32
+`endif
+
+/** Indicates Maximum Number of SCLK PAUSE that can be inserted in a transaction */
+`ifndef SVT_SPI_MAX_PAUSE_COUNT
+`define SVT_SPI_MAX_PAUSE_COUNT 5
+`endif
+
+/** Indicates Maximum Duration for a SCLK PAUSE */
+`ifndef SVT_SPI_MAX_PAUSE_DURATION
+`define SVT_SPI_MAX_PAUSE_DURATION 10
+`endif
+
+/** Operation Mode set to Run Mode */
+`define SVT_SPI_RUN_MODE  0
+
+/** Operation Mode set to Wait Mode */
+`define SVT_SPI_WAIT_MODE 1      
+
+/** Operation Mode set to Stop Mode */
+`define SVT_SPI_STOP_MODE 2 
+
+/** Maximum value of leading time before the first sclk edge */ 
+`define SVT_SPI_MAX_LEADING_TIME 10
+
+/** Maximum value of trailing time after the last sclk edge */ 
+`define SVT_SPI_MAX_TRAILING_TIME 10
+
+/**  IDLE Time in between two Transfer */
+`define SVT_SPI_MAX_IDLE_TIME_BETWEEN_TRANSFER 5
+
+/** 
+ * Maximum length of Data Array to be transfered.<br/>
+ * This works as upper limit when randomizing the length of Data phase for <br/>
+ * SPI_STD,SPI_MULTILANE and SPI FLASH commands(except program and OTP) 
+ */
+`ifndef SVT_SPI_MAX_DATA_TRANSFER
+`define SVT_SPI_MAX_DATA_TRANSFER 10
+`endif
+
+/**
+ * Maximum OTP bytes transferred during READ_OTP_ARRAY/PROGRAM_OTP_ARRAY <br/>
+ * This macro is used by SPI Flash Controller/Master agent as upper limit <br/>
+ * when randomizing the length of Data phase.
+ */
+`ifndef SVT_SPI_MAX_OTP_BYTES_TRANSFER
+`define SVT_SPI_MAX_OTP_BYTES_TRANSFER 100
+`endif
+
+/**
+ * Maximum bytes transferred during PROGRAM command <br/>
+ * This macro is used by SPI Flash Controller/Master agent as upper limit <br/>
+ * when randomizing the length of Data phase.
+ */
+`ifndef SVT_SPI_MAX_PROGRAM_BYTES_TRANSFER
+`define SVT_SPI_MAX_PROGRAM_BYTES_TRANSFER 256
+`endif
+
+/**
+ * Maximum bytes transferred during TUNING DATA PATTERN command <br/>
+ * This macro is used by SPI Flash Controller/Master agent as upper limit <br/>
+ * when randomizing the length of Data phase for thus command.
+ */
+`ifndef SVT_SPI_MAX_TUNING_DATA_PATTERN_BYTES_TRANSFER
+`define SVT_SPI_MAX_TUNING_DATA_PATTERN_BYTES_TRANSFER 64
+`endif
+
+/** Maximum clock delay for transmit_delay*/
+`define SVT_SPI_MAX_TRANSMIT_DELAY 10 
+
+/** Maximum Time from master assert ss_n to slave assert SPI_INT (DirectWrite) */
+`define SVT_SPI_MAX_ASSERT_SPI_SSN_TO_SPI_INT_TIME 5
+
+/** Maximum Time from slave assert SPI_INT to master assert ss_n (DirectRead) */
+`define SVT_SPI_MAX_ASSERT_SPI_INT_TO_SPI_SSN 5
+
+`define SVT_SPI_MIN_TIMEOUT_THRESHOLD 10 
+`define SVT_SPI_MAX_TIMEOUT_THRESHOLD 100
+
+/** Time from last sample on MOSI/MISO to slave deassert SPI_INT */ 
+`define SVT_SPI_MAX_LAST_SAMPLE_TO_SPI_INT_DEASSERT 5
+
+/** @cond PRIVATE */
+/** Maximum Internal Time taken by Slave Agent to assert the SPI_INT on SPI Bus for DIRECT READ */
+`define SVT_SPI_MAX_EMPSPI_SPI_INT_TRANSMIT_DELAY 8 
+
+`define SVT_SPI_EMPSPI_DEASSERT_SPI_INT_IN_MIDDLE_OF_BYTE_TRANSFER 0
+`define SVT_SPI_EMPSPI_INVALID_HEADER_BYTE 1
+`define SVT_SPI_EMPSPI_INVALID_PAYLOAD_LENGTH 2
+`define SVT_SPI_EMPSPI_NO_OP_ERROR 3
+
+`define SVT_SPI_FLASH_DEASSERT_SSN_IN_MIDDLE_OF_TRANSMISSION 0
+`define SVT_SPI_FLASH_SCLK_DUTY_CYCLE 1
+`define SVT_SPI_FLASH_NO_OP_ERROR 2
+/** @endcond */
+
+`define SVT_SPI_ACTIVE_LOW_POLARITY  0
+`define SVT_SPI_ACTIVE_HIGH_POLARITY 1
+
+/** SPI Flash Macronix Register Address */
+`define SVT_SPI_MACRONIX_STATUS_REGISTER_ADDRESS               32'h00
+`define SVT_SPI_MACRONIX_CONFIG_REGISTER_ADDRESS               32'h01
+
+`define SVT_SPI_NAND_PROTECTION_REGISTER_ADDRESS               8'hA0 
+`define SVT_SPI_NAND_FEATURE_REGISTER_ADDRESS                  8'hB0 
+`define SVT_SPI_NAND_STATUS_REGISTER_ADDRESS                   8'hC0 
+`define SVT_SPI_NAND_FEATURE_REGISTER_2_ADDRESS                8'hD0 
+`define SVT_SPI_NAND_STATUS_REGISTER_2_ADDRESS                 8'hF0 
+
+/** SPI Flash Micron Configuration Register Address */
+`define SVT_SPI_MICRON_WRAP_CONFIG_ADDR                        8'h07 
+`define SVT_SPI_MICRON_XIP_CONFIG_ADDR                         8'h06 
+`define SVT_SPI_MICRON_BYTE_CONFIG_ADDR                        8'h05  
+`define SVT_SPI_MICRON_OUTPUT_DRIVE_STRENGTH_CONFIG_ADDR       8'h03  
+`define SVT_SPI_MICRON_DUMMY_CYCLE_CONFIG_ADDR                 8'h01  
+`define SVT_SPI_MICRON_IO_MODE_CONFIG_ADDR                     8'h00  
+
+/** SPI Flash APMEMORY Mode Register Address */
+`define SVT_SPI_MODE_REGISTER_0_ADDRESS                        8'h00
+`define SVT_SPI_MODE_REGISTER_1_ADDRESS                        8'h01
+`define SVT_SPI_MODE_REGISTER_2_ADDRESS                        8'h02
+`define SVT_SPI_MODE_REGISTER_3_ADDRESS                        8'h03
+`define SVT_SPI_MODE_REGISTER_4_ADDRESS                        8'h04
+`define SVT_SPI_MODE_REGISTER_6_ADDRESS                        8'h06
+`define SVT_SPI_MODE_REGISTER_8_ADDRESS                        8'h08
+
+/** SPI Flash Spansion Configuration Register Address */
+`define SVT_SPI_SPANSION_SR1_NV_ADDR       32'h00
+`define SVT_SPI_SPANSION_CR1_NV_ADDR       32'h02
+`define SVT_SPI_SPANSION_CR2_NV_ADDR       32'h03
+`define SVT_SPI_SPANSION_CR3_NV_ADDR       32'h04
+`define SVT_SPI_SPANSION_CR4_NV_ADDR       32'h05 
+`define SVT_SPI_SPANSION_NVDLR_ADDR        32'h10
+`define SVT_SPI_SPANSION_PASS_1_ADDR       32'h20
+`define SVT_SPI_SPANSION_PASS_2_ADDR       32'h21
+`define SVT_SPI_SPANSION_PASS_3_ADDR       32'h22
+`define SVT_SPI_SPANSION_PASS_4_ADDR       32'h23
+`define SVT_SPI_SPANSION_PASS_5_ADDR       32'h24
+`define SVT_SPI_SPANSION_PASS_6_ADDR       32'h25
+`define SVT_SPI_SPANSION_PASS_7_ADDR       32'h26
+`define SVT_SPI_SPANSION_PASS_8_ADDR       32'h27
+`define SVT_SPI_SPANSION_ASPR_1_ADDR       32'h30
+`define SVT_SPI_SPANSION_ASPR_2_ADDR       32'h31
+`define SVT_SPI_SPANSION_SR1_V_ADDR        32'h80_0000
+`define SVT_SPI_SPANSION_SR2_V_ADDR        32'h80_0001
+`define SVT_SPI_SPANSION_CR1_V_ADDR        32'h80_0002
+`define SVT_SPI_SPANSION_CR2_V_ADDR        32'h80_0003
+`define SVT_SPI_SPANSION_CR3_V_ADDR        32'h80_0004
+`define SVT_SPI_SPANSION_CR4_V_ADDR        32'h80_0005 
+`define SVT_SPI_SPANSION_VDLR_ADDR         32'h80_0010
+`define SVT_SPI_SPANSION_PPBL_ADDR         32'h80_0040
+
+/** SPI Flash Adesto Configuration Register Address */
+`define SVT_SPI_ADESTO_SR1_V_ADDR          32'h01
+`define SVT_SPI_ADESTO_SR2_V_ADDR          32'h02
+`define SVT_SPI_ADESTO_SR3_V_ADDR          32'h03
+`define SVT_SPI_ADESTO_ODS_NV_ADDR         32'h81
+`define SVT_SPI_ADESTO_RWW_NV_ADDR         32'h82
+
+/** SPI Flash Command 1 byte Opcodes */
+`define SVT_SPI_RESET_ENABLE                                   8'h66
+`define SVT_SPI_RESET_MEMORY                                   8'h99
+`define SVT_SPI_READ_ID_1                                      8'h9E
+`define SVT_SPI_READ_ID_2                                      8'h9F
+`define SVT_SPI_MULTIPLE_IO_READ_ID                            8'hAF
+`define SVT_SPI_READ_SERIAL_FLASH_DISCOVERY_PARAMETER          8'h5A
+`define SVT_SPI_READ                                           8'h03
+`define SVT_SPI_FAST_READ                                      8'h0B
+`define SVT_SPI_DUAL_OUTPUT_FAST_READ                          8'h3B
+`define SVT_SPI_DUAL_IO_FAST_READ                              8'hBB
+`define SVT_SPI_QUAD_OUTPUT_FAST_READ                          8'h6B
+`define SVT_SPI_QUAD_IO_FAST_READ                              8'hEB
+`define SVT_SPI_QUAD_IO_FAST_READ_START_FROM_TOP_SEGMENT       8'hEA
+`define SVT_SPI_OCTAL_OUTPUT_FAST_READ                         8'h8B
+`define SVT_SPI_OCTAL_IO_FAST_READ                             8'hCB
+`define SVT_SPI_OCTAL_IO_FAST_READ_DTR                         8'hEE
+`define SVT_SPI_FAST_READ_DTR                                  8'h0D
+`define SVT_SPI_DUAL_OUTPUT_FAST_READ_DTR                      8'h3D
+`define SVT_SPI_DUAL_IO_FAST_READ_DTR                          8'hBD
+`define SVT_SPI_QUAD_OUTPUT_FAST_READ_DTR                      8'h6D
+`define SVT_SPI_QUAD_IO_FAST_READ_DTR                          8'hED
+`define SVT_SPI_OCTAL_OUTPUT_FAST_READ_DTR                     8'h9D
+`define SVT_SPI_FOUR_BYTE_READ                                 8'h13
+`define SVT_SPI_FOUR_BYTE_FAST_READ                            8'h0C
+`define SVT_SPI_FOUR_BYTE_DUAL_OUTPUT_FAST_READ                8'h3C
+`define SVT_SPI_FOUR_BYTE_DUAL_IO_FAST_READ                    8'hBC
+`define SVT_SPI_FOUR_BYTE_QUAD_OUTPUT_FAST_READ                8'h6C
+`define SVT_SPI_FOUR_BYTE_QUAD_IO_FAST_READ                    8'hEC
+`define SVT_SPI_FOUR_BYTE_OCTAL_OUTPUT_FAST_READ               8'h7C
+`define SVT_SPI_FOUR_BYTE_OCTAL_IO_FAST_READ                   8'hCC
+`define SVT_SPI_WRITE_ENABLE                                   8'h06
+`define SVT_SPI_WRITE_ENABLE_FOR_VOLATILE_STATUS_REGISTER      8'h50
+`define SVT_SPI_WRITE_DISABLE                                  8'h04
+`define SVT_SPI_READ_STATUS_REGISTER                           8'h05
+`define SVT_SPI_WRITE_STATUS_REGISTER                          8'h01
+`define SVT_SPI_WRITE_STATUS_REGISTER_2                        8'h31
+`define SVT_SPI_WRITE_STATUS_REGISTER_3                        8'h11
+`define SVT_SPI_WRITE_CONFIGURATION_REGISTER_2                 8'h72                                         
+`define SVT_SPI_READ_LOCK_REGISTER                             8'hE8
+`define SVT_SPI_WRITE_LOCK_REGISTER                            8'hE5
+`define SVT_SPI_READ_FLAG_STATUS_REGISTER                      8'h70
+`define SVT_SPI_CLEAR_FLAG_STATUS_REGISTER                     8'h50
+`define SVT_SPI_READ_NONVOLATILE_CONFIGURATION_REGISTER        8'hB5
+`define SVT_SPI_WRITE_NONVOLATILE_CONFIGURATION_REGISTER       8'hB1
+`define SVT_SPI_READ_VOLATILE_CONFIGURATION_REGISTER           8'h85
+`define SVT_SPI_WRITE_VOLATILE_CONFIGURATION_REGISTER          8'h81
+`define SVT_SPI_READ_ENHANCED_VOLATILE_CONFIGURATION_REGISTER  8'h65
+`define SVT_SPI_WRITE_ENHANCED_VOLATILE_CONFIGURATION_REGISTER 8'h61
+`define SVT_SPI_READ_EXTENDED_ADDRESS_REGISTER                 8'hC8
+`define SVT_SPI_WRITE_EXTENDED_ADDRESS_REGISTER                8'hC5
+`define SVT_SPI_READ_GENERAL_PURPOSE_READ_REGISTER             8'h96
+`define SVT_SPI_READ_PROTECTION_MANAGEMENT_REGISTER            8'h2B
+`define SVT_SPI_WRITE_PROTECTION_MANAGEMENT_REGISTER           8'h68
+`define SVT_SPI_TUNING_DATA_PATTERN_OPERATION                  8'h48
+`define SVT_SPI_PAGE_PROGRAM                                   8'h02
+`define SVT_SPI_DUAL_INPUT_FAST_PROGRAM                        8'hA2
+`define SVT_SPI_EXTENDED_DUAL_INPUT_FAST_PROGRAM               8'hD2
+`define SVT_SPI_QUAD_INPUT_FAST_PROGRAM                        8'h32
+`define SVT_SPI_EXTENDED_QUAD_INPUT_FAST_PROGRAM               8'h12
+`define SVT_SPI_OCTAL_INPUT_FAST_PROGRAM                       8'h82
+`define SVT_SPI_EXTENDED_OCTAL_INPUT_FAST_PROGRAM              8'hC2
+`define SVT_SPI_ERASE_4KB                                      8'h20
+`define SVT_SPI_ERASE_4KB_2                                    8'hD7
+`define SVT_SPI_ERASE_64KB                                     8'hD8
+`define SVT_SPI_DIE_ERASE                                      8'hC4
+`define SVT_SPI_PROGRAM_ERASE_RESUME                           8'h7A
+`define SVT_SPI_PROGRAM_ERASE_RESUME_2                         8'h30   
+`define SVT_SPI_PROGRAM_ERASE_RESUME_3                         8'h8A   
+`define SVT_SPI_PROGRAM_ERASE_SUSPEND                          8'h75
+`define SVT_SPI_PROGRAM_ERASE_SUSPEND_2                        8'hB0   
+`define SVT_SPI_PROGRAM_ERASE_SUSPEND_3                        8'h85   
+`define SVT_SPI_READ_OTP_ARRAY                                 8'h4B
+`define SVT_SPI_PROGRAM_OTP_ARRAY                              8'h42
+`define SVT_SPI_ENTER_FOUR_BYTE_ADDRESS_MODE                   8'hB7
+`define SVT_SPI_EXIT_FOUR_BYTE_ADDRESS_MODE                    8'hE9
+`define SVT_SPI_FOUR_BYTE_PAGE_PROGRAM                         8'h12
+`define SVT_SPI_FOUR_BYTE_QUAD_INPUT_FAST_PROGRAM              8'h34
+`define SVT_SPI_FOUR_BYTE_EXTENDED_QUAD_INPUT_FAST_PROGRAM     8'h3E
+`define SVT_SPI_FOUR_BYTE_OCTAL_INPUT_FAST_PROGRAM             8'h84
+`define SVT_SPI_FOUR_BYTE_EXTENDED_OCTAL_INPUT_FAST_PROGRAM    8'h8E
+`define SVT_SPI_FOUR_BYTE_ERASE_4KB                            8'h21
+`define SVT_SPI_FOUR_BYTE_ERASE_32KB                           8'h5C
+`define SVT_SPI_FOUR_BYTE_ERASE_64KB                           8'hDC
+`define SVT_SPI_FOUR_BYTE_ERASE_128KB                          8'hDC
+`define SVT_SPI_FOUR_BYTE_ERASE_256KB                          8'hDC
+`define SVT_SPI_BULK_ERASE                                     8'hC7
+`define SVT_SPI_ENTER_QUAD                                     8'h35
+`define SVT_SPI_EXIT_QUAD                                      8'hF5
+`define SVT_SPI_ENTER_DEEP_POWER_DOWN                          8'hB9
+`define SVT_SPI_RELEASE_FROM_DEEP_POWER_DOWN                   8'hAB
+`define SVT_SPI_ERASE_32KB                                     8'h52
+`define SVT_SPI_XIP_MODE                                       8'h00 //Need to change if such command opcode exist.
+`define SVT_SPI_CHIP_ERASE_1                                   8'hC7
+`define SVT_SPI_CHIP_ERASE_2                                   8'h60
+`define SVT_SPI_READ_MANUFACTURER_DEVICE_ID                    8'h90
+`define SVT_SPI_READ_MANUFACTURER_DEVICE_ID_DUAL_IO            8'h92
+`define SVT_SPI_READ_MANUFACTURER_DEVICE_ID_QUAD_IO            8'h94
+`define SVT_SPI_READ_JEDEC_ID                                  8'h9F
+`define SVT_SPI_READ_JEDEC_ID_QPI_MODE                         8'hAF
+`define SVT_SPI_READ_UNIQUE_ID                                 8'h4B
+`define SVT_SPI_PROTOCOL_RESET                                 8'hFF
+`define SVT_SPI_STORE                                          8'h3C
+`define SVT_SPI_RECALL                                         8'h60
+`define SVT_SPI_AUTOSTORE_ENABLE                               8'h59
+`define SVT_SPI_AUTOSTORE_DISABLE                              8'h19
+`define SVT_SPI_READ_ELECTRONIC_MANUFACTURER_SIGNATURE         8'h90
+`define SVT_SPI_READ_ID                                        8'h9F
+`define SVT_SPI_READ_QUAD_ID                                   8'hAF
+`define SVT_SPI_READ_ELECTRONIC_SIGNATURE                      8'hAB
+`define SVT_SPI_READ_STATUS_REGISTER_2                         8'h07
+`define SVT_SPI_READ_STATUS_REGISTER_3                         8'h15
+`define SVT_SPI_READ_CONFIGURATION_REGISTER                    8'h35
+`define SVT_SPI_READ_CONFIGURATION_REGISTER_2                  8'h71
+`define SVT_SPI_WRITE_REGISTER                                 8'h01
+`define SVT_SPI_WRITE_CONFIGURATION_REGISTER                   8'h87
+`define SVT_SPI_CLEAR_STATUS_REGISTER                          8'h30
+`define SVT_SPI_CLEAR_STATUS_REGISTER_ALTERNATE                8'h82
+`define SVT_SPI_READ_AUTOBOOT_REGISTER                         8'h14
+`define SVT_SPI_WRITE_AUTOBOOT_REGISTER                        8'h15
+`define SVT_SPI_READ_BANK_REGISTER                             8'h16
+`define SVT_SPI_WRITE_BANK_REGISTER                            8'h17
+`define SVT_SPI_ACCESS_BANK_REGISTER                           8'hB9
+`define SVT_SPI_READ_DATA_LEARNING_PATTERN                     8'h41
+`define SVT_SPI_PROGRAM_NV_DATA_LEARNING_REGISTER              8'h43
+`define SVT_SPI_WRITE_VOLATILE_DATA_LEARNING_REGISTER          8'h4A
+`define SVT_SPI_READ_DYB                                       8'hE0
+`define SVT_SPI_WRITE_DYB                                      8'hE1
+`define SVT_SPI_READ_PPB                                       8'hE2
+`define SVT_SPI_PROGRAM_PPB                                    8'hE3
+`define SVT_SPI_ERASE_PPB                                      8'hE4
+`define SVT_SPI_READ_ASP                                       8'h2B
+`define SVT_SPI_PROGRAM_ASP                                    8'h2F
+`define SVT_SPI_READ_PPB_LOCK_BIT                              8'hA7
+`define SVT_SPI_WRITE_PPB_LOCK_BIT                             8'hA6
+`define SVT_SPI_READ_PASSWORD                                  8'hE7
+`define SVT_SPI_PROGRAM_PASSWORD                               8'hE8
+`define SVT_SPI_UNLOCK_PASSWORD                                8'hE9
+`define SVT_SPI_FOUR_BYTE_FAST_READ_DTR                        8'h0E
+`define SVT_SPI_FOUR_BYTE_DUAL_IO_FAST_READ_DTR                8'hBE
+`define SVT_SPI_FOUR_BYTE_QUAD_IO_FAST_READ_DTR                8'hEE
+`define SVT_SPI_FOUR_BYTE_OCTAL_IO_FAST_READ_DTR               8'hFD
+`define SVT_SPI_QUAD_INPUT_FAST_PROGRAM_2                      8'h38
+`define SVT_SPI_FOUR_BYTE_QUAD_INPUT_FAST_PROGRAM_2            8'h3E
+`define SVT_SPI_PROGRAM_SUSPEND                                8'h85
+`define SVT_SPI_PROGRAM_RESUME                                 8'h8A
+`define SVT_SPI_BULK_ERASE_2                                   8'h60
+`define SVT_SPI_ERASE_256KB                                    8'hD8
+`define SVT_SPI_ERASE_SUSPEND                                  8'h75
+`define SVT_SPI_ERASE_RESUME                                   8'h7A
+`define SVT_SPI_SOFTWARE_RESET                                 8'hF0
+`define SVT_SPI_GET_FEATURES                                   8'h0F  
+`define SVT_SPI_SET_FEATURES                                   8'h1F 
+`define SVT_SPI_PAGE_READ                                      8'h13
+`define SVT_SPI_READ_PAGE_CACHE_RANDOM                         8'h30
+`define SVT_SPI_READ_PAGE_CACHE_LAST                           8'h3F
+`define SVT_SPI_READ_CACHE_1                                   8'h03
+`define SVT_SPI_READ_CACHE_2                                   8'h0B
+`define SVT_SPI_READ_CACHE_X2                                  8'h3B           
+`define SVT_SPI_READ_CACHE_X4                                  8'h6B           
+`define SVT_SPI_READ_CACHE_DUAL_IO                             8'hBB    
+`define SVT_SPI_READ_CACHE_QUAD_IO                             8'hEB   
+`define SVT_SPI_PROGRAM_LOAD                                   8'h02
+`define SVT_SPI_PROGRAM_LOAD_X4                                8'h32     
+`define SVT_SPI_PROGRAM_EXECUTE                                8'h10     
+`define SVT_SPI_PROGRAM_LOAD_RANDOM_DATA                       8'h84                  
+`define SVT_SPI_PROGRAM_LOAD_RANDOM_DATA_X4_1                  8'hC4               
+`define SVT_SPI_PROGRAM_LOAD_RANDOM_DATA_X4_2                  8'h34               
+`define SVT_SPI_PROGRAM_LOAD_RANDOM_DATA_QUAD_IO               8'h72                     
+`define SVT_SPI_PERMANENT_BLOCK_LOCK_PROTECTION                8'h2C                     
+`define SVT_SPI_ERASE_128KB                                    8'hD8 
+`define SVT_SPI_QUAD_IO_WORD_READ                              8'hE7
+`define SVT_SPI_QUAD_IO_OCTAL_WORD_READ                        8'hE3
+`define SVT_SPI_SET_BURST_WITH_WRAP                            8'h77
+`define SVT_SPI_READ_MANUFACTURER_DEVICE_ID_QUAD_IO            8'h94
+`define SVT_SPI_ERASE_SECURITY_REGISTERS                       8'h44
+`define SVT_SPI_PROGRAM_SECURITY_REGISTERS                     8'h42
+`define SVT_SPI_READ_SECURITY_REGISTERS                        8'h48
+`define SVT_SPI_RESET                                          8'hFF
+`define SVT_SPI_NOP                                            8'h00  
+`define SVT_SPI_ENTER_SECURED_OTP_REGION                       8'hB1   
+`define SVT_SPI_EXIT_SECURED_OTP_REGION                        8'hC1   
+`define SVT_SPI_ENTER_PARALLEL_MODE                            8'h55   
+`define SVT_SPI_EXIT_PARALLEL_MODE                             8'h45   
+`define SVT_SPI_SET_BURST_LENGTH                               8'hC0   
+`define SVT_SPI_RDSCUR                                         8'h2B   
+`define SVT_SPI_WRSCUR                                         8'h2F   
+`define SVT_SPI_ENABLE_DPI                                     8'h37
+`define SVT_SPI_ENABLE_QPI                                     8'h38
+`define SVT_SPI_DISABLE_QPI                                    8'hFF
+`define SVT_SPI_SET_READ_PARAMETERS                            8'hC0
+`define SVT_SPI_SET_READ_PARAMETERS_2                          8'h63
+`define SVT_SPI_BURST_READ_WITH_WRAP                           8'h0C
+`define SVT_SPI_READ_SECTOR_PROTECTION                         8'h2D
+`define SVT_SPI_PROGRAM_SECTOR_PROTECTION                      8'h2C
+`define SVT_SPI_READ_NONVOLATILE_LOCK_BITS                     8'hE2
+`define SVT_SPI_WRITE_NONVOLATILE_LOCK_BITS                    8'hE3
+`define SVT_SPI_ERASE_NONVOLATILE_LOCK_BITS                    8'hE4
+`define SVT_SPI_READ_GLOBAL_FREEZE_BIT                         8'hA7
+`define SVT_SPI_WRITE_GLOBAL_FREEZE_BIT                        8'hA6
+`define SVT_SPI_FOUR_BYTE_READ_LOCK_REGISTER                   8'hE0
+`define SVT_SPI_FOUR_BYTE_WRITE_LOCK_REGISTER                  8'hE1
+`define SVT_SPI_READ_FAST_BOOT_REGISTER                        8'h16
+`define SVT_SPI_WRITE_FAST_BOOT_REGISTER                       8'h17
+`define SVT_SPI_ERASE_FAST_BOOT_REGISTER                       8'h18
+`define SVT_SPI_WRITE_LOCK_DOWN_REGISTER                       8'h2C
+`define SVT_SPI_READ_LOCK_DOWN_REGISTER                        8'h2D
+`define SVT_SPI_WRITE_SPB_REGISTER                             8'hE3
+`define SVT_SPI_ERASE_SPB_REGISTER                             8'hE4
+`define SVT_SPI_READ_SPB_REGISTER                              8'hE2
+`define SVT_SPI_WRITE_DPB_REGISTER                             8'hE1
+`define SVT_SPI_READ_DPB_REGISTER                              8'hE0
+`define SVT_SPI_WRITE_PROTECT_SELECT                           8'h68
+`define SVT_SPI_GANG_BLOCK_LOCK                                8'h7E
+`define SVT_SPI_GANG_BLOCK_UNLOCK                              8'h98
+`define SVT_SPI_READ_BLOCK_LOCK                                8'h3D
+`define SVT_SPI_INDIVIDUAL_BLOCK_LOCK                          8'h36   
+`define SVT_SPI_INDIVIDUAL_BLOCK_UNLOCK                        8'h39   
+`define SVT_SPI_INTERFACE_ACTIVATION                           8'h9B
+`define SVT_SPI_READ_IDENTIFICATION_PAGE                       8'h83
+`define SVT_SPI_WRITE_IDENTIFICATION_PAGE                      8'h82
+`define SVT_SPI_READ_FUNCTION_REGISTER                         8'h48
+`define SVT_SPI_WRITE_FUNCTION_REGISTER                        8'h42
+`define SVT_SPI_ENTER_QPI_MODE                                 8'h35
+`define SVT_SPI_EXIT_QPI_MODE                                  8'hF5
+`define SVT_SPI_SET_READ_PARAMETERS_NV                         8'h65
+`define SVT_SPI_SET_EXTENDED_READ_PARAMETERS                   8'h83
+`define SVT_SPI_SET_EXTENDED_READ_PARAMETERS_NV                8'h85
+`define SVT_SPI_READ_READ_PARAMETERS                           8'h61
+`define SVT_SPI_READ_EXTENDED_READ_PARAMETERS                  8'h81
+`define SVT_SPI_READ_INFORMATION_ROW                           8'h68
+`define SVT_SPI_PROGRAM_INFORMATION_ROW                        8'h62
+`define SVT_SPI_ERASE_INFORMATION_ROW                          8'h64
+`define SVT_SPI_SECTOR_UNLOCK                                  8'h26
+`define SVT_SPI_SECTOR_LOCK                                    8'h24
+`define SVT_SPI_FOUR_BYTE_SECTOR_UNLOCK                        8'h25
+`define SVT_SPI_CLEAR_EXTENDED_READ_REGISTER                   8'h82
+`define SVT_SPI_READ_BANK_REGISTER_2                           8'hC8
+`define SVT_SPI_WRITE_BANK_REGISTER_2                          8'hC5
+`define SVT_SPI_WRITE_BANK_REGISTER_NV                         8'h18
+`define SVT_SPI_THREE_BYTE_READ_DYB                            8'hFA
+`define SVT_SPI_THREE_BYTE_WRITE_DYB                           8'hFB
+`define SVT_SPI_THREE_BYTE_READ_PPB                            8'hFC
+`define SVT_SPI_THREE_BYTE_PROGRAM_PPB                         8'hFD
+`define SVT_SPI_SET_FREEZE_BIT                                 8'h91
+`define SVT_SPI_ENTER_DUAL                                     8'h3B
+`define SVT_SPI_EXIT_DUAL_AND_QUAD                             8'hFF
+`define SVT_SPI_READ_MODE_REGISTER                             8'h05
+`define SVT_SPI_WRITE_MODE_REGISTER                            8'h01
+`define SVT_SPI_SYNC_READ                                      8'h00
+`define SVT_SPI_SYNC_WRITE                                     8'h80
+`define SVT_SPI_LINEAR_BURST_SYNC_READ                         8'h20
+`define SVT_SPI_LINEAR_BURST_SYNC_WRITE                        8'hA0
+`define SVT_SPI_GLOBAL_RESET                                   8'hFF
+`define SVT_SPI_CONTINUOUS_PROGRAM_MODE                        8'hAD
+`define SVT_SPI_ENABLE_SO_TO_OUTPUT                            8'h70
+`define SVT_SPI_DISABLE_SO_TO_OUTPUT                           8'h80
+`define SVT_SPI_HIGH_PERFORMANCE_ENABLE_MODE                   8'hA3
+`define SVT_SPI_CLEAR_SECURITY_REGISTER                        8'h30
+`define SVT_SPI_READ_ELECTRONIC_MANUFACTURER_SIGNATURE_DUAL_IO 8'hEF
+`define SVT_SPI_READ_ELECTRONIC_MANUFACTURER_SIGNATURE_QUAD_IO 8'hDF
+`define SVT_SPI_READ_ELECTRONIC_MANUFACTURER_SIGNATURE_QUAD_IO_DTR 8'hCF
+`define SVT_SPI_READ_ANY_REGISTER                              8'h65
+`define SVT_SPI_WRITE_ANY_REGISTER                             8'h71
+`define SVT_SPI_EVALUATE_ERASE_STATUS                          8'hD0
+`define SVT_SPI_READ_ECC_REGISTER                              8'h19
+`define SVT_SPI_FOUR_BYTE_READ_ECC_REGISTER                    8'h18
+`define SVT_SPI_WRITE                                          8'h02
+`define SVT_SPI_QUAD_WRITE                                     8'h38
+`define SVT_SPI_WRAPPED_READ                                   8'h8B
+`define SVT_SPI_WRAPPED_WRITE                                  8'h82
+`define SVT_SPI_BURST_LENGTH_TOGGLE                            8'hC0
+`define SVT_SPI_ENTER_HALF_SLEEP                               8'hC0
+`define SVT_SPI_ENTER_OCTAL_MODE                               8'hE8
+`define SVT_SPI_ENTER_DEFAULT_PROTOCOL_MODE                    8'hFF
+`define SVT_SPI_BUFFER_READ                                    8'hD4
+`define SVT_SPI_BUFFER_WRITE                                   8'h84
+`define SVT_SPI_BUFFER_TO_MEMORY_WRITE                         8'h88
+`define SVT_SPI_PROTECT_SECTOR                                 8'h36
+`define SVT_SPI_UNPROTECT_SECTOR                               8'h39
+`define SVT_SPI_READ_SECTOR_PROTECTION_REGISTER                8'h3C
+`define SVT_SPI_READ_OTP_SECURITY_REGISTER                     8'h77
+`define SVT_SPI_PROGRAM_OTP_SECURITY_REGISTER                  8'h9B
+`define SVT_SPI_ACTIVE_STATUS_INTERRUPT                        8'h25
+`define SVT_SPI_ENTER_ULTRA_DEEP_POWER_DOWN                    8'h79
+`define SVT_SPI_ECHO                                           8'hAA
+`define SVT_SPI_ECHO_WITH_INVERSION                            8'hA5
+`define SVT_SPI_TAMPER_DETECT                                  8'h17
+`define SVT_SPI_EXIT_TAMPER_DETECT                             8'h07
+`define SVT_SPI_READ_SERIAL_NUMBER_REGISTER                    8'hC3
+`define SVT_SPI_FAST_READ_SERIAL_NUMBER_REGISTER               8'hC9
+`define SVT_SPI_WRITE_SERIAL_NUMBER_REGISTER                   8'hC2
+`define SVT_SPI_ENTER_HIBERNATE_MODE                           8'hBA
+`define SVT_SPI_FAST_READ_ID                                   8'h9E
+
+/** SPI Flash Protocol mode */
+`define SVT_SPI_EXTENDED_SPI 3'b011
+`define SVT_DUAL_IO          3'b010   
+`define SVT_QUAD_IO          3'b001  
+`define SVT_OCTAL_IO_STR     3'b100  
+`define SVT_OCTAL_IO_DTR     3'b101  
+`define SVT_UNDEF_PROTOCOL   3'b000  
+
+/** SPI Flash MODE Register Operation */
+`define SVT_SPI_BYTE_OPERATION       2'b00
+`define SVT_SPI_PAGE_OPERATION       2'b10   
+`define SVT_SPI_SEQUENTIAL_OPERATION 2'b01  
+
+/** Maximum duration for HOLD assert */
+`define SVT_SPI_MAX_HOLD_ASSERT_DELAY 10
+
+/** Indicates Non-Sequential transfer state for MicroWire. */
+`define SVT_SPI_UWIRE_NON_SEQUENTIAL 0
+
+/** Indicates Sequential transfer state for MicroWire. */
+`define SVT_SPI_UWIRE_SEQUENTIAL 1
+
+/** Indicates Maximum duration taken by Slave agent to assert Ready during Handshaking in Micowire mode. */
+`define SVT_SPI_UWIRE_MAX_BUSY_TIMER 100
+
+/** 
+ * Maximum length of Control Word Array to be transfered.<br/>
+ * This works as upper limit when randomizing the length of Control Word for SPI feature set to Microwire mode. 
+ */
+`ifndef SVT_SPI_UWIRE_MAX_CONTROL_WORD_TRANSFER
+`define SVT_SPI_UWIRE_MAX_CONTROL_WORD_TRANSFER 50
+`endif
+
+/**
+ * Indicates the maximum width of register field for xSPI generic registers
+ */
+`ifndef SVT_SPI_xSPI_MAX_REG_FIELD_WIDTH
+`define SVT_SPI_xSPI_MAX_REG_FIELD_WIDTH 32
+`endif
+
+`protect
+/** @cond PRIVATE */
+
+/**
+ * Macro used to by `SVT_DATA_TYPE::allocate_pattern methods to add new BITVEC pattern_data instances to the allocated pattern.
+ * Argument: elemname Provides the name for the pattern_data. The type of this argument is STRING.
+ * Argument: methodsflag Indicates which common data class operations are to be supported automatically for this field.
+ * Argument: fldwidth Indicates field bit width used by common data class operations.
+ * The below SVT Macro has been enhanced to receive string(elemname) and field width(fldwidth) as an argument.
+ */
+`ifndef SVT_SPI_DATA_UTIL_ALLOC_PATTERN_ELEM_BITVEC 
+`define SVT_SPI_DATA_UTIL_ALLOC_PATTERN_ELEM_BITVEC(elemname,methodsflag,fldwidth) \
+  add_pattern_prop(allocate_pattern, allocate_pattern_owner, elemname, svt_pattern_data::BITVEC, methodsflag, fldwidth);
+`endif
+
+/** @endcond */
+`endprotect
+
+`endif // GUARD_SVT_SPI_COMMON_DEFINES_SVI
+

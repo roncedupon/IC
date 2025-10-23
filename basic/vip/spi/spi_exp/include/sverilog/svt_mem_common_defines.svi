@@ -1,0 +1,59 @@
+//=======================================================================
+// COPYRIGHT (C) 2012-2015 SYNOPSYS INC.
+// This software and the associated documentation are confidential and
+// proprietary to Synopsys, Inc. Your use or disclosure of this software
+// is subject to the terms and conditions of a written license agreement
+// between you, or your company, and Synopsys, Inc. In the event of
+// publications, the following notice is applicable:
+//
+// ALL RIGHTS RESERVED
+//
+// The entire notice above must be reproduced on all authorized copies.
+//
+//-----------------------------------------------------------------------
+
+// DESCRIPTION: These are symbolic constant definitions used by SVT MEM VIP.
+
+`ifndef GUARD_SVT_MEM_COMMON_DEFINES_SVI
+`define GUARD_SVT_MEM_COMMON_DEFINES_SVI
+
+// ****************************************************************************
+//   svt_mem macros
+// ****************************************************************************
+`ifdef SVT_MEM_INCLUDE_USER_DEFINES
+`include "svt_mem_user_defines.inc"
+`endif 
+
+// SVT_MEM_MAX_ADDR_WIDTH, SVT_MEM_MAX_DATA_WIDTH, and SVT_MEM_MAX_ATTR_WIDTH are
+// defined in ../../svt/include/svt_common_defines.svi
+`ifndef SVT_MEM_MAX_DATA_SIZE
+ `define SVT_MEM_MAX_DATA_SIZE 1024
+`endif
+`ifndef SVT_MEM_MAX_DATA_SIZE
+ `define SVT_MEM_MAX_DATA_SIZE 1024
+`endif
+`ifndef SVT_MEM_MAX_PATTERN_WIDTH
+ `define SVT_MEM_MAX_PATTERN_WIDTH 8
+`endif
+
+// Defines for the various Memory Actions
+`define SVT_MEM_ACTION_TYPE_COUNT           10
+
+`define SVT_MEM_ACTION_READ                  0
+`define SVT_MEM_ACTION_WRITE                 1
+`define SVT_MEM_ACTION_WRITE_MASKED          2
+`define SVT_MEM_ACTION_PEEK                  3
+`define SVT_MEM_ACTION_POKE                  4
+`define SVT_MEM_ACTION_UNLOAD                5
+`define SVT_MEM_ACTION_UNLOAD_ALL            6
+`define SVT_MEM_ACTION_LOAD_FILE             7
+`define SVT_MEM_ACTION_FILE_DATA             8
+`define SVT_MEM_ACTION_CREATE_PATTERN        9
+
+// Needed for svt_mem_core and svt_mem_backdoor classes with corresponding enum
+`define SVT_MEM_CORE_READ  1'b0
+`define SVT_MEM_CORE_WRITE 1'b1
+`define SVT_MEM_CORE_2STATE  1'b0
+`define SVT_MEM_CORE_4STATE  1'b1
+
+`endif //  `ifndef GUARD_SVT_MEM_COMMON_DEFINES_SVI

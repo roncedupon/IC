@@ -1,0 +1,22 @@
+// DESCRIPTION: This file serves the bootstrap strategy,which is to load  
+// the minimal set of svt defines and macros to get the SVT process off the
+// ground. .
+
+`ifndef GUARD_SVT_BOOTLOADER_SVI
+`define GUARD_SVT_BOOTLOADER_SVI
+
+`ifndef SVT_VERSION
+`define SVT_VERSION R-2020.12
+`endif
+
+`ifdef DESIGNWARE_INCDIR
+  `define SVT_LOADER_FILE `"`DESIGNWARE_INCDIR/vip/svt/common/`SVT_VERSION/sverilog/include/svt_loader_util.svi`"
+  `include `SVT_LOADER_FILE
+`else
+  `include "svt_source_defines.svi"
+  `include "svt_loader_util.svi"
+`endif
+
+`include `SVT_SOURCE_MAP_LIB_INCLUDE_SVI(R-2020.12,svt_defines)
+
+`endif
