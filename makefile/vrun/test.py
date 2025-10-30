@@ -1,38 +1,29 @@
-def modify_uvm_code_in_file(input_file, new_name):
-    # Read the original code from the input file
-    with open(input_file, 'r') as file:
-        code = file.read()
+def colored(t, c):
+    return f"\033[{c}m{t}\033[0m"
 
-    # Replace the <CLASS_NAME> placeholder with the new name
-    modified_code = code.replace('<CLASS_NAME>', new_name)
+def print_summary(all_pass_num, all_fail_num, all_warning_num, all_timeout_num):
+    all_tc = all_pass_num + all_fail_num + all_warning_num + all_timeout_num
+    if all_tc == 0: all_tc = 1
 
-    # Write the modified code to a new file
-    output_file = f"modified_{input_file}"
-    with open(output_file, 'w') as file:
-        file.write(modified_code)
+    pass_pct    = round(all_pass_num / all_tc * 100, 1)
+    fail_pct    = round(all_fail_num / all_tc * 100, 1)
+    warn_pct    = round(all_warning_num / all_tc * 100, 1)
+    timeout_pct = round(all_timeout_num / all_tc * 100, 1)
 
-    print(f"Modified code saved to {output_file}")
+    bar = "=" * 95
+    mid_bar = "-" * 95
 
-# Example usage
-input_file = 'virtual_sequencer.sv'  # Your original file
-new_name = 'my_virtual_sequencer'  # New class name
-modify_uvm_code_in_file(input_file, new_name)
+    print(bar)
+    print(colored("                     ✅ Regression Summary Report ✅".center(95), "1;37"))
+    print(mid_bar)
+    print(f"{colored('PASS    :', '1;32')} {str(all_pass_num).rjust(5)}  ({pass_pct:>5} %)")
+    print(f"{colored('FAIL    :', '1;31')} {str(all_fail_num).rjust(5)}  ({fail_pct:>5} %)")
+    print(f"{colored('WARNING :', '1;33')} {str(all_warning_num).rjust(5)}  ({warn_pct:>5} %)")
+    print(f"{colored('TIMEOUT :', '1;36')} {str(all_timeout_num).rjust(5)}  ({timeout_pct:>5} %)")
+    print(mid_bar)
+    print(f"Total Testcases : {all_tc}".center(95))
+    print(bar)
 
-#%%
-A=[[1,2,3],[4,5,6]]
-B=[[7,7,7],[7,7,7]]
-for i in range(2):
-    print(A[i]+B[i])
 
-# #%%
-# A=1
-# B=A
-# A=2
-# print(B)
-#%%
-import numpy as np
-A_array=np.zeros((10,10))
-B_array=np.zeros((10,10))
-B_array=A_array
-A_array+=1
-print(A_array,B_array)
+# Test Example
+print_summary(120, 15, 3, 2)

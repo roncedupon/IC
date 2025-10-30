@@ -274,6 +274,6 @@ if __name__ == "__main__":
 # for index,item in enumerate(a):
 #     print(index,item)
 
-#%%
-A="00011"
-print(int(A,base=2))
+# #%%
+# A="00011"
+# print(int(A,base=2))

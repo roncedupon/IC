@@ -1,0 +1,3 @@
+cd /mnt/disk_0/IC/makefile/vrun/ && pyinstaller --add-data "./template/*:template" \
+--add-data "./makefile:." \
+--name=vrun --onefile ./vrun.py 

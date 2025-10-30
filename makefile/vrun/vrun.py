@@ -26,7 +26,7 @@ class vrun(toolbox):
         parser.add_argument("-uvm",action="store_true",help="UVM_FLAG",default=True)
         parser.add_argument("-verdi",action="store_true",help="UVM_FLAG",default=False)
         parser.add_argument("-dir",type=str,help="dir for verdi or something",default=None)
-
+        parser.add_argument('-check',action="store_true",help="check regr result",default=False)        
         parser.add_argument("-f",metavar="",help="filelist",default=None)
         
         
@@ -54,8 +54,10 @@ class vrun(toolbox):
         self.script_dir=os.path.dirname(self.script_path)
         self.json_dict  =None
         self.CUR_PROJ_HOME  =os.getcwd()#current proj home
+        self.report_name   = "regresssion_report.txt"
         self.simdir=self.CUR_PROJ_HOME+"/"+"simulation"+"/"+self.args.simdir if self.args.simdir else "simulation"+"/"+self.gettime()
-        
+        if self.args.check:
+            self.simdir=os.path.abspath(self.args.simdir)
         self.JSON_TESTNAME_KEY="testname"
 
         self.MAKEFILE_PATH=os.path.dirname(__file__)+"/makefile"
@@ -76,7 +78,7 @@ class vrun(toolbox):
             VERDI_CMD=f"cd {self.args.dir}  && verdi -dbdir ./simv.daidir/ -ssf {fsdb_file_name} -rcFile {self.script_path}/novas.rc"
         print(VERDI_CMD)
         os.system(VERDI_CMD+" &")
-        exit()
+        sys.exit()
     def launch_verdi(self):
         
         os.chdir(self.args.dir)
@@ -250,6 +252,9 @@ class vrun(toolbox):
             self.single_run(simdir,tc_dict)
     
     def vrun_main(self):
+        if self.args.check:
+            self.result_check()
+            sys.exit()
         self.env_init()
         if self.args.c:
             if self.args.top !="":
@@ -265,11 +270,11 @@ class vrun(toolbox):
             print(f"gcc {file_path} -o {PROGRAM_NAME} && ./{PROGRAM_NAME}")
             os.system(f"gcc {file_path} -o {PROGRAM_NAME} && ./{PROGRAM_NAME}")
             print(os.getcwd())
-            exit()
+            sys.exit()
         
         if self.args.verdi:
             self.launch_verdi()
-            exit()
+            sys.exit()
         if self.args.gen:
             
             if "component" in self.args.extra:
@@ -284,7 +289,7 @@ class vrun(toolbox):
                 else:
                     print("WARNING:NO OBJECT NAME PROVIDED!!!")
                     print(self.args.extra)
-            exit()
+            sys.exit()
         self.mkdir(self.simdir)
         if not self.args.only_run:
             self.simdir=self.CUR_PROJ_HOME+"/"+"simulation"+"/"+self.args.simdir if self.args.simdir else "simulation"+"/"+self.gettime()
@@ -330,6 +335,118 @@ class vrun(toolbox):
             file.write(modified_code)
 
         print(f"Modified code saved to {new_name}")
+    def print_tc_status(self,fname,num,name,seed,status,common,**args):
+        # post_check_result=args["post_check_result"]
+        status_f = open(fname,"a+")
+        status_f.write("-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n")
+        print('|{:<10}{:<90}|sim_{:<14}|post_{:<14}' .format(num,name,status,"Null"), file = status_f)
+        status_f.close()
+    def result_check(self):
+        #  if self.is_error_waves_dumped:
+        #     return
+        if os.path.exists(self.report_name) :
+            os.remove(self.report_name)
+            #  self.gen_rl_report(self.report_name) 
+        
+        os.chdir(self.simdir) 
+
+        file_dir_post = []#all testcase dir
+        sub_file_pre = []#all sub-dir of current sim dir
+        sub_file_post = []
+        error_tc_list=[]
+
+        all_tc_num = 0
+        all_pass_num = 0
+        all_fail_num = 0
+        all_unknown_num = 0
+        all_warning_fail_num=0
+        tc_num = 0         
+        file_dir_pre = os.listdir(self.simdir)
+        # print(file_dir_pre)
+        for i in range(0, len(file_dir_pre)) :
+            if "test" in file_dir_pre[i] and os.path.isdir(self.simdir+"/"+file_dir_pre[i]):
+                if self.args.check:
+                    if "reRun"not in file_dir_pre[i] :
+                        file_dir_post.append(file_dir_pre[i])                        
+                else:
+                    if "reRun"not in file_dir_pre[i] :
+                        file_dir_post.append(file_dir_pre[i])  #TODO                   
+        error_count=0
+        fatal_count=0                        
+        for i in range(0, len(file_dir_post)) :
+            # post_check_result=self.post_check(file_dir_post[i],False)
+            # os.chdir("../")
+            #   print(os.getcwd())
+            os.chdir(file_dir_post[i])
+            
+            sub_file_pre = []
+            sub_file_post = []
+            file_dir_pre = os.listdir("./")
+            tc_res = "timeout"
+            for j in range(0, len(file_dir_pre)) :
+                if "test" in file_dir_pre[j] :
+                        sub_file_pre.append(file_dir_pre[j])
+            for j in range(0, len(sub_file_pre)) :
+                if "log" in sub_file_pre[j] and "swp" not in sub_file_pre[j] :
+                        sub_file_post.append(sub_file_pre[j])
+            for j in range(0, len(sub_file_post)) :              
+                tc_num = tc_num + 1
+                tmp = open("./" + sub_file_post[j],"r", encoding='utf-8', errors='ignore')
+                # tmp_list = tmp.readlines()
+                ALL_LINES=tmp.read() 
+            #    for line in tmp_list:
+                error_match=re.search(r"UVM_ERROR :.*?(\d+)",ALL_LINES)
+                fatal_match=re.search(r"UVM_FATAL :.*?(\d+)",ALL_LINES)
+                if re.findall(r"\$finish at simulation time",ALL_LINES):
+                        if error_match:
+                            error_count=int(error_match.group(1))
+                        if fatal_match:
+                            fatal_count=int(fatal_match.group(1))                        
+                        if error_count==0 and fatal_count==0:
+                            tc_res = "passed"
+                            # break
+                        elif fatal_count==0:# re.findall("SIMULATION RESULT: FAILED",line) or re.findall("$finish called from file",line) \
+                            tc_res = "failed"      
+                else:
+                    with open("/scratch2/BW01_Proj_Digital/yao.dai/bw01d_top/soc_verif/testlist/bw01d/soc_run_cim.lst","r")as regr_lst:
+                        lines=regr_lst.readlines()
+                        for i,line in enumerate(lines):
+                            if line.startswith("@") and sub_file_post[j].split("test")[0]+"test" in lines[i+1]:
+                                print(lines[i].strip())
+                                print(lines[i+1])
+                                i+=1
+                if tc_res == "passed":
+                    all_pass_num += 1
+                    #    error_tc_list.append(file_dir_post[i])
+                elif tc_res == "failed":
+                    all_fail_num += 1
+                    #    error_tc_list.append(file_dir_post[i])
+                elif tc_res == "warning_failed":
+                    all_warning_fail_num += 1
+                elif tc_res == "timeout":
+                    all_unknown_num += 1
+                    # print(f"@seed=[501:501]\n{case_name}_@seed +dir=bw01d/flash_die/cpu +UVM_TESTNAME={case_name}")
+                    #    error_tc_list.append(file_dir_post[i])
+                self.print_tc_status(self.simdir+"/"+self.report_name, tc_num, './' + file_dir_post[i].split('.')[0] + '/' + sub_file_post[j], "", tc_res, "")
+            os.chdir(self.simdir)
+        all_tc_num = all_pass_num + all_fail_num + all_unknown_num+all_warning_fail_num
+
+        all_pass_precent    =round(all_pass_num/all_tc_num*100,2) if all_tc_num!=0 else 0
+        all_failed_precent  =round(all_fail_num/all_tc_num*100,2) if all_tc_num!=0 else 0
+        all_unknown_precent =round(all_unknown_num/all_tc_num*100,2) if all_tc_num!=0 else 0        
+        all_warning_precent =round(all_warning_fail_num/all_tc_num*100,2) if all_tc_num!=0 else 0
+        lineformat="{:<40} {:>10}"
+        print("=====================================================================================================================\n")    
+        print("                                The results of regression test are as follows.\n")
+        print("---------------------------------------------------------------------------------------------------------------------")
+        print(f"\033[1;32m\t\t                    passed testcase num({all_pass_precent}%): " +str(all_pass_num)    + "\033[0m"                          )
+        print(f"\033[1;33m\t\t                    failed testcase num({all_failed_precent}%): " + str(all_fail_num)    +  "\033[0m"                         )
+        print(f"\033[1;31m\t\t                   warning testcase num({all_warning_precent}%): " + str(all_warning_fail_num)    +  "\033[0m"                 )
+        print(f"\033[1;36m\t\t                   timeout testcase num({all_unknown_precent}%): " + str(all_unknown_num) + "\033[0m"                          )
+        print("                                     all testcase num : " + str(all_tc_num)                                           )
+        print("---------------------------------------------------------------------------------------------------------------------")
+        print("=====================================================================================================================")
+
 if __name__ =="__main__":
     
     toolbox_inst=vrun()
@@ -342,3 +459,5 @@ if __name__ =="__main__":
     # print(toolbox_inst.is_single_path(toolbox_inst.args.i))
     # print(toolbox_inst.get_file_or_path(toolbox_inst.args.i))
     # print(toolbox_inst.generate_filelist("../"),(".sv",".v"))
+
+#%%
