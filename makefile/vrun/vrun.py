@@ -54,10 +54,11 @@ class vrun(toolbox):
         self.script_dir=os.path.dirname(self.script_path)
         self.json_dict  =None
         self.CUR_PROJ_HOME  =os.getcwd()#current proj home
-        self.report_name   = "regresssion_report.txt"
+        
         self.simdir=self.CUR_PROJ_HOME+"/"+"simulation"+"/"+self.args.simdir if self.args.simdir else "simulation"+"/"+self.gettime()
         if self.args.check:
             self.simdir=os.path.abspath(self.args.simdir)
+        self.report_name   = os.path.basename(self.simdir)            
         self.JSON_TESTNAME_KEY="testname"
 
         self.MAKEFILE_PATH=os.path.dirname(__file__)+"/makefile"
@@ -407,14 +408,14 @@ class vrun(toolbox):
                             # break
                         elif fatal_count==0:# re.findall("SIMULATION RESULT: FAILED",line) or re.findall("$finish called from file",line) \
                             tc_res = "failed"      
-                else:
-                    with open("/scratch2/BW01_Proj_Digital/yao.dai/bw01d_top/soc_verif/testlist/bw01d/soc_run_cim.lst","r")as regr_lst:
-                        lines=regr_lst.readlines()
-                        for i,line in enumerate(lines):
-                            if line.startswith("@") and sub_file_post[j].split("test")[0]+"test" in lines[i+1]:
-                                print(lines[i].strip())
-                                print(lines[i+1])
-                                i+=1
+                # else:
+                #     with open("/scratch2/BW01_Proj_Digital/yao.dai/bw01d_top/soc_verif/testlist/bw01d/soc_run_cim.lst","r")as regr_lst:
+                #         lines=regr_lst.readlines()
+                #         for i,line in enumerate(lines):
+                #             if line.startswith("@") and sub_file_post[j].split("test")[0]+"test" in lines[i+1]:
+                #                 print(lines[i].strip())
+                #                 print(lines[i+1])
+                #                 i+=1
                 if tc_res == "passed":
                     all_pass_num += 1
                     #    error_tc_list.append(file_dir_post[i])
