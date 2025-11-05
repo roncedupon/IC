@@ -28,6 +28,7 @@ class vrun(toolbox):
         parser.add_argument("-dir",type=str,help="dir for verdi or something",default=None)
         parser.add_argument('-check',action="store_true",help="check regr result",default=False)        
         parser.add_argument("-f",metavar="",help="filelist",default=None)
+        parser.add_argument('-check_env',action="store_true",help="check env(vip included)",default=False)        
         
         
         parser.add_argument("-gen",action="store_true",help="generate uvm file flag",default=False)
@@ -50,8 +51,8 @@ class vrun(toolbox):
     def __init__(self):
 
         self.args       =self.cfg_args()
-        self.script_path=os.path.dirname(os.path.abspath(__file__))
-        self.script_dir=os.path.dirname(self.script_path)
+        self.script_path=os.path.abspath(__file__)
+        self.script_dir=os.path.dirname(os.path.abspath(__file__))
         self.json_dict  =None
         self.CUR_PROJ_HOME  =os.getcwd()#current proj home
         
@@ -112,7 +113,7 @@ class vrun(toolbox):
             with open("compile_opts","r")as f:
                 for line in f.readlines():
                     self.VCS_COMPILE_OPTIONS+=line
-            
+        self.mkdir(self.simdir)
     def generate_filelist(self,path,match=(".sv",".v")):
         #recursily check current dir,and create filelist including every dir that include ".sv"
         directories = []
@@ -253,6 +254,15 @@ class vrun(toolbox):
             self.single_run(simdir,tc_dict)
     
     def vrun_main(self):
+        if self.args.check_env:
+            os.chdir(self.script_dir+"/env_check/tb_spi_svt_uvm_basic_1m_1s_sys")
+            self.__init__()
+            self.env_init()
+            self.args.top="top.sv"#在compile阶段会自动加入$CUR_PROJ_HOME
+            self.args.t="exception_override_idle_phase_tristate_master_txrx_slave_txrx_test"
+            self.compile()
+            self.single_run()            
+            sys.exit()
         if self.args.check:
             self.result_check()
             sys.exit()
@@ -268,9 +278,13 @@ class vrun(toolbox):
 
             self.mkdir(output_dir)
             os.chdir(output_dir)
-            print(f"gcc {file_path} -o {PROGRAM_NAME} && ./{PROGRAM_NAME}")
+            print("=========================================================")
+            print(f"[compile cmd] gcc {file_path} -o {PROGRAM_NAME} && ./{PROGRAM_NAME}")
+            print("----------------------↓C OUTPUT↓-----------------------------")
             os.system(f"gcc {file_path} -o {PROGRAM_NAME} && ./{PROGRAM_NAME}")
-            print(os.getcwd())
+            print("\n----------------------------------------------------------")
+            print("[current dir]",os.getcwd())
+            print("=========================================================")
             sys.exit()
         
         if self.args.verdi:
@@ -291,9 +305,8 @@ class vrun(toolbox):
                     print("WARNING:NO OBJECT NAME PROVIDED!!!")
                     print(self.args.extra)
             sys.exit()
-        self.mkdir(self.simdir)
+
         if not self.args.only_run:
-            self.simdir=self.CUR_PROJ_HOME+"/"+"simulation"+"/"+self.args.simdir if self.args.simdir else "simulation"+"/"+self.gettime()
             self.compile()
         if not self.args.only_compile:
             self.single_run()

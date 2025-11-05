@@ -1,0 +1,10 @@
++incdir+$VIP2020_HOME/src/sverilog/vcs \
++incdir+$VIP2020_HOME/include/sverilog \
++incdir+$VIP2020_HOME/src/verilog/vcs \
++incdir+$VIP2020_HOME/include/verilog \
++incdir+$CUR_PROJ_HOME \
++incdir+$CUR_PROJ_HOME/env \
++incdir+$CUR_PROJ_HOME/hdl_interconnect \
++incdir+$CUR_PROJ_HOME/tests \
++define+UVM_PACKER_MAX_BYTES=8000 +define+WAVES_FSDB\
++define+SVT_SPI +define+UVM_PACKER_MAX_BYTES=1500000 +define+SVT_SPI_DATA_WIDTH=8  +define+SVT_MEM_ENABLE_DEPTH_INDEPENDENT_VALUES -unit_timescale=100ps/100ps
