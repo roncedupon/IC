@@ -1,0 +1,262 @@
+
+**************************************************************************
+Basic SVT UVM Testbench Example for Synopsys Discovery I2C VIP
+*************************************************************************
+
+CONTENTS:
+A. Introduction
+B. Running the Example Testbench
+C. Files in the Example
+D. SystemVerilog Testbench Description
+E. UVM Verification Environment 
+F. How to Contact Support
+
+-------------------------------------------------------------------------
+A. Introduction
+-------------------------------------------------------------------------
+
+This example shows how to implement a basic functioning UVM testbench using I2C
+Verification IP. A quickstart navigation guide can be found at:
+    
+HTML Quickstart is available @ $DESIGNWARE_HOME/vip/svt/i2c_svt/latest/examples/sverilog/tb_i2c_svt_uvm_basic_sys/doc/i2c_uvm_basic/index_basic.html
+    
+The example consists of the following:
+
+- A top-level testbench in SystemVerilog
+- A hdl_interconnect representing the I2C bus in the testbench and master I2C 
+  and Slave I2C interfaces are connected to hdl_interconnect
+- UVM verification environment
+- I2C master and I2C slave agents are instantiated in the UVM verification environment
+- Three test files illustrating 
+  i.   Basic test with default sequence
+  ii.  Directed test with directed sequences
+  iii. Random test with random sequence
+
+The UVM Synopsys Discovery I2C VIP agents are connected in the following manner:
+
+                                     (I2C Env)
+    ==================================================================================
+  ||     (I2C Master Agent)                                      (I2C Slave Agent)    ||
+  ||   ---------------------                                    -------------------   ||
+  ||  |  ------    -------  |                                  |  -----   -------  |  ||
+  ||  | |Master|  |Monitor| |        ------------------        | |Slave| |Monitor| |  ||
+  ||  |  ------    -------  |<=====>| hdl_interconnect |<=====>|  -----   -------  |  ||
+  ||  |    *Active Mode*    |        ------------------        |   *Active Mode*   |  ||
+  ||   \___________________/                                    \_________________/   ||
+  ||                                                                                  ||
+    ==================================================================================
+
+
+In the remainder of this description, <design_dir> refers to the directory where
+the example was installed using script dw_vip_setup. The example source files
+would then exist at two locations:
+
+- "$DESIGNWARE_HOME/vip/svt/i2c_svt/latest/examples/sverilog/tb_i2c_svt_uvm_basic_sys" 
+- "<design_dir>/examples/sverilog/i2c_svt/tb_i2c_svt_uvm_basic_sys" 
+
+Note :- the quickstart guide is _only_ available at
+$DESIGNWARE_HOME/vip/svt/i2c_svt/latest/examples/sverilog/tb_i2c_svt_uvm_basic_sys/doc/tb_i2c_svt_uvm_basic_sys/index_basic.html
+
+The quickstart is not installed in <design_dir>. Unless otherwise noted, the files
+described below are also found in <design_dir>.  
+
+Complete class reference HTML documentation of I2C UVM Verification 
+IP is available at:
+  
+$DESIGNWARE_HOME/vip/svt/i2c_svt/latest/doc/i2c_svt_uvm_class_reference/html/index.html
+------------------------------------------------------------------------
+B. Running the Example Testbench
+------------------------------------------------------------------------
+
+1. Install the example using the following command line:
+
+   % cd <location where example is to be installed>
+   % mkdir design_dir <provide any name of your choice>
+   % $DESIGNWARE_HOME/bin/dw_vip_setup -path ./design_dir  -e i2c_svt/tb_i2c_svt_uvm_basic_sys -svtb 
+
+2. Use either one of the following to run the testbench:
+
+   a) Use the Makefile:
+
+      Three tests are provided in the "tests" directory.
+      The tests are: 
+      1. ts.base_test.sv 
+      2. ts.directed_test.sv 
+      3. ts.random_test.sv 
+
+      For example, to run test ts.directed_test.sv, do following:
+      
+      gmake USE_SIMULATOR=vcsvlog directed_test WAVES=1
+
+      Invoke "gmake help" to show more options.
+   
+   b) Use the sim script:
+
+    1) For example, to run test ts.random_test.sv on VCS simulator, do following:
+
+     ./run_i2c_svt_uvm_basic_sys -w random_test vcsvlog-svlog 
+
+    2) For example, to run test ts.random_test.sv on NC simulator, do following:
+
+     ./run_i2c_svt_uvm_basic_sys random_test ncvlog-svlog 
+
+      Invoke "./run_i2c_svt_uvm_basic_sys -help" to show more options.
+
+
+-------------------------------------------------------------------------
+C. Files in the Example
+-------------------------------------------------------------------------
+
+The following lists all the code files in this example.
+
+<tb_i2c_svt_uvm_basic_sys>
+      |
+      |
+      |-> hdl_interconnect
+      |     -> hdl_interconnect.v
+      |     -> i2c_svt_interconnect_sv_wrapper.sv
+      |-> env
+      |     -> cust_svt_i2c_configuration.sv
+      |     -> cust_svt_i2c_master_transaction.sv
+      |     -> cust_svt_i2c_slave_transaction.sv
+      |     -> i2c_basic_env.sv
+      |     -> i2c_base_test.sv
+      |     -> i2c_default_mst_sequence.sv
+      |     -> i2c_default_slv_sequence.sv
+      |     -> i2c_default_virtual_sequence.sv
+      |     -> i2c_mst_directed_sequence.sv
+      |     -> i2c_slv_directed_sequence.sv
+      |     -> i2c_null_virtual_sequence.sv
+      |     -> i2c_mst_random_sequence.sv
+      |     -> i2c_slv_random_sequence.sv
+      |     -> i2c_virtual_sequencer.sv
+      |     -> i2c_reset_if.svi    
+      |     -> i2c_simple_reset_sequence.sv
+      |-> tests
+      |     -> ts.base_test.sv
+      |     -> ts.directed_test.sv
+      |     -> ts.random_test.sv
+      |-> top.sv
+      |-> top_test.sv
+      |-> README 
+      |-> waves.tcl
+      |-> Makefile
+      |-> modellist
+      |-> methodology
+      |-> vcs_build_options
+      |-> ncv_build_options
+      |-> sim_run_options
+
+The interface definition file is originally located at:
+ 
+ Port interface  : $DESIGNWARE_HOME/vip/svt/i2c_svt/latest/sverilog/include/svt_i2c_if.svi
+ 
+When you run dw_vip_setup (above), the interface file will be installed at:
+
+  ./design_dir/include/sverilog/svt_i2c_if.svi 
+
+
+-------------------------------------------------------------------------
+D. SystemVerilog Testbench Description
+-------------------------------------------------------------------------
+
+The  top-level testbench is written in SystemVerilog. The I2C interfaces 
+are represented as instances of 'interface' objects. The hdl_interconnect 
+is represented as a I2C bus model with 'interface' connections as its ports.
+The UVM verification environment is represented as an i2c_basic_env instance.
+The test file is created as a class which extends i2c_base_test.
+
+The file containing the top-level testbench in the example is "top.sv".  
+This file which encapsulates individual tests is "top_test.sv".
+
+The I2C bus model used in the example is defined as a hdl_interconnect, within a SystemVerilog
+wrapper. The intent is to demonstrate how a legacy core may be integrated into
+the SystemVerilog testbench. The example I2C bus model has master and slave I2C interfaces. 
+
+
+The SystemVerilog wrapper for the I2C bus model defines a module that takes 'interface'
+references as its port connections. The SystemVerilog wrapper instantiates
+the Verilog I2C bus model, and connects I2C master and slave interfaces to the I2C bus model.
+
+The example I2C bus model is found in the file "hdl_interconnect.v". The example wrapper
+is found in the file "i2c_svt_interconnect_sv_wrapper.sv".
+
+The entire UVM test environment is encapsulated in i2c_basic_env.sv, which is
+instantiated in the UVM tests.  The tests gets included in 'top.sv',
+which eventually triggers the specific test by the use of run_test().
+  
+
+-------------------------------------------------------------------------
+E. UVM Verification Environment Description
+-------------------------------------------------------------------------
+
+A complete description of the UVM environment (ENV) is beyond the scope of this
+README. Please refer to the UVM manual for details of a UVM environment.
+
+Following is a summary of the files used by the ENV:
+
+  - i2c_svt_interconnect_sv_wrapper.sv.  A SystemVerilog module that wraps the
+    verilog RTL Interconnect.  This will be instantiated in the top-level SystemVerilog
+    file.
+  
+  - i2c_basic_env.sv
+    This file serves as environment class.  The top-level environment is
+    implemented by extending uvm_env base class.  This class instantiates the
+    I2C Master agent, I2C Slave agent and a virtual sequencer.
+
+  - cust_svt_i2c_configuration.sv
+    This file has a class cust_svt_i2c_agent_configuration that extends from svt_i2c_agent_configuration.
+    All the necessary configuration parameters are set up for the environment 
+    in this class.
+
+  - cust_svt_i2c_master_transaction.sv
+    This file extends the master transaction (svt_i2c_master_transaction).
+    Customized constraints are defined by this class.
+
+ -  cust_svt_i2c_slave_transaction.sv
+    This file extends the slave transaction (svt_i2c_slave_transaction).
+    Customized constraints are defined by this class.
+
+  - i2c_simple_reset_sequence.sv
+    This file shows a sequence that generates a reset sequence
+    to drive the reset pins.  This sequence is registered with the TB
+    virtual sequencer as the default sequence for the reset phase.
+
+  - i2c_default_virtual_sequence.sv
+    This file implements a virtual sequence and executes master and slave sequences.
+    This sequence is registered with the I2C System ENV virtual sequencer as 
+    the default sequence for the main phase.
+
+  - i2c_null_virtual_sequence.sv
+    This file implements a virtual sequence with an empty body method.  This
+    sequence can be used by extended tests to disable the default sequence.
+
+  - i2c_mst_random_sequence.sv
+    This file shows a master sequence (extending from uvm_sequence)
+    that generates constrained random svt_i2c_master_transaction.  
+
+  - i2c_slv_random_sequence.sv
+    This file shows a slave sequence (extending from uvm_sequence)
+    that generates constrained random svt_i2c_slave_transaction.
+
+  - i2c_mst_directed_sequence.sv
+    This file shows a master sequence (extending from uvm_sequence)
+    that generates a series of directed svt_i2c_master_transaction.
+
+  - i2c_slv_directed_sequence.sv
+    This file shows a slave sequence (extending from uvm_sequence)
+    that generates a series of directed svt_i2c_slave_transaction.
+
+  - i2c_default_mst_sequence.sv
+    This file shows a master sequence (extending from uvm_sequence)
+    that generates a default random svt_i2c_master_transaction.
+
+  - i2c_default_slv_sequence.sv
+    This file shows a slave sequence (extending from uvm_sequence)
+    that generates a default random svt_i2c_slave_transaction.
+
+--------------------------------------------------------------------------
+F. Contacting Customer Support
+--------------------------------------------------------------------------
+Please contact Synopsys Support Center or local CAE for support.
+

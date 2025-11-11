@@ -1,0 +1,24 @@
+
+/**
+ * Abstract:
+ * Defines an interface that provides access to a reset signal. This
+ * interface can be used to write sequences to drive the reset logic.
+ */
+
+`ifndef GUARD_I2C_RESET_IF_SVI
+`define GUARD_I2C_RESET_IF_SVI
+
+interface i2c_reset_if();
+
+  logic reset;
+  logic clk;
+
+  modport i2c_reset_modport (input clk, output reset);
+
+endinterface
+
+`endif // GUARD_I2C_RESET_IF_SVI
+
+//------------------------------------------------------------------------
+//-----------------------END OF FILE--------------------------------------
+//------------------------------------------------------------------------
