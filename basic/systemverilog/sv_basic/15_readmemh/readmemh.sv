@@ -1,3 +1,5 @@
+import "DPI-C" function int setenv(input string env_name, input string env_value, input int overwrite);
+import "DPI-C" function string getenv (input string env_name);
 module top;
 
     reg [31:0]data[128];
@@ -6,7 +8,7 @@ module top;
 
     initial begin
         clk=0;
-        $readmemh("/mnt/disk_0/IC/basic/systemverilog/sv_basic/15_readmemh/data.txt",data);
+        $readmemh($sformatf("%s/data.txt",getenv("CUR_PROJ_HOME")),data);
         foreach(data[i])begin
             $display("%x",data[i]);
         end

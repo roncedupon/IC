@@ -1,0 +1,36 @@
+
+rom: NDSROM.dat | $(OUT)
+
+test:
+	echo $(C_SRCS)
+
+NDSROM.dat: a.out  $(HEADERS)
+	$(PATTEN)./riscv-elf-aout2mem $(OUT)/a.out $@
+	$(PATTEN)$(OBJDUMP) -D -S -l $(OUT)/a.out > NDSROM.list    
+	$(PATTEN)./nds2ilm -datdir . -outdir .
+	$(PATTEN)./nds2sram -datdir . -outdir .
+
+
+a.out:   libtest.a $(ASM_OBJS)  $(HEADERS)   | $(OUT)
+	$(PATTEN)$(ECHO) compile $(notdir $<)
+	$(PATTEN) $(CC) $(AOBJS) $(LDFLAGS) -T$(LINKER_SCRIPT) -o $(OUT)/$@ 
+
+libtest.a: $(C_OBJS) $(HEADERS)  | $(OUT)
+	$(PATTEN)$(ECHO) compile $(notdir $<)
+	$(PATTEN) $(AR) $(ARFLAGS) $(OUT)/$@ $(OBJS) 
+
+$(ASM_OBJS):%.o: %.S  $(HEADERS) | $(OUT) 
+	$(PATTEN)$(ECHO) compile $(notdir $<)
+	$(PATTEN) $(CC) $(CFLAGS) $(INCLUDES) $< -o $(OUT)/$(notdir $@)    
+
+$(C_OBJS):%.o: %.c $(HEADERS) | $(OUT)
+	$(PATTEN)$(ECHO) compile $(notdir $<)
+	$(PATTEN) $(CC) $(CFLAGS) $(INCLUDES) $< -o $(OUT)/$(notdir $@)    
+
+$(OUT):
+	$(PATTEN)mkdir $(OUT)
+	$(info CFLAGS is $(CFLAGS))
+
+
+clean_rom:
+	$(PATTEN)rm -rf a.out *.dat NDSROM.list flist *.o libtest.a $(OUT)    

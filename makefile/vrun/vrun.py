@@ -35,7 +35,7 @@ class vrun(toolbox):
         parser.add_argument("-extra",metavar="",nargs="+",help="generate uvm_component,[component,object]",default=[])
         
 
-        # parser.add_argument("-sim_opts",metavar="",help="filelist",default=False)
+        parser.add_argument("-sim_opts",metavar="",help="extra simopts",default=False)
         args=parser.parse_args()
         # if len(args.t)==1:
         #     args.t=args.t[0]
@@ -206,7 +206,7 @@ class vrun(toolbox):
                 #case2
                 #...
         os.chdir(self.simdir)
-        extra_sim_opt=f"+ntb_random_seed={self.args.seed}"#加入一个默认的seed参数
+        extra_sim_opt=f"+ntb_random_seed={self.args.seed} +UVM_OBJECTION_TRACE"#加入一个默认的seed参数
         case_dict=self.check_args(args,"case_dict",None)
         if case_dict is not None:
             case_name=case_dict[self.TESTNAME_KEY]

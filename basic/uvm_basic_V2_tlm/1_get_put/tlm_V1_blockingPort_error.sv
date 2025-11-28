@@ -4,7 +4,7 @@
 `include "uvm_macros.svh"
 `include "tlm_tr.sv"
 import uvm_pkg::*;
-//如果仅仅简单连接put_port和port_export，那么就会报错
+//如果仅仅简单连接put_port和port_export，那么就会报错,这个例子里没有实现put方法也没有imp
 // UVM_ERROR @ 0: uvm_test_top.consumer0.put_export [Connection Error] connection count of 0 does not meet required minimum of 1
 // UVM_ERROR @ 0: uvm_test_top.producer0.put_port [Connection Error] connection count of 0 does not meet required minimum of 1
 // UVM_FATAL @ 0: reporter [BUILDERR] stopping due to build errors

@@ -10,7 +10,8 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "cwd": "${fileDirname}"
+            "cwd": "${fileDirname}",
+            "args": ["-check_env","-simdir","/mnt/disk_0/IC/makefile/vrun/dist"]
         },
         {
             "name": "debug regression script",

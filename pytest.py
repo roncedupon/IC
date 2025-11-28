@@ -29,3 +29,8 @@ result_even = np.array([np.flip(row.reshape(-1, 2)[0::2],axis=0) for row in s_me
 print(result_even)
 print("-----------")
 print(result_odd)
+
+
+#%% 
+aa="123"
+print(int(aa)-100)
