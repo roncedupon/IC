@@ -1,3 +1,6 @@
 [submodule "ibex_submodule"]
-	path = ibex_submodule
+	path = submodule_ibex
 	url = git@gitee.com:gitee_dy/soc.git
+[submodule "cnn_transformer_accelerator"]
+	path = submodule_cnn_transformer_accelerator
+	url = git@gitee.com:gitee_dy/cnn_transformer_accelerator.git
