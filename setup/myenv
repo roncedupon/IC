@@ -10,7 +10,7 @@ alias vrun="python3 $IC_HOME/makefile/vrun/vrun.py"
 #-------------------------------------------------------------------------------------------------
 
 
-source $IC_HOME/setup/synopsys2022.setup
+source $IC_HOME/setup/synopsys2022
 export VIP2018_HOME=$SOFTWARE_INSTALLED_HOME/vips/vip2018
 export VIP2020_HOME=$SOFTWARE_INSTALLED_HOME/vips/vip2020
 # export DISPLAY=:10.0

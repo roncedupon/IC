@@ -51,7 +51,7 @@ glibc/
 # urgReport
 # !vip_amba_svt_O-2018.09.run
 simulation
-uvm-1.2
+
 
 novas.rc
 
