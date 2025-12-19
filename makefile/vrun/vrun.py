@@ -28,9 +28,10 @@ class vrun(toolbox):
         parser.add_argument("-dir",type=str,help="dir for verdi or something",default=None)
         parser.add_argument('-check',action="store_true",help="check regr result",default=False)        
         parser.add_argument("-f",metavar="",help="filelist",default=None)
-        parser.add_argument('-check_env',action="store_true",help="check env(vip included)",default=False)        
+        parser.add_argument('-check_env',action="store_true",help="check env(vip included)",default=False)
+        parser.add_argument('-cov',action="store_true",help="coverage ctrl",default=False)        
         
-        
+        parser.add_argument("-template",action="store_true",help="generate standart agent for uvm",default=False)
         parser.add_argument("-gen",action="store_true",help="generate uvm file flag",default=False)
         parser.add_argument("-extra",metavar="",nargs="+",help="generate uvm_component,[component,object]",default=[])
         
@@ -50,21 +51,24 @@ class vrun(toolbox):
 #-------------------------------------------------------------------------------
     def __init__(self):
 
-        self.args       =self.cfg_args()
-        self.script_path=os.path.abspath(__file__)
-        self.script_dir=os.path.dirname(os.path.abspath(__file__))
-        self.json_dict  =None
-        self.CUR_PROJ_HOME  =os.getcwd()#current proj home
+        self.args                       =self.cfg_args()
+        self.script_path                =os.path.abspath(__file__)
+        self.script_dir                 =os.path.dirname(os.path.abspath(__file__))
+        self.json_dict                  =None
+        self.CUR_PROJ_HOME              =os.getcwd()#current proj home
         
-        self.simdir=self.CUR_PROJ_HOME+"/"+"simulation"+"/"+self.args.simdir if self.args.simdir else "simulation"+"/"+self.gettime()
+        self.simdir                     =self.CUR_PROJ_HOME+"/"+"simulation"+"/"+self.args.simdir if self.args.simdir else "simulation"+"/"+self.gettime()
         if self.args.check:
-            self.simdir=os.path.abspath(self.args.simdir)
-        self.report_name   = os.path.basename(self.simdir)            
-        self.JSON_TESTNAME_KEY="testname"
+            self.simdir                 =os.path.abspath(self.args.simdir)
+        self.report_name                = os.path.basename(self.simdir)            
+        self.JSON_TESTNAME_KEY          ="testname"
 
-        self.MAKEFILE_PATH=os.path.dirname(__file__)+"/makefile"
-        self.VCS_COMPILE_OPTIONS=f" +incdir+{self.CUR_PROJ_HOME} "
-        
+        self.MAKEFILE_PATH              =os.path.dirname(__file__)+"/makefile"
+        self.VCS_COMPILE_OPTIONS        =f" +incdir+{self.CUR_PROJ_HOME} "
+        self.VCS_SIM_OPTIONS            =""
+        if self.args.cov:
+            self.VCS_COMPILE_OPTIONS    += " -cm line+cond+fsm+tgl+branch+assert  "
+            self.VCS_SIM_OPTIONS        +=" -cm line+cond+fsm+tgl+branch+assert  -cm_dir ./simv.vdb "
     def launch_verdi_old(self):
         font_cfg='-font "Courier 18"'
         VERDI_HOME=self.simdir+"/verdi"
@@ -148,7 +152,7 @@ class vrun(toolbox):
         make_extra_opt+=f"VCS_COMPILE_OPTIONS=\"{self.VCS_COMPILE_OPTIONS} {self.args.comp_opts}\""
         
         print(make_extra_opt)
-        
+        # exit()
         make_cmd=f"make -f {self.MAKEFILE_PATH} compile "+make_extra_opt
 
 
@@ -206,7 +210,7 @@ class vrun(toolbox):
                 #case2
                 #...
         os.chdir(self.simdir)
-        extra_sim_opt=f"+ntb_random_seed={self.args.seed} +UVM_OBJECTION_TRACE"#加入一个默认的seed参数
+        extra_sim_opt=self.VCS_SIM_OPTIONS+f" +ntb_random_seed={self.args.seed} +UVM_OBJECTION_TRACE "#加入一个默认的seed参数
         case_dict=self.check_args(args,"case_dict",None)
         if case_dict is not None:
             case_name=case_dict[self.TESTNAME_KEY]
@@ -215,7 +219,9 @@ class vrun(toolbox):
             if not os.path.exists("build"):
                 os.system("ln -s ../build ./")
             os.system("ln -s ../build/simv.daidir ./")
-            os.system(f"./build/simv +UVM_TESTNAME={case_name} SEED={1234} -l simulation.log")        
+            if self.args.cov:
+                os.system("ln -s ../build/simv.vdb ./")
+            os.system(f"./build/simv +UVM_TESTNAME={case_name} -l {case_name}.log {extra_sim_opt}")        
             os.chdir("../")
         else:
             if self.args.t  !=None:

@@ -28,14 +28,14 @@ endif
 # code coverage command
 CM = -cm line+cond+fsm+branch+tgl+assert
 CM_NAME = -cm_name ${CM_NAME_STR}
-CM_DIR = -cm_dir ./covdir.vdb
+CM_DIR = -cm_dir ./simv.vdb
 COVERAGE_CMD:=${CM} ${CM_NAME} ${CM_DIR}
 cov:	
 	./simv -l run.log \
 	-f filelist.f \
 	${COVERAGE_CMD}
 cov_gui:
-	dve -full64 -covdir *.vdb &
+	dve -full64 -simv *.vdb &
 
 
 #-fsdb
@@ -82,7 +82,7 @@ ${COVERAGE_CMD}
 # -LDFLAGS -Wl,--no-as-needed--是为了解决libvcsnew.so: undefined reference的问题
 
 CLEAN_CMD=rm -rf *~ core csrc  vc_hdrs.h ucli.key urg* *.log *.fsdb *.vcd inter.vpd *.out DVEfiles/ .inter.vpd.uvm \
-.restartSimSession.tcl.old novas.* waves.* simv.daidir verdiLog/ *.vpd covdir.vdb/ cov_test.daidir/
+.restartSimSession.tcl.old novas.* waves.* simv.daidir verdiLog/ *.vpd simv.vdb/ cov_test.daidir/
 
 move_file:
 	cd $(PROJECT_HOME) && pwd &&\

@@ -154,3 +154,10 @@ module example_Dynamic_Array3;
     end
 
 endmodule
+module array_test;
+    initial begin
+        $display("=============beginning of %m===============");
+    end    
+    int array[];
+
+endmodule

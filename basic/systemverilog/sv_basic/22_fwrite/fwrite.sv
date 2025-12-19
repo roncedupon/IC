@@ -1,7 +1,14 @@
 module write_test;
 
   integer f;
+  logic count[8];
   initial begin
+
+    foreach(count[i]) begin
+      count[i] = i;
+      $display("i/4,i/2",i/4,i%4);
+    end
+
     f = $fopen("output.txt", "w");
 
 
@@ -11,5 +18,8 @@ module write_test;
 
     $fclose(f);
   end
+
+
+
 
 endmodule

@@ -16,7 +16,7 @@ else
 endif
 
 FILE_LIST=filelist.f
-FILE_NAME:=top.sv
+FILE_NAME:=
 ifeq ($(FILE_LIST),)
 	FILE_LISTS_OPTIONS=
 else
@@ -77,8 +77,8 @@ $(FSDB_CMD) \
 -LDFLAGS -Wl,--no-as-needed \
 -debug_all  -debug_accsss\
 -assert svaext\
-$(FILE_LISTS_OPTIONS)\
 $(VCS_COMPILE_OPTIONS)\
+$(FILE_LISTS_OPTIONS)\
 $(DUMP_ARRAY_CMD)\
 +lint=TFIPC-L \
 +sdfverbose -diag=sdf:verbose -diag=sdf \
