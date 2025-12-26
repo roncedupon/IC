@@ -2,113 +2,72 @@
 `include "uvm_macros.svh"
 import uvm_pkg::*;
 
-// // 时钟定义（顶层传递）
-// `ifndef CLK_DEF
-// `define CLK_DEF
-// logic clk;
-// `endif
+// -------------------------- 接口侧别枚举（仅用于日志区分） --------------------------
+typedef enum {MASTER, SLAVE} handshake_side_e;
 
-// -------------------------- Master 接口（主动发起握手） --------------------------
-interface simple_handshake_master_interface #(parameter DATA_WIDTH = 32) (input logic clk);  
-  // 握手信号：master输出valid/data，输入rdy
-  logic                  m_valid;         
-  logic                  m_rdy;
-  logic [DATA_WIDTH-1:0] m_tr_data;   
+// -------------------------- 统一握手接口（核心：消除m/s拆分） --------------------------
+interface simple_handshake_interface #(parameter DATA_WIDTH = 32) (input logic clk);  
+  // 统一信号名（去掉m_/s_前缀）
+  logic                  valid;         
+  logic                  rdy;
+  logic [DATA_WIDTH-1:0] tr_data;   
   
-  // Driver/Monitor clocking块（沿posedge clk采样）
-  clocking driver_cb @(posedge clk);            
-    output m_valid, m_tr_data;  // master驱动valid/data
-    input  m_rdy;               // master采样slave的rdy
+  // Master侧Driver：驱动valid/tr_data，采样rdy
+  clocking master_driver_cb @(posedge clk);            
+    output valid, tr_data;            
+    input  rdy;        
+  endclocking   
+  
+  // Slave侧Driver：驱动rdy，采样valid/tr_data
+  clocking slave_driver_cb @(posedge clk);            
+    input  valid, tr_data;            
+    output rdy;        
   endclocking   
              
+  // 通用Monitor clocking：仅采样所有信号（master/slave侧监控逻辑一致）
   clocking monitor_cb @(posedge clk);            
-    input m_valid, m_rdy, m_tr_data;  // monitor采样所有信号
+    input valid, rdy, tr_data;        
   endclocking
 
-  modport master_mp(clocking driver_cb, input clk);        
-  modport monitor_mp(clocking monitor_cb, input clk);  
+  // Modport区分master/slave的驱动方向（仅Driver侧有差异，Monitor侧通用）
+  modport master_mp(clocking master_driver_cb, input clk);        
+  modport slave_mp(clocking slave_driver_cb, input clk);        
+  modport monitor_mp(clocking monitor_cb, input clk);  // 通用Monitor modport
 endinterface
 
-// -------------------------- Slave 接口（被动响应握手） --------------------------
-interface simple_handshake_slave_interface #(parameter DATA_WIDTH = 32) (input logic clk);  
-  // 握手信号：slave输入valid/data，输出rdy
-  logic                  s_valid;         
-  logic                  s_rdy;
-  logic [DATA_WIDTH-1:0] s_tr_data;   
-  
-  // Driver/Monitor clocking块（沿posedge clk采样）
-  clocking driver_cb @(posedge clk);            
-    input  s_valid, s_tr_data;  // slave采样master的valid/data
-    output s_rdy;               // slave驱动rdy
-  endclocking   
-             
-  clocking monitor_cb @(posedge clk);            
-    input s_valid, s_rdy, s_tr_data;  // monitor采样所有信号
-  endclocking
+// -------------------------- 通用配置类（简化：仅日志侧别+基础配置） --------------------------
+class simple_handshake_config #(parameter DATA_WIDTH = 32) extends uvm_object;
+  `uvm_object_param_utils(simple_handshake_config#(DATA_WIDTH))
 
-  modport slave_mp(clocking driver_cb, input clk);        
-  modport monitor_mp(clocking monitor_cb, input clk);  
-endinterface
-
-class simple_handshake_base_config #(parameter DATA_WIDTH = 32) extends uvm_object;
-  `uvm_object_param_utils(simple_handshake_base_config#(DATA_WIDTH))
-
+  // 仅用于日志标注：当前监控的是master侧还是slave侧
+  handshake_side_e monitor_side;
   // 通用配置
-  // int unsigned DATA_WIDTH = DATA_WIDTH;          // 数据位宽
-  bit enable_protocol_checks = 1'b1;             // 协议检查开关
-  string default_dump_file = "handshake_dump.txt";// 默认dump文件
+  bit enable_protocol_checks = 1'b1;
+  string default_dump_file = "handshake_dump.txt";
 
-  function new(string name = "simple_handshake_base_config");
+  function new(string name = "simple_handshake_config");
     super.new(name);
   endfunction
 endclass
 
-// Slave 专属配置（可扩展slave特有配置）
-class simple_handshake_slave_config #(parameter DATA_WIDTH = 32) extends simple_handshake_base_config#(DATA_WIDTH);
-  `uvm_object_param_utils(simple_handshake_slave_config#(DATA_WIDTH))
-  function new(string name = "simple_handshake_slave_config");
-    super.new(name);
-  endfunction
-endclass
-
-// Master 专属配置（可扩展master特有配置）
-class simple_handshake_master_config #(parameter DATA_WIDTH = 32) extends simple_handshake_base_config#(DATA_WIDTH);
-  `uvm_object_param_utils(simple_handshake_master_config#(DATA_WIDTH))
-  function new(string name = "simple_handshake_master_config");
-    super.new(name);
-  endfunction
-endclass
-
-
-// 定义握手monitor的行为接口类（仅声明纯虚方法）
-// interface class handshake_monitor_if #(parameter DATA_WIDTH = 32);
-//   pure virtual function bit get_valid();                // 获取valid信号
-//   pure virtual function bit get_rdy();                  // 获取rdy信号
-//   pure virtual function logic [DATA_WIDTH-1:0] get_tr_data(); // 获取数据
-//   pure virtual task wait_monitor_cb();                  // 等待clocking块
-// endclass
-
-class simple_handshake_base_monitor #(parameter DATA_WIDTH = 32) extends uvm_monitor ; // 实现行为接口类
-
-  `uvm_component_param_utils(simple_handshake_base_monitor#(DATA_WIDTH))
+// -------------------------- 通用握手Monitor（完全无需区分m/s接口） --------------------------
+class simple_handshake_monitor #(parameter DATA_WIDTH = 32) extends uvm_monitor;
+  `uvm_component_param_utils(simple_handshake_monitor#(DATA_WIDTH))
 
   // 通用属性
-  logic [DATA_WIDTH-1:0] dump_data[];  // 存储监控的所有数据
-  simple_handshake_base_config#(DATA_WIDTH) cfg; // 公共配置
+  logic [DATA_WIDTH-1:0] dump_data[];
+  simple_handshake_config#(DATA_WIDTH) cfg;
   int file_handle;
 
-  // 分析端口（传递监控到的事务）
+  // 分析端口
   uvm_analysis_port #(uvm_sequence_item) ap;
 
-  // 协议检查临时变量（通用）
+  // 协议检查临时变量
   logic                   valid_data_check_flag;
   logic [DATA_WIDTH-1:0]  tr_data_check;
 
-  // -------------------------- 修正：改为普通virtual方法（留空实现） --------------------------
-  virtual function bit get_valid();                return 1'b0; endfunction
-  virtual function bit get_rdy();                  return 1'b0; endfunction
-  virtual function logic [DATA_WIDTH-1:0] get_tr_data(); return '0; endfunction
-  virtual task wait_monitor_cb();                  endtask
+  // 核心简化：仅保留一个统一的握手接口句柄（无m_vif/s_vif区分）
+  virtual simple_handshake_interface#(DATA_WIDTH) vif;
 
   // -------------------------- 构造函数 --------------------------
   function new(string name, uvm_component parent);
@@ -117,226 +76,103 @@ class simple_handshake_base_monitor #(parameter DATA_WIDTH = 32) extends uvm_mon
     dump_data = {};
   endfunction
 
-  // -------------------------- 通用Build阶段 --------------------------
+  // -------------------------- Build阶段（仅获取统一接口，无分支） --------------------------
   virtual function void build_phase(uvm_phase phase);
     super.build_phase(phase);
-    // 获取配置（子类需保证cfg已通过uvm_config_db传入）
-    if (!uvm_config_db#(simple_handshake_base_config#(DATA_WIDTH))::get(this, "", "handshake_cfg", cfg)) begin
-      `uvm_fatal("BASE_MON", "Handshake config not found in uvm_config_db")
+    // 获取配置
+    if (!uvm_config_db#(simple_handshake_config#(DATA_WIDTH))::get(this, "", "handshake_cfg", cfg)) begin
+      `uvm_fatal(get_full_name(), "Handshake config not found in uvm_config_db")
+    end
+    // 获取统一接口（无需区分m/s，直接绑定）
+    if (!uvm_config_db#(virtual simple_handshake_interface#(DATA_WIDTH))::get(this, "", "handshake_vif", vif)) begin
+      `uvm_fatal(get_full_name(), "Virtual handshake interface not found!")
     end
   endfunction
+
+  // -------------------------- 统一信号访问（无分支，直接访问通用信号名） --------------------------
+  virtual function bit get_valid();
+    return vif.monitor_cb.valid;
+  endfunction
+
+  virtual function bit get_rdy();
+    return vif.monitor_cb.rdy;
+  endfunction
+
+  virtual function logic [DATA_WIDTH-1:0] get_tr_data();
+    return vif.monitor_cb.tr_data;
+  endfunction
+
+  virtual task wait_monitor_cb();
+    @(vif.monitor_cb);
+  endtask
 
   // -------------------------- 通用数据Dump功能 --------------------------
   virtual function void dump_all_data(string file_name = "");
     if (file_name == "") begin
       file_name = cfg.default_dump_file;
-      `uvm_warning("BASE_MON", $sformatf("File name empty, use default: %s", file_name))
+      `uvm_warning(get_full_name(), $sformatf("File name empty, use default: %s", file_name))
     end
 
     file_handle = $fopen(file_name, "w");
     if (file_handle == 0) begin
-      `uvm_error("BASE_MON", $sformatf("Open file %s failed!", file_name))
+      `uvm_error(get_full_name(), $sformatf("Open file %s failed!", file_name))
       return;
     end
 
-    `uvm_info("BASE_MON", $sformatf("Dump %0d data to %s", dump_data.size(), file_name), UVM_MEDIUM)
+    `uvm_info(get_full_name(), $sformatf("Dump %0d data to %s (monitor side: %0s)", dump_data.size(), file_name, cfg.monitor_side.name()), UVM_MEDIUM)
     foreach(dump_data[i]) begin
       $fdisplay(file_handle, "0x%0h", dump_data[i]);
     end
     $fclose(file_handle);
   endfunction
 
-  // -------------------------- 通用Run阶段 --------------------------
+  // -------------------------- 核心监控逻辑（完全通用，无m/s区分） --------------------------
+  virtual task monitor_transaction();
+    uvm_sequence_item tr;
+
+    // 1. 记录valid=1但rdy=0时的初始数据
+    if (get_valid() === 1'b1 && get_rdy() === 1'b0) begin
+      valid_data_check_flag = 1'b1;
+      tr_data_check = get_tr_data();
+    end
+
+    // 2. 捕获完整握手（valid=1 & rdy=1）
+    if (get_valid() === 1'b1 && get_rdy() === 1'b1) begin
+      tr = uvm_sequence_item::type_id::create("tr");
+      dump_data.push_back(get_tr_data());
+      ap.write(tr);
+      valid_data_check_flag = 1'b0;
+
+      `uvm_info(get_full_name(), $sformatf("[%0s] Capture transaction: data=0x%0h", cfg.monitor_side.name(), get_tr_data()), UVM_HIGH)
+    end
+  endtask
+
+  // -------------------------- 通用协议检查（无m/s区分） --------------------------
+  virtual task perform_protocol_checks();
+    if (!cfg.enable_protocol_checks) return;
+
+    // 检查1：valid=1时数据不能有X/Z
+    if (get_valid() === 1'b1 && $isunknown(get_tr_data())) begin
+      `uvm_error(get_full_name(), $sformatf("[%0s] Data has X/Z when valid=1: 0x%0h", cfg.monitor_side.name(), get_tr_data()))
+    end
+
+    // 检查2：valid=1 & rdy=0时，valid/data不能变化
+    if (valid_data_check_flag) begin
+      if (get_valid() == 1'b0) begin
+        `uvm_error(get_full_name(), $sformatf("[%0s] valid changed to 0 before rdy=1!", cfg.monitor_side.name()))
+      end
+      if (get_tr_data() != tr_data_check) begin
+        `uvm_error(get_full_name(), $sformatf("[%0s] data changed when valid=1 & rdy=0: 0x%0h", cfg.monitor_side.name(), get_tr_data()))
+      end
+    end
+  endtask
+
+  // -------------------------- Run阶段（极简循环） --------------------------
   virtual task run_phase(uvm_phase phase);
     forever begin
-      wait_monitor_cb();  // 等待clocking块（子类重写实现）
-      monitor_transaction(); // 监控事务（子类重写实现）
-      perform_protocol_checks(); // 协议检查（子类重写实现）
-    end
-  endtask
-
-  // -------------------------- 需子类重写的核心方法 --------------------------
-  virtual task monitor_transaction(); endtask
-  virtual task perform_protocol_checks(); endtask
-
-endclass
-
-class simple_handshake_slave_monitor #(parameter DATA_WIDTH = 32) 
-  extends simple_handshake_base_monitor#(DATA_WIDTH);
-
-  `uvm_component_param_utils(simple_handshake_slave_monitor#(DATA_WIDTH))
-
-  // 绑定slave接口
-  virtual simple_handshake_slave_interface#(DATA_WIDTH) vif;
-
-  // 事务类型（可替换为自定义slave事务）
-  typedef uvm_sequence_item tr_t;
-
-  // -------------------------- 重写基类方法（实现具体接口访问） --------------------------
-  virtual function bit get_valid();
-    return vif.monitor_cb.s_valid;
-  endfunction
-
-  virtual function bit get_rdy();
-    return vif.monitor_cb.s_rdy;
-  endfunction
-
-  virtual function logic [DATA_WIDTH-1:0] get_tr_data();
-    return vif.monitor_cb.s_tr_data;
-  endfunction
-
-  virtual task wait_monitor_cb();
-    @(vif.monitor_cb);
-  endtask
-
-  // -------------------------- 构造函数 --------------------------
-  function new(string name, uvm_component parent);
-    super.new(name, parent);
-  endfunction
-
-  // -------------------------- Build阶段：获取接口 --------------------------
-  virtual function void build_phase(uvm_phase phase);
-    super.build_phase(phase);
-    // 获取slave接口
-    if (!uvm_config_db#(virtual simple_handshake_slave_interface#(DATA_WIDTH))::get(this, "", "slave_handshake_vif", vif)) begin
-      `uvm_fatal("SLAVE_MON", "Virtual slave interface not found!")
-    end
-  endfunction
-
-  // -------------------------- 监控Slave侧事务 --------------------------
-  virtual task monitor_transaction();
-    tr_t tr;
-
-    // 1. 记录valid=1但rdy=0时的初始数据（协议检查用）
-    if (get_valid() === 1'b1 && get_rdy() === 1'b0) begin
-      valid_data_check_flag = 1'b1;
-      tr_data_check = get_tr_data();
-    end
-
-    // 2. 捕获完整握手（valid=1 & rdy=1）
-    if (get_valid() === 1'b1 && get_rdy() === 1'b1) begin
-      tr = tr_t::type_id::create("tr");
-      // 给事务赋值（自定义事务需扩展此部分）
-      if ($cast(tr, tr)) begin
-        // 示例：若自定义事务有tr_data字段，需赋值
-        // tr.tr_data = get_tr_data();
-      end
-      dump_data.push_back(get_tr_data()); // 存储数据
-      ap.write(tr); // 发送到analysis port
-      valid_data_check_flag = 1'b0;
-
-      `uvm_info("SLAVE_MON", $sformatf("Capture slave transaction: data=0x%0h", get_tr_data()), UVM_HIGH)
-    end
-  endtask
-
-  // -------------------------- Slave侧协议检查 --------------------------
-  virtual task perform_protocol_checks();
-    if (!cfg.enable_protocol_checks) return;
-
-    // 检查1：valid=1时数据不能有X/Z
-    if (get_valid() === 1'b1 && $isunknown(get_tr_data())) begin
-      `uvm_error("SLAVE_MON", $sformatf("Data has X/Z when s_valid=1: 0x%0h", get_tr_data()))
-    end
-
-    // 检查2：valid=1 & rdy=0时，valid/data不能变化
-    if (valid_data_check_flag) begin
-      if (get_valid() == 1'b0) begin
-        `uvm_error("SLAVE_MON", "s_valid changed to 0 before s_rdy=1!")
-      end
-      if (get_tr_data() != tr_data_check) begin
-        `uvm_error("SLAVE_MON", $sformatf("s_tr_data changed when s_valid=1 & s_rdy=0: 0x%0h", get_tr_data()))
-      end
-    end
-  endtask
-
-endclass
-
-
-class simple_handshake_master_monitor #(parameter DATA_WIDTH = 32) 
-  extends simple_handshake_base_monitor#(DATA_WIDTH);
-
-  `uvm_component_param_utils(simple_handshake_master_monitor#(DATA_WIDTH))
-
-  // 绑定master接口
-  virtual simple_handshake_master_interface#(DATA_WIDTH) vif;
-
-  // 事务类型（可替换为自定义master事务）
-  typedef uvm_sequence_item tr_t;
-
-  // -------------------------- 重写基类方法（实现具体接口访问） --------------------------
-  virtual function bit get_valid();
-    return vif.monitor_cb.m_valid;
-  endfunction
-
-  virtual function bit get_rdy();
-    return vif.monitor_cb.m_rdy;
-  endfunction
-
-  virtual function logic [DATA_WIDTH-1:0] get_tr_data();
-    return vif.monitor_cb.m_tr_data;
-  endfunction
-
-  virtual task wait_monitor_cb();
-    @(vif.monitor_cb);
-  endtask
-
-  // -------------------------- 构造函数 --------------------------
-  function new(string name, uvm_component parent);
-    super.new(name, parent);
-  endfunction
-
-  // -------------------------- Build阶段：获取接口 --------------------------
-  virtual function void build_phase(uvm_phase phase);
-    super.build_phase(phase);
-    // 获取master接口
-    if (!uvm_config_db#(virtual simple_handshake_master_interface#(DATA_WIDTH))::get(this, "", "master_handshake_vif", vif)) begin
-      `uvm_fatal("MASTER_MON", "Virtual master interface not found!")
-    end
-  endfunction
-
-  // -------------------------- 监控Master侧事务 --------------------------
-  virtual task monitor_transaction();
-    tr_t tr;
-
-    // 1. 记录valid=1但rdy=0时的初始数据（协议检查用）
-    if (get_valid() === 1'b1 && get_rdy() === 1'b0) begin
-      valid_data_check_flag = 1'b1;
-      tr_data_check = get_tr_data();
-    end
-
-    // 2. 捕获完整握手（valid=1 & rdy=1）
-    if (get_valid() === 1'b1 && get_rdy() === 1'b1) begin
-      tr = tr_t::type_id::create("tr");
-      // 给事务赋值（自定义事务需扩展此部分）
-      if ($cast(tr, tr)) begin
-        // 示例：若自定义事务有tr_data字段，需赋值
-        // tr.tr_data = get_tr_data();
-      end
-      dump_data.push_back(get_tr_data()); // 存储数据
-      ap.write(tr); // 发送到analysis port
-      valid_data_check_flag = 1'b0;
-
-      `uvm_info("MASTER_MON", $sformatf("Capture master transaction: data=0x%0h", get_tr_data()), UVM_HIGH)
-    end
-  endtask
-
-  // -------------------------- Master侧协议检查 --------------------------
-  virtual task perform_protocol_checks();
-    if (!cfg.enable_protocol_checks) return;
-
-    // 检查1：valid=1时数据不能有X/Z
-    if (get_valid() === 1'b1 && $isunknown(get_tr_data())) begin
-      `uvm_error("MASTER_MON", $sformatf("Data has X/Z when m_valid=1: 0x%0h", get_tr_data()))
-    end
-
-    // 检查2：valid=1 & rdy=0时，valid/data不能变化
-    if (valid_data_check_flag) begin
-      if (get_valid() == 1'b0) begin
-        `uvm_error("MASTER_MON", "m_valid changed to 0 before m_rdy=1!")
-      end
-      if (get_tr_data() != tr_data_check) begin
-        `uvm_error("MASTER_MON", $sformatf("m_tr_data changed when m_valid=1 & m_rdy=0: 0x%0h", get_tr_data()))
-      end
+      wait_monitor_cb();
+      monitor_transaction();
+      perform_protocol_checks();
     end
   endtask
 
