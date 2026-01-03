@@ -78,28 +78,51 @@ class uart_directed_sequence extends uvm_sequence #(svt_uart_transaction);
     `uvm_info("body", "Entered ...", UVM_LOW)
 
     /** Create instance of svt_uart_transaction class. */
-    `uvm_create(tx_xact)  
+    for(int loop=0;loop<3;loop++)begin
 
-    /** Assigning the fields of Uart Transaction class*/
-    tx_xact.packet_count = 5;
-    tx_xact.inter_cycle_delay = 100;
-    tx_xact.payload = new[tx_xact.packet_count];
- 
-    /** Inject the directed transaction in the output stream of Uart sequencer.*/
-    `uvm_send(tx_xact)  
+      /** Assigning the fields of Uart Transaction class*/
+      /** Inject the directed transaction in the output stream of Uart sequencer.*/
+      // `uvm_send(tx_xact)  
+      // `uvm_create(tx_xact)
+      // // tx_xact.reasonable_constraint_mode(0);
+      // tx_xact.direction = 0; // 0 - TX , 1 - RX      
+      // `uvm_rand_send_with(tx_xact,{
 
-    /** 
-     * Call get_response only if agent configuration attribute,
-     * enable_put_response is set 1.
-     */
-    if(uart_cfg.enable_put_response == 1)
-      get_response(rsp);
 
+      //   tx_xact.inter_cycle_delay == 100;
+      //   tx_xact.packet_count == 8;
+      //   foreach(tx_xact.payload[i]) {
+      //     tx_xact.payload[i] == i;
+      //   }
+      // });
+      // tx_xact.print();
+      // #100us;      
+      // if(uart_cfg.enable_put_response == 1)
+      //   get_response(rsp);
+      // rsp.print();
+      #100us;
+      uart_rx(32);
+
+      `uvm_info("body", $sformatf("UART PACKET %0d sent successfully", loop+1), UVM_LOW)
+      #100000;
+    end
     `uvm_info("body", "UART PACKET has finished", UVM_LOW)
-
     `uvm_info("body", "Exiting ...", UVM_LOW)
   endtask : body
 
+    task uart_rx(int received_bytes);
+        `uvm_create(tx_xact);        
+        tx_xact.direction           = 1;//RX                    
+        `uvm_rand_send_with(tx_xact,{
+            tx_xact.packet_count        == received_bytes;
+            tx_xact.inter_cycle_delay   == 80;  
+        });   
+        `uvm_info(get_full_name(),$sformatf("waiting for cpu send back %d",received_bytes),UVM_LOW);
+        tx_xact.print();       
+        get_response(rsp);
+        `uvm_info(get_full_name(),$sformatf("%d data received.",received_bytes),UVM_LOW);       
+        rsp.print();       
+    endtask        
 endclass : uart_directed_sequence 
 
 `endif // GUARD_UART_DIRECTED_SEQUENCE_UVM_SV
