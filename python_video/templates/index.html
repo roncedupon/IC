@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 视频同步播放系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .header-content { flex: 1; }
+        h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+        .subtitle { font-size: 16px; opacity: 0.9; margin-bottom: 20px; }
+        
+        .stats { 
+            display: flex; 
+            gap: 25px; 
+            font-size: 15px;
+            flex-wrap: wrap;
+        }
+        .stat-item { 
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255,255,255,0.15);
+            padding: 12px 20px;
+            border-radius: 12px;
+            min-width: 120px;
+        }
+        .stat-value { 
+            font-size: 28px; 
+            font-weight: 700; 
+            margin-bottom: 5px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .stat-label { font-size: 13px; opacity: 0.9; }
+        
+        .card { 
+            background: white; 
+            border-radius: 16px; 
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08); 
+            padding: 28px; 
+            margin: 20px;
+            transition: transform 0.3s ease;
+        }
+        .card:hover { 
+            transform: translateY(-3px);
+        }
+        
+        h2 { 
+            color: #4a5568; 
+            font-size: 22px; 
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .control-panel { 
+            display: grid; 
+            grid-template-columns: 1fr auto;
+            gap: 15px; 
+            margin-bottom: 20px; 
+            align-items: center; 
+        }
+        @media (max-width: 768px) {
+            .control-panel { grid-template-columns: 1fr; }
+        }
+        
+        .url-input { 
+            flex: 1; 
+            padding: 14px 18px; 
+            border: 2px solid #e2e8f0; 
+            border-radius: 12px; 
+            font-size: 15px; 
+            transition: all 0.3s;
+            background: #f8fafc;
+        }
+        .url-input:focus { 
+            outline: none; 
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn-group { 
+            display: flex; 
+            gap: 12px; 
+            flex-wrap: wrap; 
+        }
+        .btn { 
+            padding: 14px 24px; 
+            border: none; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-size: 15px; 
+            font-weight: 600;
+            transition: all 0.3s; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-width: 120px;
+        }
+        .btn-primary { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+        }
+        .btn-primary:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        .btn-danger { 
+            background: #f56565; 
+            color: white; 
+        }
+        .btn-danger:hover { 
+            background: #e53e3e; 
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(245, 101, 101, 0.4);
+        }
+        .btn-info { 
+            background: #4299e1; 
+            color: white; 
+        }
+        .btn-info:hover { 
+            background: #3182ce; 
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(66, 153, 225, 0.4);
+        }
+        
+        .video-container { 
+            position: relative; 
+            width: 100%; 
+            margin-bottom: 25px; 
+            background: #000; 
+            border-radius: 16px; 
+            overflow: hidden; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        video { 
+            width: 100%; 
+            height: auto;
+            max-height: 600px;
+            display: block; 
+            outline: none;
+        }
+        
+        .video-info { 
+            margin-top: 15px; 
+            color: #4a5568; 
+            font-size: 14px; 
+            padding: 20px; 
+            background: #f8fafc; 
+            border-radius: 12px; 
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .video-info-item { display: flex; flex-direction: column; }
+        .video-info-label { font-weight: 600; color: #718096; margin-bottom: 5px; font-size: 13px; }
+        .video-info-value { font-weight: 500; color: #2d3748; font-size: 15px; word-break: break-all; }
+        
+        .device-panel { marginTop: 10px; }
+        .device-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+            gap: 20px; 
+            margin-top: 20px; 
+        }
+        .device-card { 
+            border: 1px solid #e2e8f0; 
+            border-radius: 14px; 
+            padding: 20px; 
+            background: white;
+            transition: all 0.3s;
+            border-left: 4px solid #48bb78;
+        }
+        .device-card:hover { 
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .device-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            margin-bottom: 15px; 
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .device-id { 
+            font-weight: 700; 
+            color: #2d3748; 
+            font-size: 16px;
+        }
+        .device-status { 
+            padding: 4px 12px; 
+            border-radius: 20px; 
+            font-size: 12px; 
+            font-weight: 600;
+        }
+        .status-online { background: #c6f6d5; color: #22543d; }
+        .status-buffering { background: #fed7d7; color: #742a2a; }
+        .status-paused { background: #e9d8fd; color: #553c9a; }
+        
+        .device-metrics { display: grid; gap: 12px; }
+        .metric { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+        }
+        .metric-label { color: #718096; font-size: 14px; }
+        .metric-value { 
+            font-weight: 600; 
+            font-size: 15px;
+        }
+        .progress-bar { 
+            height: 8px; 
+            background: #e2e8f0; 
+            border-radius: 4px; 
+            margin-top: 6px; 
+            overflow: hidden; 
+        }
+        .progress-fill { 
+            height: 100%; 
+            background: linear-gradient(90deg, #48bb78, #38a169);
+            border-radius: 4px; 
+            transition: width 0.5s ease;
+        }
+        
+        .log-panel { 
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace; 
+            font-size: 13px; 
+            max-height: 300px; 
+            overflow-y: auto; 
+            padding: 20px; 
+            background: #1a202c; 
+            border-radius: 12px; 
+            color: #cbd5e0;
+        }
+        .log-entry { 
+            padding: 8px 0; 
+            border-bottom: 1px solid #2d3748; 
+            line-height: 1.5;
+        }
+        
+        .message-area { 
+            position: fixed; 
+            top: 20px; 
+            right: 20px; 
+            z-index: 1000; 
+            max-width: 400px;
+        }
+        .message { 
+            padding: 16px 20px; 
+            border-radius: 12px; 
+            margin-bottom: 10px; 
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .message.success { background: #48bb78; color: white; }
+        .message.error { background: #f56565; color: white; }
+        .message.info { background: #4299e1; color: white; }
+        .message.warning { background: #ed8936; color: white; }
+        
+        .loading { 
+            text-align: center; 
+            padding: 40px; 
+            color: #a0aec0; 
+            font-size: 16px;
+        }
+        
+        .connection-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .connected { background: #48bb78; color: white; }
+        .disconnected { background: #f56565; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1>🎬 视频同步播放系统</h1>
+                <div class="subtitle">实时同步播放、进度 | 音量独立控制 | 多设备监控 | 根治状态竞争问题</div>
+            </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="online-count">{{ online_count }}</div>
+                    <div class="stat-label">在线设备</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="session-id">-</div>
+                    <div class="stat-label">同步会话</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>视频控制</h2>
+            <div class="control-panel">
+                <input type="text" class="url-input" id="video-url" 
+                       placeholder="输入视频URL (支持MP4、M3U8、FLV等格式)" 
+                       value="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4">
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="playVideo()">▶️ 播放/同步</button>
+                    <button class="btn btn-danger" onclick="pauseVideo()">⏸️ 暂停</button>
+                    <button class="btn btn-info" onclick="seekVideo(30)">⏩ +30秒</button>
+                    <button class="btn btn-info" onclick="seekVideo(-30)">⏪ -30秒</button>
+                    <button class="btn" onclick="forceSync()">🔄 强制同步</button>
+                    <button class="btn" onclick="clearVideo()">🗑️ 清空</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>视频播放器</h2>
+            <div class="video-container">
+                <video id="player" controls playsinline preload="auto" crossorigin="anonymous">
+                    您的浏览器不支持HTML5视频播放
+                </video>
+            </div>
+            <div class="video-info">
+                <div class="video-info-item">
+                    <div class="video-info-label">当前视频:</div>
+                    <div class="video-info-value" id="current-url">无</div>
+                </div>
+                <div class="video-info-item">
+                    <div class="video-info-label">播放状态:</div>
+                    <div class="video-info-value" id="player-state">等待播放</div>
+                </div>
+                <div class="video-info-item">
+                    <div class="video-info-label">播放进度:</div>
+                    <div class="video-info-value" id="progress-display">0:00 / 0:00</div>
+                </div>
+                <div class="video-info-item">
+                    <div class="video-info-label">加载速度:</div>
+                    <div class="video-info-value" id="load-speed">0 KB/s</div>
+                </div>
+                <div class="video-info-item">
+                    <div class="video-info-label">缓冲进度:</div>
+                    <div class="video-info-value" id="buffer-progress">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card device-panel">
+            <h2>设备监控 (<span id="device-count">0</span> 台在线)</h2>
+            <div id="device-grid" class="device-grid">
+                <div class="loading">正在加载设备列表...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>同步日志</h2>
+            <div id="sync-log" class="log-panel">
+                <div class="log-entry">系统就绪，等待连接...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="message-area" class="message-area"></div>
+    <div id="connection-status" class="connection-status disconnected">连接中...</div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const player = document.getElementById('player');
+        
+        let playerState = {
+            isPlaying: false,
+            currentTime: 0,
+            isDragging: false,
+            isBuffering: false,
+            lastSyncTs: 0,
+            currentVideoUrl: '',
+            loadSpeed: 0,
+            bufferProgress: 0,
+            lastSpeedCalcTime: Date.now(),
+            lastBufferBytes: 0,
+            latency: 0,
+            deviceId: null
+        };
+        
+        let syncSession = null;
+        const SYNC_INTERVAL = {{ config.SYNC_INTERVAL }};
+        const SYNC_THRESHOLD = {{ config.SYNC_THRESHOLD }};
+        const SPEED_REPORT_INTERVAL = {{ config.SPEED_REPORT_INTERVAL }};
+        const HEARTBEAT_INTERVAL = {{ config.HEARTBEAT_INTERVAL }};
+        
+        // 补全缺失的工具函数
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function addLog(message, type = 'info', syncId = '') {
+            const logPanel = document.getElementById('sync-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `[${timestamp}] ${message} ${syncId ? `(ID: ${syncId})` : ''}`;
+            
+            // 添加颜色样式
+            if (type === 'success') logEntry.style.color = '#48bb78';
+            else if (type === 'error') logEntry.style.color = '#f56565';
+            else if (type === 'warning') logEntry.style.color = '#ed8936';
+            else if (type === 'info') logEntry.style.color = '#4299e1';
+            
+            logPanel.appendChild(logEntry);
+            logPanel.scrollTop = logPanel.scrollHeight;
+        }
+        
+        function showMessage(message, type = 'info', duration = 3000) {
+            const messageArea = document.getElementById('message-area');
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${type}`;
+            messageEl.textContent = message;
+            
+            messageArea.appendChild(messageEl);
+            
+            setTimeout(() => {
+                messageEl.style.opacity = '0';
+                messageEl.style.transform = 'translateX(100%)';
+                messageEl.style.transition = 'all 0.3s ease';
+                setTimeout(() => messageEl.remove(), 300);
+            }, duration);
+        }
+        
+        function updateConnectionStatus(isConnected) {
+            const statusEl = document.getElementById('connection-status');
+            if (isConnected) {
+                statusEl.className = 'connection-status connected';
+                statusEl.textContent = '已连接';
+            } else {
+                statusEl.className = 'connection-status disconnected';
+                statusEl.textContent = '已断开';
+            }
+        }
+        
+        function updatePlayerState() {
+            // 更新播放状态显示
+            const stateText = playerState.isBuffering 
+                ? '缓冲中' 
+                : (playerState.isPlaying ? '播放中' : '已暂停');
+            document.getElementById('player-state').textContent = stateText;
+            
+            // 更新进度显示
+            const currentTime = formatTime(player.currentTime);
+            const duration = formatTime(player.duration || 0);
+            document.getElementById('progress-display').textContent = `${currentTime} / ${duration}`;
+            
+            // 更新加载速度和缓冲进度
+            document.getElementById('load-speed').textContent = `${playerState.loadSpeed} KB/s`;
+            document.getElementById('buffer-progress').textContent = `${playerState.bufferProgress}%`;
+        }
+        
+        function updateDevicePanel(data) {
+            const deviceGrid = document.getElementById('device-grid');
+            const deviceCount = document.getElementById('device-count');
+            const onlineCountEl = document.getElementById('online-count');
+            
+            deviceCount.textContent = data.online_count;
+            onlineCountEl.textContent = data.online_count;
+            
+            if (data.online_count === 0) {
+                deviceGrid.innerHTML = '<div class="loading">暂无在线设备</div>';
+                return;
+            }
+            
+            deviceGrid.innerHTML = '';
+            data.devices.forEach(device => {
+                const deviceCard = document.createElement('div');
+                deviceCard.className = 'device-card';
+                
+                // 确定设备状态
+                let statusClass = 'status-online';
+                let statusText = '在线';
+                if (device.is_buffering) {
+                    statusClass = 'status-buffering';
+                    statusText = '缓冲中';
+                } else if (!device.is_playing) {
+                    statusClass = 'status-paused';
+                    statusText = '已暂停';
+                }
+                
+                deviceCard.innerHTML = `
+                    <div class="device-header">
+                        <div class="device-id">${device.device_id}</div>
+                        <div class="device-status ${statusClass}">${statusText}</div>
+                    </div>
+                    <div class="device-metrics">
+                        <div class="metric">
+                            <span class="metric-label">加载速度</span>
+                            <span class="metric-value">${device.load_speed} KB/s</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">缓冲进度</span>
+                            <span class="metric-value">${device.buffer_progress}%</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">连接时长</span>
+                            <span class="metric-value">${Math.floor((Date.now()/1000 - device.connected_at)/60)} 分钟</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">缓冲进度条</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${device.buffer_progress}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                deviceGrid.appendChild(deviceCard);
+            });
+        }
+        
+        // 视频控制函数
+        function playVideo() {
+            const videoUrl = document.getElementById('video-url').value.trim();
+            if (!videoUrl) {
+                showMessage('请输入有效的视频URL', 'error');
+                return;
+            }
+            
+            socket.emit('send_state', {
+                video_url: videoUrl,
+                is_playing: true,
+                current_time: 0
+            });
+            showMessage('正在同步播放视频...', 'info');
+        }
+        
+        function pauseVideo() {
+            socket.emit('send_state', {
+                is_playing: false
+            });
+            showMessage('已暂停播放', 'info');
+        }
+        
+        function seekVideo(seconds) {
+            const newTime = player.currentTime + seconds;
+            if (newTime < 0) return;
+            
+            socket.emit('send_state', {
+                current_time: newTime,
+                is_playing: playerState.isPlaying
+            });
+            showMessage(`已跳转 ${seconds > 0 ? '+' : ''}${seconds} 秒`, 'info');
+        }
+        
+        function forceSync() {
+            socket.emit('request_force_sync');
+            showMessage('已发送强制同步指令', 'info');
+        }
+        
+        function clearVideo() {
+            socket.emit('send_state', {
+                video_url: '',
+                current_time: 0,
+                is_playing: false
+            });
+            showMessage('已清空视频', 'info');
+        }
+        
+        function startHeartbeat() {
+            setInterval(() => {
+                if (socket.connected) {
+                    socket.emit('heartbeat');
+                }
+            }, HEARTBEAT_INTERVAL);
+        }
+        
+        // 监听播放器事件
+        socket.on('connect', () => {
+            updateConnectionStatus(true);
+            addLog('✅ 已连接到服务器', 'success');
+            socket.emit('get_init_state');
+            startHeartbeat();
+        });
+        
+        socket.on('disconnect', () => {
+            updateConnectionStatus(false);
+            addLog('❌ 与服务器断开连接', 'error');
+        });
+        
+        socket.on('connect_error', (error) => {
+            updateConnectionStatus(false);
+            addLog('❌ 连接错误: ' + error.message, 'error');
+        });
+        
+        socket.on('welcome', (data) => {
+            playerState.deviceId = data.device_id;
+            syncSession = data.session_id;
+            document.getElementById('session-id').textContent = syncSession;
+            addLog(`🎉 欢迎设备: ${data.device_id}`, 'success');
+        });
+        
+        socket.on('sync_self', (state) => {
+            handleSync(state, true);
+        });
+        
+        socket.on('sync_all', (state) => {
+            handleSync(state, false);
+        });
+        
+        socket.on('device_status_update', (data) => {
+            updateDevicePanel(data);
+        });
+        
+        function handleSync(state, isSelf) {
+            const prefix = isSelf ? '🔄 初始化同步' : '🔄 全局同步';
+            addLog(`${prefix}: ${state.is_playing ? '播放' : '暂停'} @ ${state.current_time.toFixed(1)}s`, 'info', state.sync_id);
+            
+            syncSession = state.session_id;
+            document.getElementById('session-id').textContent = syncSession;
+            
+            const needPlay = state.is_playing === true;
+            playerState.isPlaying = needPlay;
+
+            if (state.video_url && state.video_url !== playerState.currentVideoUrl) {
+                const videoUrlDisplay = state.video_url.length > 60 ? state.video_url.substring(0, 60) + '...' : state.video_url;
+                addLog(`📸 加载视频: ${videoUrlDisplay}`, 'info');
+                playerState.currentVideoUrl = state.video_url;
+                player.src = state.video_url;
+                document.getElementById('current-url').textContent = videoUrlDisplay;
+                
+                player.load();
+                
+                const loadHandler = () => {
+                    if (state.current_time > 0 && Math.abs(player.currentTime - state.current_time) > 0.5) {
+                        player.currentTime = state.current_time;
+                    }
+                    if(needPlay) player.play().catch(()=>{});
+                    player.removeEventListener('loadedmetadata', loadHandler);
+                };
+                player.addEventListener('loadedmetadata', loadHandler);
+                
+                showMessage('正在加载视频...', 'info');
+            } 
+            else if (!state.video_url && playerState.currentVideoUrl) {
+                player.pause();
+                player.src = '';
+                player.load();
+                playerState.currentVideoUrl = '';
+                document.getElementById('current-url').textContent = '无';
+                playerState.isPlaying = false;
+                updatePlayerState();
+                return;
+            }
+            
+            if (state.video_url && Math.abs(player.currentTime - state.current_time) > SYNC_THRESHOLD) {
+                if (!playerState.isDragging) {
+                    const wasPlaying = playerState.isPlaying;
+                    if(wasPlaying) player.pause();
+                    player.currentTime = state.current_time.toFixed(2);
+                    if(wasPlaying) player.play().catch(err => console.warn("音频对齐兜底:", err));
+                }
+            }
+            
+            if (needPlay && playerState.currentVideoUrl) {
+                player.play().catch(err => {
+                    console.warn("自动播放兜底:", err);
+                    addLog('⚠️ 浏览器限制自动播放，手动点击播放即可', 'warning');
+                });
+            } else if(!needPlay) {
+                player.pause();
+            }
+            
+            updatePlayerState();
+        }
+        
+        // 初始化播放器事件监听
+        function initPlayer() {
+            player.addEventListener('loadedmetadata', () => {
+                updatePlayerState();
+            });
+            
+            player.addEventListener('timeupdate', () => {
+                playerState.currentTime = player.currentTime;
+                updatePlayerState();
+                
+                const now = Date.now();
+                if (playerState.isPlaying && now - playerState.lastSyncTs > SYNC_INTERVAL) {
+                    if (!playerState.isDragging) {
+                        // ============【前端核心优化：被动同步 只上报进度，不带任何状态字段】============
+                        socket.emit('send_state', { 
+                            current_time: player.currentTime.toFixed(2)
+                        });
+                        // =====================================================================
+                    }
+                    playerState.lastSyncTs = now;
+                }
+            });
+            
+            player.addEventListener('play', () => {
+                if (!playerState.isPlaying && playerState.currentVideoUrl) {
+                    playerState.isPlaying = true;
+                    socket.emit('send_state', { 
+                        is_playing: true,
+                        is_buffering: false
+                    });
+                    addLog('▶️ 开始播放', 'success');
+                }
+            });
+            
+            player.addEventListener('pause', () => {
+                if (playerState.isPlaying && !playerState.isBuffering) {
+                    playerState.isPlaying = false;
+                    socket.emit('send_state', { 
+                        is_playing: false,
+                        is_buffering: false
+                    });
+                    addLog('⏸️ 暂停播放', 'info');
+                }
+            });
+            
+            player.addEventListener('seeking', () => {
+                playerState.isDragging = true;
+                addLog('⏩ 正在跳转...', 'info');
+            });
+            
+            player.addEventListener('seeked', () => {
+                playerState.isDragging = false;
+                playerState.currentTime = player.currentTime;
+                socket.emit('send_state', { 
+                    current_time: player.currentTime.toFixed(2),
+                    is_buffering: playerState.isBuffering,
+                    is_playing: playerState.isPlaying
+                });
+                addLog(`⏩ 跳转到 ${formatTime(player.currentTime)}`, 'info');
+            });
+            
+            // 音量完全独立，无任何同步逻辑
+            let bufferingTimer = null;
+            
+            player.addEventListener('waiting', () => {
+                if (!playerState.isBuffering) {
+                    playerState.isBuffering = true;
+                    addLog('⏳ 缓冲中...', 'info');
+                    showMessage('缓冲中...', 'warning');
+                    
+                    socket.emit('send_state', { 
+                        is_buffering: true,
+                        is_playing: playerState.isPlaying
+                    });
+                    
+                    if (socket.connected) {
+                        socket.emit('report_player_metrics', {
+                            load_speed: playerState.loadSpeed,
+                            buffer_progress: playerState.bufferProgress,
+                            is_playing: playerState.isPlaying,
+                            is_buffering: true
+                        });
+                    }
+                }
+                updatePlayerState();
+            });
+            
+            player.addEventListener('playing', () => {
+                if (playerState.isBuffering) {
+                    playerState.isBuffering = false;
+                    addLog('✅ 缓冲完成，继续播放', 'success');
+                    showMessage('缓冲完成', 'success');
+                    
+                    socket.emit('send_state', { 
+                        is_buffering: false,
+                        is_playing: playerState.isPlaying
+                    });
+                }
+                updatePlayerState();
+            });
+            
+            player.addEventListener('canplay', () => {
+                if (playerState.isBuffering) {
+                    playerState.isBuffering = false;
+                }
+                updatePlayerState();
+            });
+            
+            // 计算加载速度
+            setInterval(() => {
+                if (player.buffered.length > 0) {
+                    const bufferedEnd = player.buffered.end(player.buffered.length - 1);
+                    const currentBufferBytes = bufferedEnd * player.videoWidth * player.videoHeight * 0.1; // 估算值
+                    const now = Date.now();
+                    const timeDiff = (now - playerState.lastSpeedCalcTime) / 1000;
+                    
+                    if (timeDiff > 0) {
+                        playerState.loadSpeed = Math.round((currentBufferBytes - playerState.lastBufferBytes) / 1024 / timeDiff);
+                        playerState.bufferProgress = Math.round((bufferedEnd / player.duration) * 100) || 0;
+                        playerState.lastSpeedCalcTime = now;
+                        playerState.lastBufferBytes = currentBufferBytes;
+                        
+                        // 上报播放器指标
+                        if (socket.connected) {
+                            socket.emit('report_player_metrics', {
+                                load_speed: playerState.loadSpeed,
+                                buffer_progress: playerState.bufferProgress,
+                                is_playing: playerState.isPlaying,
+                                is_buffering: playerState.isBuffering
+                            });
+                        }
+                    }
+                }
+                updatePlayerState();
+            }, SPEED_REPORT_INTERVAL);
+        }
+        
+        // 初始化
+        window.addEventListener('load', () => {
+            initPlayer();
+            // 初始加载状态
+            document.getElementById('online-count').textContent = {{ online_count }};
+            document.getElementById('device-count').textContent = {{ online_count }};
+        });
+    </script>
+</body>
+</html>
