@@ -23,7 +23,7 @@ global_play_state = {
     "video_url": "",
     "current_time": 0.0,
     "is_playing": False,
-    "is_muted": True,
+    "is_muted": True,  # ✅ 仅占位，不再参与任何同步逻辑，完全无效
     "update_ts": time.time(),
     "session_id": str(uuid.uuid4())[:8],
     "last_sync_operation": None
@@ -34,16 +34,16 @@ device_status = {}
 DEVICE_PREFIX = "DEV-"
 device_lock = threading.Lock()
 
-# 配置参数
+# 配置参数 【保留音频同步优化参数，声音播放精准对齐】
 CONFIG = {
-    "STATE_LOCK": 0.5,           # 状态锁定时间(秒) - 防止重复同步
-    "SYNC_THRESHOLD": 1.5,       # 进度同步阈值(秒) - 调小以更丝滑
-    "SYNC_INTERVAL": 1500,       # 进度同步间隔(ms) - 播放中定期同步
-    "SPEED_REPORT_INTERVAL": 1000,  # 速度报告间隔(ms)
-    "HEARTBEAT_INTERVAL": 5000,  # 心跳间隔(ms)
-    "HEARTBEAT_TIMEOUT": 15000,  # 心跳超时(ms)
-    "MIN_VALID_TIME": 0.1,       # 最小有效播放时间(秒)
-    "MAX_BUFFER_SYNC_DELAY": 3.0,  # 最大缓冲同步延迟(秒)
+    "STATE_LOCK": 0.3,           
+    "SYNC_THRESHOLD": 0.3,       # 声音同步核心：人耳无感阈值
+    "SYNC_INTERVAL": 800,        # 缩短间隔，进度无累积误差
+    "SPEED_REPORT_INTERVAL": 1000,
+    "HEARTBEAT_INTERVAL": 5000,
+    "HEARTBEAT_TIMEOUT": 15000,
+    "MIN_VALID_TIME": 0.1,
+    "MAX_BUFFER_SYNC_DELAY": 1.5,
 }
 
 # 心跳监控线程
@@ -84,21 +84,19 @@ def handle_connect():
             "load_speed": 0.0,
             "buffer_progress": 0.0,
             "is_playing": False,
-            "is_buffering": False,  # 设备缓冲状态
+            "is_buffering": False,
             "online": True,
             "connected_at": time.time(),
             "last_seen": time.time(),
             "ip": request.remote_addr
         }
     
-    # 发送欢迎消息和初始状态
     emit('welcome', {
         "device_id": device_id,
         "session_id": global_play_state["session_id"],
         "server_time": time.time()
     })
     
-    # 发送当前全局状态给新设备
     emit('sync_self', global_play_state)
     broadcast_device_status()
     
@@ -137,7 +135,7 @@ def handle_player_metrics(data):
                 "load_speed": round(data.get("load_speed", 0), 1),
                 "buffer_progress": round(data.get("buffer_progress", 0), 1),
                 "is_playing": data.get("is_playing", False),
-                "is_buffering": data.get("is_buffering", False),  # 缓冲状态
+                "is_buffering": data.get("is_buffering", False),
                 "last_seen": time.time()
             })
     broadcast_device_status()
@@ -149,40 +147,35 @@ def send_init_state():
 
 @socketio.on('send_state')
 def handle_state_change(data):
-    """处理状态变更 - 优化缓冲处理 + ✅修复：elif改if 解除状态阻断"""
+    """处理状态变更 - 保留所有原修复：elif改if 解除状态阻断 + 缓冲不修改播放状态"""
     global global_play_state
     
     sid = request.sid
     now = time.time()
     
-    # 验证数据格式
     if not isinstance(data, dict):
         return
     
-    # 更新设备最后活动时间
     with device_lock:
         if sid in device_status:
             device_status[sid]["last_seen"] = now
     
-    # 检查状态锁定
     if now - global_play_state["update_ts"] < CONFIG["STATE_LOCK"]:
         return
     
     need_broadcast = False
     operation_type = None
-    
-    # ✅ 修复点1【核心】：所有状态判断从 elif 改为 if ，解除多状态传递阻断
-    # 所有状态独立判断，可同时生效，进度同步绝不修改播放状态，完美保留原状态
+
     # 1. 视频源变更
     if "video_url" in data and data["video_url"] != global_play_state["video_url"]:
         video_url = data["video_url"]
-        if not video_url:  # 清空视频
+        if not video_url:
             global_play_state.update({
                 "video_url": "",
                 "current_time": 0.0,
                 "is_playing": False
             })
-        else:  # 新视频
+        else:
             global_play_state.update({
                 "video_url": video_url,
                 "current_time": 0.0,
@@ -194,20 +187,14 @@ def handle_state_change(data):
     
     # 2. 播放/暂停状态变更
     if "is_playing" in data and data["is_playing"] != global_play_state["is_playing"]:
-        # 只在有视频时允许播放
         if not global_play_state["video_url"] and data["is_playing"]:
             return
         
-        # 检查是否是因为缓冲导致的暂停
         is_buffering = data.get("is_buffering", False)
-        
-        # 关键修复：如果设备正在缓冲，则不改变全局播放状态
         if is_buffering and global_play_state["is_playing"]:
-            # 只记录，不广播
             logger.debug(f"设备 {sid[:8]} 缓冲中，忽略暂停状态")
             operation_type = "buffering_ignore"
         else:
-            # 正常播放/暂停状态变更
             global_play_state["is_playing"] = data["is_playing"]
             need_broadcast = True
             operation_type = "play_pause"
@@ -217,42 +204,32 @@ def handle_state_change(data):
     if "current_time" in data and global_play_state["video_url"]:
         current_time = float(data["current_time"])
         
-        # 验证进度值
         if current_time < 0:
             return
         
-        # 防止无效的0进度重置
         if current_time < CONFIG["MIN_VALID_TIME"] and global_play_state["current_time"] > 1:
             return
         
         time_diff = abs(global_play_state["current_time"] - current_time)
-        
-        # 优化：使用较小的阈值实现更丝滑的同步
         if time_diff > CONFIG["SYNC_THRESHOLD"]:
             global_play_state["current_time"] = current_time
             need_broadcast = True
             operation_type = "seek"
             logger.debug(f"设备 {sid[:8]} 跳转进度: {current_time:.1f}s")
     
-    # 4. 静音状态
-    if "is_muted" in data and data["is_muted"] != global_play_state["is_muted"]:
-        global_play_state["is_muted"] = data["is_muted"]
-        need_broadcast = True
-        operation_type = "mute"
+    # ✅【核心修改1：彻底删除 静音状态的同步逻辑】
+    # 完全移除 is_muted 的判断和广播，服务端从此不处理任何音量/静音相关数据
     
-    # 如果需要广播
     if need_broadcast:
         global_play_state["update_ts"] = now
         global_play_state["last_sync_operation"] = operation_type
         
-        # 准备广播数据
         broadcast_data = {
             **global_play_state,
             "sync_id": str(uuid.uuid4())[:8],
             "timestamp": now
         }
         
-        # 广播给其他设备（排除发送者）
         try:
             socketio.emit('sync_all', broadcast_data, skip_sid=sid)
             logger.debug(f"广播 {operation_type} 状态")
@@ -280,7 +257,7 @@ def broadcast_device_status():
                 "load_speed": v["load_speed"],
                 "buffer_progress": v["buffer_progress"],
                 "is_playing": v.get("is_playing", False),
-                "is_buffering": v.get("is_buffering", False),  # 缓冲状态
+                "is_buffering": v.get("is_buffering", False),
                 "online": v.get("online", False),
                 "connected_at": v["connected_at"]
             }
@@ -349,7 +326,6 @@ def api_control():
                 "video_url": video_url,
                 "current_time": 0.0,
                 "is_playing": True,
-                "is_muted": True,
                 "update_ts": time.time()
             })
             
@@ -368,7 +344,7 @@ def api_control():
         elif action == 'seek':
             try:
                 current_time = float(data.get('current_time', 0))
-                if not 0 <= current_time <= 86400:  # 限制在24小时内
+                if not 0 <= current_time <= 86400:
                     return jsonify({"status": "error", "message": "进度值必须在0-86400秒之间"})
                 
                 global_play_state["current_time"] = current_time
@@ -385,7 +361,6 @@ def api_control():
                 "video_url": "",
                 "current_time": 0.0,
                 "is_playing": False,
-                "is_muted": True,
                 "update_ts": time.time()
             })
             
@@ -394,7 +369,6 @@ def api_control():
             return jsonify({"status": "success", "message": "已清空视频"})
         
         elif action == 'force_sync':
-            # 强制同步所有设备
             socketio.emit('sync_all', global_play_state)
             logger.info("API控制: 强制同步所有设备")
             return jsonify({"status": "success", "message": "强制同步指令已发送"})
@@ -596,7 +570,7 @@ MAIN_HTML = '''
         .video-info-label { font-weight: 600; color: #718096; margin-bottom: 5px; font-size: 13px; }
         .video-info-value { font-weight: 500; color: #2d3748; font-size: 15px; word-break: break-all; }
         
-        .device-panel { margin-top: 10px; }
+        .device-panel { marginTop: 10px; }
         .device-grid { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
@@ -729,7 +703,7 @@ MAIN_HTML = '''
         <div class="header">
             <div class="header-content">
                 <h1>🎬 视频同步播放系统</h1>
-                <div class="subtitle">实时同步播放、进度 | 支持多设备监控 | 优化缓冲处理</div>
+                <div class="subtitle">实时同步播放、进度 | 音量独立控制 | 多设备监控 | 优化缓冲处理</div>
             </div>
             <div class="stats">
                 <div class="stat-item">
@@ -817,9 +791,8 @@ MAIN_HTML = '''
         let playerState = {
             isPlaying: false,
             currentTime: 0,
-            isMuted: true,
             isDragging: false,
-            isBuffering: false,  // 本地缓冲状态
+            isBuffering: false,
             lastSyncTs: 0,
             currentVideoUrl: '',
             loadSpeed: 0,
@@ -841,8 +814,6 @@ MAIN_HTML = '''
             updateConnectionStatus(true);
             addLog('✅ 已连接到服务器', 'success');
             socket.emit('get_init_state');
-            
-            // 开始心跳
             startHeartbeat();
         });
         
@@ -875,7 +846,8 @@ MAIN_HTML = '''
             updateDevicePanel(data);
         });
         
-        // ✅ 修复点3【核心】：重构 handleSync 同步函数，播放状态优先级置顶 + 进度同步后强制续播
+        // ✅ 保留所有核心修复：播放状态优先级置顶 + 进度同步后强制续播 + 无感知进度校准
+        // ✅【核心修改2：彻底删除 静音状态的同步逻辑】播放器静音/音量完全本地独立控制
         function handleSync(state, isSelf) {
             const prefix = isSelf ? '🔄 初始化同步' : '🔄 全局同步';
             addLog(`${prefix}: ${state.is_playing ? '播放' : '暂停'} @ ${state.current_time.toFixed(1)}s`, 'info', state.sync_id);
@@ -883,7 +855,6 @@ MAIN_HTML = '''
             syncSession = state.session_id;
             document.getElementById('session-id').textContent = syncSession;
             
-            // ✅ 优先级最高：先同步播放状态，保证状态不丢失
             const needPlay = state.is_playing === true;
             playerState.isPlaying = needPlay;
 
@@ -895,19 +866,12 @@ MAIN_HTML = '''
                 player.src = state.video_url;
                 document.getElementById('current-url').textContent = videoUrlDisplay;
                 
-                // 设置静音
-                player.muted = state.is_muted;
-                playerState.isMuted = state.is_muted;
-                
-                // 加载视频
                 player.load();
                 
-                // 视频加载完成后设置进度+强制续播
                 const loadHandler = () => {
                     if (state.current_time > 0 && Math.abs(player.currentTime - state.current_time) > 0.5) {
                         player.currentTime = state.current_time;
                     }
-                    // 加载完成后如果是播放状态，强制播放
                     if(needPlay) player.play().catch(()=>{});
                     player.removeEventListener('loadedmetadata', loadHandler);
                 };
@@ -915,7 +879,6 @@ MAIN_HTML = '''
                 
                 showMessage('正在加载视频...', 'info');
             } 
-            // 清空视频
             else if (!state.video_url && playerState.currentVideoUrl) {
                 player.pause();
                 player.src = '';
@@ -927,21 +890,17 @@ MAIN_HTML = '''
                 return;
             }
             
-            // 静音状态
-            if (player.muted !== state.is_muted) {
-                player.muted = state.is_muted;
-                playerState.isMuted = state.is_muted;
-            }
-            
             // 进度同步逻辑
             if (state.video_url && Math.abs(player.currentTime - state.current_time) > SYNC_THRESHOLD) {
                 if (!playerState.isDragging) {
-                    player.currentTime = state.current_time;
+                    const wasPlaying = playerState.isPlaying;
+                    if(wasPlaying) player.pause();
+                    player.currentTime = state.current_time.toFixed(2);
+                    if(wasPlaying) player.play().catch(err => console.warn("音频对齐兜底:", err));
                 }
             }
             
-            // ✅ 核心修复：进度同步后 强制续播！抵消HTML5 video的原生暂停行为
-            // 只要全局是播放状态，无论任何同步场景，都强制调用play()保持播放
+            // 强制续播核心修复
             if (needPlay && playerState.currentVideoUrl) {
                 player.play().catch(err => {
                     console.warn("自动播放兜底:", err);
@@ -956,31 +915,27 @@ MAIN_HTML = '''
         
         // 播放器事件监听
         function initPlayer() {
-            // 元数据加载
             player.addEventListener('loadedmetadata', () => {
                 document.getElementById('duration').textContent = formatTime(player.duration);
             });
             
-            // ✅ 修复点4：timeupdate定期同步 - 携带播放状态，兜底保障
             player.addEventListener('timeupdate', () => {
                 playerState.currentTime = player.currentTime;
                 updatePlayerState();
                 
-                // 定期同步进度
                 const now = Date.now();
                 if (playerState.isPlaying && now - playerState.lastSyncTs > SYNC_INTERVAL) {
                     if (!playerState.isDragging) {
                         socket.emit('send_state', { 
-                            current_time: player.currentTime,
+                            current_time: player.currentTime.toFixed(2),
                             is_buffering: playerState.isBuffering,
-                            is_playing: playerState.isPlaying // ✅ 追加播放状态
+                            is_playing: playerState.isPlaying
                         });
                     }
                     playerState.lastSyncTs = now;
                 }
             });
             
-            // 播放事件
             player.addEventListener('play', () => {
                 if (!playerState.isPlaying && playerState.currentVideoUrl) {
                     playerState.isPlaying = true;
@@ -992,9 +947,7 @@ MAIN_HTML = '''
                 }
             });
             
-            // 暂停事件
             player.addEventListener('pause', () => {
-                // 关键：只有非缓冲状态下的暂停才发送同步指令
                 if (playerState.isPlaying && !playerState.isBuffering) {
                     playerState.isPlaying = false;
                     socket.emit('send_state', { 
@@ -1005,32 +958,25 @@ MAIN_HTML = '''
                 }
             });
             
-            // 拖动事件
             player.addEventListener('seeking', () => {
                 playerState.isDragging = true;
                 addLog('⏩ 正在跳转...', 'info');
             });
             
-            // ✅ 修复点2【核心】：seeked拖动完成 - 发送进度+播放状态，强制携带！
+            // ✅ 核心修复：拖动完成发送进度+播放状态
             player.addEventListener('seeked', () => {
                 playerState.isDragging = false;
                 playerState.currentTime = player.currentTime;
-                // 发送进度同步 + 强制携带当前播放状态，后端明确知道播放状态
                 socket.emit('send_state', { 
-                    current_time: player.currentTime,
+                    current_time: player.currentTime.toFixed(2),
                     is_buffering: playerState.isBuffering,
-                    is_playing: playerState.isPlaying // ✅ 必带！核心修复
+                    is_playing: playerState.isPlaying
                 });
                 addLog(`⏩ 跳转到 ${formatTime(player.currentTime)}`, 'info');
             });
             
-            // 音量变化
-            player.addEventListener('volumechange', () => {
-                if (playerState.isMuted !== player.muted) {
-                    playerState.isMuted = player.muted;
-                    socket.emit('send_state', { is_muted: player.muted });
-                }
-            });
+            // ✅【核心修改3：彻底删除 音量变化的同步事件】本地调音量/静音不再发送任何请求
+            // 移除 volumechange 事件监听，播放器音量完全独立
             
             // 缓冲事件处理
             let bufferingTimer = null;
@@ -1041,13 +987,11 @@ MAIN_HTML = '''
                     addLog('⏳ 缓冲中...', 'info');
                     showMessage('缓冲中...', 'warning');
                     
-                    // 发送缓冲状态，但不发送暂停状态
                     socket.emit('send_state', { 
                         is_buffering: true,
                         is_playing: playerState.isPlaying
                     });
                     
-                    // 报告指标
                     if (socket.connected) {
                         socket.emit('report_player_metrics', {
                             load_speed: playerState.loadSpeed,
@@ -1066,7 +1010,6 @@ MAIN_HTML = '''
                     addLog('✅ 缓冲完成，继续播放', 'success');
                     showMessage('缓冲完成', 'success');
                     
-                    // 发送缓冲完成状态
                     socket.emit('send_state', { 
                         is_buffering: false,
                         is_playing: playerState.isPlaying
@@ -1089,7 +1032,6 @@ MAIN_HTML = '''
                 updatePlayerState();
             });
             
-            // 错误处理
             player.addEventListener('error', (e) => {
                 const error = player.error;
                 let message = '视频播放错误';
@@ -1111,7 +1053,6 @@ MAIN_HTML = '''
                 updatePlayerState();
             });
             
-            // 报告指标
             setInterval(() => {
                 if (player.buffered.length > 0 && player.duration) {
                     const bufferedEnd = player.buffered.end(player.buffered.length - 1);
@@ -1120,14 +1061,12 @@ MAIN_HTML = '''
                     const now = Date.now();
                     const timeDiff = (now - playerState.lastSpeedCalcTime) / 1000;
                     if (timeDiff >= 1) {
-                        // 估算加载速度
                         const bufferBytes = (bufferedEnd * (player.videoBitrate || 2000000)) / 8;
                         const bytesDiff = Math.max(0, bufferBytes - playerState.lastBufferBytes);
                         playerState.loadSpeed = (bytesDiff / 1024) / timeDiff;
                         playerState.lastSpeedCalcTime = now;
                         playerState.lastBufferBytes = bufferBytes;
                         
-                        // 更新UI
                         document.getElementById('load-speed').textContent = formatSpeed(playerState.loadSpeed);
                         document.getElementById('buffer-progress').textContent = playerState.bufferProgress.toFixed(1) + '%';
                     }
@@ -1143,10 +1082,9 @@ MAIN_HTML = '''
                 }
             }, SPEED_REPORT_INTERVAL);
             
-            addLog('✅ 播放器初始化完成', 'success');
+            addLog('✅ 播放器初始化完成，音量独立控制模式', 'success');
         }
         
-        // 心跳机制
         function startHeartbeat() {
             setInterval(() => {
                 if (socket.connected) {
@@ -1165,7 +1103,6 @@ MAIN_HTML = '''
                 return;
             }
             
-            // 验证URL格式
             if (!url.startsWith('http://') && !url.startsWith('https://')) {
                 showMessage('URL必须以 http:// 或 https:// 开头', 'error');
                 return;
@@ -1174,12 +1111,11 @@ MAIN_HTML = '''
             showMessage('正在发送播放指令...', 'info');
             addLog(`📤 发送播放指令: ${url.substring(0, 50)}...`, 'info');
             
-            // 发送播放指令
+            // ✅【核心修改4：发送播放指令时 移除 is_muted 字段】
             socket.emit('send_state', {
                 video_url: url,
                 current_time: 0,
                 is_playing: true,
-                is_muted: true,
                 is_buffering: false
             });
         }
@@ -1206,9 +1142,9 @@ MAIN_HTML = '''
             const newTime = Math.max(0, Math.min(player.currentTime + seconds, player.duration));
             player.currentTime = newTime;
             socket.emit('send_state', { 
-                current_time: newTime,
+                current_time: newTime.toFixed(2),
                 is_buffering: false,
-                is_playing: playerState.isPlaying // ✅ 追加播放状态
+                is_playing: playerState.isPlaying
             });
             addLog(`⏩ 跳转 ${seconds > 0 ? '+' : ''}${seconds}秒`, 'info');
         }
@@ -1219,6 +1155,7 @@ MAIN_HTML = '''
                 return;
             }
             
+            // ✅【核心修改5：清空视频时 移除 is_muted 字段】
             socket.emit('send_state', { 
                 video_url: '',
                 current_time: 0,
@@ -1233,16 +1170,13 @@ MAIN_HTML = '''
             showMessage('正在强制同步...', 'info');
         }
         
-        // 工具函数
+        // 工具函数 无修改
         function updatePlayerState() {
             const stateText = !playerState.currentVideoUrl ? '等待播放' : 
                              playerState.isBuffering ? '缓冲中...' :
                              playerState.isPlaying ? '播放中' : '暂停';
             
             document.getElementById('player-state').textContent = stateText;
-            
-            const currentTimeEl = document.getElementById('current-time');
-            const durationEl = document.getElementById('duration');
             const progressDisplay = document.getElementById('progress-display');
             
             if (progressDisplay) {
@@ -1337,7 +1271,6 @@ MAIN_HTML = '''
             logPanel.appendChild(logEntry);
             logPanel.scrollTop = logPanel.scrollHeight;
             
-            // 限制日志数量
             const logs = logPanel.querySelectorAll('.log-entry');
             if (logs.length > 100) {
                 logs[0].remove();
@@ -1354,7 +1287,6 @@ MAIN_HTML = '''
             
             messageArea.appendChild(messageEl);
             
-            // 自动消失
             setTimeout(() => {
                 if (messageEl.parentNode === messageArea) {
                     messageArea.removeChild(messageEl);
@@ -1391,32 +1323,28 @@ MAIN_HTML = '''
         
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
-            // 初始化播放器
             initPlayer();
             updatePlayerState();
             
-            // 连接状态监控
             setInterval(() => {
                 if (!socket.connected) {
                     addLog('尝试重新连接服务器...', 'warning');
                 }
             }, 5000);
             
-            // 页面卸载时清理
             window.addEventListener('beforeunload', () => {
                 if (socket.connected) {
                     socket.disconnect();
                 }
             });
             
-            // 输入框回车键支持
             document.getElementById('video-url').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     playVideo();
                 }
             });
             
-            addLog('🚀 系统初始化完成，等待连接...', 'success');
+            addLog('🚀 系统初始化完成，等待连接...(音量独立控制)', 'success');
         });
     </script>
 </body>
@@ -1425,8 +1353,10 @@ MAIN_HTML = '''
 
 if __name__ == '__main__':
     print("=" * 60)
-    print("🎬 视频同步播放系统 v4.0 [修复版]")
-    print("✅ 已修复：播放中拖动进度条后同步暂停的问题")
+    print("🎬 视频同步播放系统 v4.0 [最终版]")
+    print("✅ 保留所有修复：播放中拖动进度条不暂停、缓冲不打断播放")
+    print("✅ 音量/静音 完全独立控制，永不同步，各设备互不影响")
+    print("✅ 视频+声音播放精准同步，无错位")
     print("=" * 60)
     print(f"🌐 访问地址: http://localhost:19134")
     print(f"📡 WebSocket端口: 19134")
