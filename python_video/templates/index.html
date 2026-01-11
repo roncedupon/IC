@@ -781,8 +781,8 @@
             showMessage('正在添加视频...', 'info');
         }
 
-        function removeVideoFromPlaylist(index) {
-            socket.emit('remove_from_playlist', { index });
+        function removeVideoFromPlaylist(videoId) {
+            socket.emit('remove_video_by_id', { id: videoId });
             showMessage('正在删除视频...', 'info');
         }
 
@@ -826,6 +826,8 @@
             
             playlistState.videos.forEach((video, index) => {
                 const isActive = index === playlistState.currentIndex;
+                // 使用视频ID，如果没有则使用索引作为fallback
+                const videoId = video.id || `temp-${index}`;
                 
                 const item = document.createElement('div');
                 item.className = `playlist-item ${isActive ? 'active' : ''}`;
@@ -837,7 +839,7 @@
                     </div>
                     <div class="playlist-item-actions">
                         ${!isActive ? `<button class="playlist-btn-play" onclick="event.stopPropagation(); playFromPlaylist(${index})">播放</button>` : '<span style="color: #48bb78; font-size: 14px; font-weight: 600;">播放中</span>'}
-                        <button class="playlist-btn-delete" onclick="event.stopPropagation(); removeVideoFromPlaylist(${index})">删除</button>
+                        <button class="playlist-btn-delete" onclick="event.stopPropagation(); removeVideoFromPlaylist('${videoId}')">删除</button>
                     </div>
                 `;
                 

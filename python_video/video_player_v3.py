@@ -5,6 +5,8 @@ import uuid
 import threading
 from datetime import datetime
 import logging
+import os
+import json
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -54,6 +56,65 @@ CONFIG = {
     "MIN_VALID_TIME": 0.1,
     "MAX_BUFFER_SYNC_DELAY": 1.5,
 }
+
+# 播放列表文件存储
+PLAYLIST_FILE = os.path.join(os.path.dirname(__file__), "playlist_data.json")
+playlist_lock = threading.Lock()
+
+def load_playlist_from_file():
+    """从文件加载播放列表"""
+    global global_playlist
+    
+    try:
+        if not os.path.exists(PLAYLIST_FILE):
+            logger.info(f"播放列表文件不存在，创建新文件: {PLAYLIST_FILE}")
+            save_playlist_to_file()
+            return
+        
+        with open(PLAYLIST_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        # 验证数据格式
+        if not isinstance(data, dict) or 'videos' not in data:
+            logger.warning("播放列表文件格式错误，使用空列表")
+            return
+        
+        # 加载数据
+        with playlist_lock:
+            global_playlist['videos'] = data.get('videos', [])
+            global_playlist['current_index'] = data.get('current_index', -1)
+            # 为没有ID的视频添加ID
+            for video in global_playlist['videos']:
+                if 'id' not in video:
+                    video['id'] = str(uuid.uuid4())[:8]
+        
+        logger.info(f"成功加载播放列表: {len(global_playlist['videos'])} 个视频")
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"播放列表文件JSON解析失败: {e}")
+    except Exception as e:
+        logger.error(f"加载播放列表失败: {e}")
+
+def save_playlist_to_file():
+    """保存播放列表到文件"""
+    global global_playlist
+    
+    try:
+        with playlist_lock:
+            data = {
+                'videos': global_playlist['videos'],
+                'current_index': global_playlist['current_index'],
+                'version': 1,
+                'saved_at': time.time()
+            }
+        
+        with open(PLAYLIST_FILE, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        
+        logger.debug(f"播放列表已保存到文件: {PLAYLIST_FILE}")
+        
+    except Exception as e:
+        logger.error(f"保存播放列表失败: {e}")
 
 # 心跳监控线程
 def heartbeat_monitor():
@@ -348,6 +409,7 @@ def handle_add_to_playlist(data):
     
     # 添加视频到播放列表
     new_video = {
+        "id": str(uuid.uuid4())[:8],  # 添加唯一ID
         "url": video_url,
         "name": video_name,
         "added_at": time.time()
@@ -360,6 +422,9 @@ def handle_add_to_playlist(data):
         global_playlist['current_index'] = 0
     
     logger.info(f"设备 {sid[:8]} 添加视频: {video_name} (索引: {len(global_playlist['videos']) - 1})")
+    
+    # 保存到文件
+    save_playlist_to_file()
     
     # 广播播放列表更新
     socketio.emit('playlist_update', {
@@ -408,6 +473,9 @@ def handle_remove_from_playlist(data):
         global_playlist['current_index'] -= 1
     
     global_playlist['update_ts'] = time.time()
+    
+    # 保存到文件
+    save_playlist_to_file()
     
     # 广播播放列表更新
     socketio.emit('playlist_update', {
@@ -569,6 +637,64 @@ def handle_play_previous():
         "timestamp": now
     })
 
+@socketio.on('remove_video_by_id')
+def handle_remove_video_by_id(data):
+    """按ID删除视频记录"""
+    global global_playlist
+    
+    sid = request.sid
+    if not isinstance(data, dict):
+        return
+    
+    video_id = data.get('id')
+    if not video_id or not isinstance(video_id, str):
+        logger.warning(f"设备 {sid[:8]} 提供的视频ID无效")
+        return
+    
+    # 查找视频
+    found_index = -1
+    for index, video in enumerate(global_playlist['videos']):
+        if video.get('id') == video_id:
+            found_index = index
+            break
+    
+    if found_index == -1:
+        logger.warning(f"设备 {sid[:8]} 未找到视频ID: {video_id}")
+        return
+    
+    removed_video = global_playlist['videos'].pop(found_index)
+    logger.info(f"设备 {sid[:8]} 删除视频: {removed_video['name']} (ID: {video_id})")
+    
+    # 调整当前播放索引
+    if global_playlist['current_index'] == found_index:
+        # 删除的是当前播放的视频
+        if len(global_playlist['videos']) > 0:
+            global_playlist['current_index'] = max(0, found_index - 1)
+        else:
+            global_playlist['current_index'] = -1
+            # 清空当前播放
+            global_play_state.update({
+                "video_url": "",
+                "current_time": 0.0,
+                "is_playing": False
+            })
+            socketio.emit('sync_all', global_play_state)
+    elif global_playlist['current_index'] > found_index:
+        # 删除的是当前播放视频之前的视频，索引减1
+        global_playlist['current_index'] -= 1
+    
+    global_playlist['update_ts'] = time.time()
+    
+    # 保存到文件
+    save_playlist_to_file()
+    
+    # 广播播放列表更新
+    socketio.emit('playlist_update', {
+        **global_playlist,
+        "timestamp": time.time(),
+        "message": f"已删除视频: {removed_video['name']}"
+    })
+
 @socketio.on('clear_playlist')
 def handle_clear_playlist():
     """清空播放列表"""
@@ -589,6 +715,9 @@ def handle_clear_playlist():
     })
     
     logger.info(f"设备 {sid[:8]} 清空播放列表 (删除了 {video_count} 个视频)")
+    
+    # 保存到文件
+    save_playlist_to_file()
     
     # 广播播放列表更新
     socketio.emit('playlist_update', {
@@ -732,4 +861,15 @@ def api_control():
         return jsonify({"status": "error", "message": f"服务器错误: {str(e)}"})
 
 if __name__ == '__main__':
+    # 启动时加载播放列表
+    logger.info("=" * 60)
+    logger.info("启动视频同步播放系统")
+    logger.info("=" * 60)
+    
+    load_playlist_from_file()
+    
+    logger.info(f"播放列表文件: {PLAYLIST_FILE}")
+    logger.info(f"当前播放列表: {len(global_playlist['videos'])} 个视频")
+    logger.info("=" * 60)
+    
     socketio.run(app, host='0.0.0.0', port=19134, debug=True)
