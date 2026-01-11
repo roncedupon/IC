@@ -33,10 +33,13 @@ global_play_state = {
     "last_operation_type": None  # 记录最后一次操作类型: 'user_action' 或 'passive_update'
 }
 
-# 播放列表管理
+# 播放列表管理（支持分类）
 global_playlist = {
-    "videos": [],  # 视频列表 [{"url": "...", "name": "...", "added_at": timestamp}]
-    "current_index": -1,  # 当前播放的视频索引，-1表示未选择
+    "categories": [],  # 分类列表 [{"name": "剧集A", "expanded": True, "videos": [...]}]
+    "current_index": {
+        "category": -1,  # 当前分类索引
+        "video": -1  # 当前视频索引（在分类内的索引）
+    },
     "update_ts": time.time()
 }
 
@@ -62,7 +65,7 @@ PLAYLIST_FILE = os.path.join(os.path.dirname(__file__), "playlist_data.json")
 playlist_lock = threading.Lock()
 
 def load_playlist_from_file():
-    """从文件加载播放列表"""
+    """从文件加载播放列表，支持新旧格式自动转换"""
     global global_playlist
     
     try:
@@ -75,20 +78,51 @@ def load_playlist_from_file():
             data = json.load(f)
         
         # 验证数据格式
-        if not isinstance(data, dict) or 'videos' not in data:
+        if not isinstance(data, dict):
             logger.warning("播放列表文件格式错误，使用空列表")
             return
         
-        # 加载数据
         with playlist_lock:
-            global_playlist['videos'] = data.get('videos', [])
-            global_playlist['current_index'] = data.get('current_index', -1)
-            # 为没有ID的视频添加ID
-            for video in global_playlist['videos']:
-                if 'id' not in video:
-                    video['id'] = str(uuid.uuid4())[:8]
+            # 检查是新格式（categories）还是旧格式（videos）
+            if 'categories' in data:
+                # 新格式：直接加载
+                global_playlist['categories'] = data.get('categories', [])
+                global_playlist['current_index'] = data.get('current_index', {
+                    'category': -1,
+                    'video': -1
+                })
+            elif 'videos' in data:
+                # 旧格式：转换为新格式
+                logger.info("检测到旧格式播放列表，自动转换为分类格式")
+                old_videos = data.get('videos', [])
+                if old_videos:
+                    # 创建一个默认分类"未分类"
+                    default_category = {
+                        "name": "未分类",
+                        "expanded": True,
+                        "videos": []
+                    }
+                    for video in old_videos:
+                        if 'id' not in video:
+                            video['id'] = str(uuid.uuid4())[:8]
+                        default_category['videos'].append(video)
+                    global_playlist['categories'] = [default_category]
+                    global_playlist['current_index'] = {
+                        'category': 0,
+                        'video': data.get('current_index', 0) if len(old_videos) > 0 else -1
+                    }
+                    # 自动保存新格式
+                    save_playlist_to_file()
+                else:
+                    global_playlist['categories'] = []
+                    global_playlist['current_index'] = {'category': -1, 'video': -1}
+            else:
+                # 空数据
+                global_playlist['categories'] = []
+                global_playlist['current_index'] = {'category': -1, 'video': -1}
         
-        logger.info(f"成功加载播放列表: {len(global_playlist['videos'])} 个视频")
+        total_videos = sum(len(cat['videos']) for cat in global_playlist['categories'])
+        logger.info(f"成功加载播放列表: {len(global_playlist['categories'])} 个分类，{total_videos} 个视频")
         
     except json.JSONDecodeError as e:
         logger.error(f"播放列表文件JSON解析失败: {e}")
@@ -102,9 +136,9 @@ def save_playlist_to_file():
     try:
         with playlist_lock:
             data = {
-                'videos': global_playlist['videos'],
+                'categories': global_playlist['categories'],
                 'current_index': global_playlist['current_index'],
-                'version': 1,
+                'version': 2,  # 版本号升级
                 'saved_at': time.time()
             }
         
@@ -374,63 +408,90 @@ def handle_get_playlist():
 
 @socketio.on('add_to_playlist')
 def handle_add_to_playlist(data):
-    """添加视频到播放列表"""
+    """添加视频到播放列表（支持分类）"""
     global global_playlist
-    
+
     sid = request.sid
     if not isinstance(data, dict):
         return
-    
+
     video_url = data.get('video_url', '').strip()
     video_name = data.get('video_name', '').strip()
-    
+    category_name = data.get('category', '').strip()  # 分类名称
+
     if not video_url:
         logger.warning(f"设备 {sid[:8]} 尝试添加空视频URL")
         return
-    
+
     # 如果没有提供名称，使用URL作为名称
     if not video_name:
         video_name = video_url.split('/')[-1].split('?')[0]
         if len(video_name) > 50:
             video_name = video_name[:50] + "..."
-    
-    video_name = video_name or f"视频 {len(global_playlist['videos']) + 1}"
-    
-    # 检查是否已存在
-    for video in global_playlist['videos']:
+
+    # 如果没有提供分类，使用"未分类"
+    if not category_name:
+        # 查找是否存在"未分类"分类
+        category_name = "未分类"
+
+    video_name = video_name or f"视频"
+
+    # 查找或创建分类
+    category = None
+    for cat in global_playlist['categories']:
+        if cat['name'] == category_name:
+            category = cat
+            break
+
+    if not category:
+        # 创建新分类
+        category = {
+            "name": category_name,
+            "expanded": True,
+            "videos": []
+        }
+        global_playlist['categories'].append(category)
+        logger.info(f"设备 {sid[:8]} 创建新分类: {category_name}")
+
+    # 检查该分类下是否已存在
+    for video in category['videos']:
         if video['url'] == video_url:
-            logger.info(f"设备 {sid[:8]} 添加的视频已存在: {video_name}")
+            logger.info(f"设备 {sid[:8]} 添加的视频已存在于分类 '{category_name}': {video_name}")
             emit('playlist_update', {
                 **global_playlist,
                 "timestamp": time.time(),
-                "message": "视频已存在于播放列表中"
+                "message": f"视频已存在于分类'{category_name}'中"
             })
             return
-    
-    # 添加视频到播放列表
+
+    # 添加视频到分类
     new_video = {
         "id": str(uuid.uuid4())[:8],  # 添加唯一ID
         "url": video_url,
         "name": video_name,
         "added_at": time.time()
     }
-    global_playlist['videos'].append(new_video)
+    category['videos'].append(new_video)
     global_playlist['update_ts'] = time.time()
-    
+
     # 如果是第一个视频，自动设为当前索引
-    if global_playlist['current_index'] == -1:
-        global_playlist['current_index'] = 0
-    
-    logger.info(f"设备 {sid[:8]} 添加视频: {video_name} (索引: {len(global_playlist['videos']) - 1})")
-    
+    if global_playlist['current_index']['category'] == -1:
+        category_idx = global_playlist['categories'].index(category)
+        global_playlist['current_index'] = {
+            'category': category_idx,
+            'video': 0
+        }
+
+    logger.info(f"设备 {sid[:8]} 添加视频: {video_name} 到分类 '{category_name}'")
+
     # 保存到文件
     save_playlist_to_file()
-    
+
     # 广播播放列表更新
     socketio.emit('playlist_update', {
         **global_playlist,
         "timestamp": time.time(),
-        "message": f"已添加视频: {video_name}"
+        "message": f"已添加视频到分类'{category_name}': {video_name}"
     })
 
 @socketio.on('remove_from_playlist')
@@ -486,29 +547,43 @@ def handle_remove_from_playlist(data):
 
 @socketio.on('play_from_playlist')
 def handle_play_from_playlist(data):
-    """从播放列表播放指定索引的视频"""
+    """从播放列表播放指定索引的视频（支持分类）"""
     global global_playlist
     global global_play_state
-    
+
     sid = request.sid
     now = time.time()
-    
+
     if not isinstance(data, dict):
         return
-    
-    index = data.get('index')
-    if index is None or not isinstance(index, int):
-        logger.warning(f"设备 {sid[:8]} 提供的索引无效")
+
+    category_index = data.get('category_index')
+    video_index = data.get('video_index')
+
+    if category_index is None or not isinstance(category_index, int):
+        logger.warning(f"设备 {sid[:8]} 提供的分类索引无效")
         return
-    
-    if index < 0 or index >= len(global_playlist['videos']):
-        logger.warning(f"设备 {sid[:8]} 提供的索引超出范围: {index}")
+
+    if category_index < 0 or category_index >= len(global_playlist['categories']):
+        logger.warning(f"设备 {sid[:8]} 提供的分类索引超出范围: {category_index}")
         return
-    
-    video = global_playlist['videos'][index]
-    global_playlist['current_index'] = index
+
+    if video_index is None or not isinstance(video_index, int):
+        logger.warning(f"设备 {sid[:8]} 提供的视频索引无效")
+        return
+
+    category = global_playlist['categories'][category_index]
+    if video_index < 0 or video_index >= len(category['videos']):
+        logger.warning(f"设备 {sid[:8]} 提供的视频索引超出范围: {video_index}")
+        return
+
+    video = category['videos'][video_index]
+    global_playlist['current_index'] = {
+        'category': category_index,
+        'video': video_index
+    }
     global_playlist['update_ts'] = now
-    
+
     # 更新播放状态（遵循原有的同步逻辑）
     global_play_state.update({
         "video_url": video['url'],
@@ -518,16 +593,16 @@ def handle_play_from_playlist(data):
         "last_operation_device": device_status.get(sid, {}).get("device_id", sid[:8]),
         "last_operation_type": "user_action"
     })
-    
-    logger.info(f"设备 {sid[:8]} 播放视频: {video['name']} (索引: {index})")
-    
+
+    logger.info(f"设备 {sid[:8]} 播放视频: {video['name']} (分类: {category['name']}, 索引: {video_index})")
+
     # 广播播放列表更新
     socketio.emit('playlist_update', {
         **global_playlist,
         "timestamp": time.time(),
         "message": f"正在播放: {video['name']}"
     })
-    
+
     # 广播播放状态更新
     socketio.emit('sync_all', {
         **global_play_state,
@@ -537,29 +612,46 @@ def handle_play_from_playlist(data):
 
 @socketio.on('play_next')
 def handle_play_next():
-    """播放下一个视频"""
+    """播放下一个视频（支持分类）"""
     global global_playlist
     global global_play_state
-    
+
     sid = request.sid
     now = time.time()
-    
-    if not global_playlist['videos']:
+
+    if not global_playlist['categories']:
         logger.warning(f"播放列表为空，无法播放下一个")
         return
-    
-    current_index = global_playlist['current_index']
-    next_index = current_index + 1
-    
-    # 如果是最后一个，循环到第一个
-    if next_index >= len(global_playlist['videos']):
-        next_index = 0
-    
-    # 调用 play_from_playlist 逻辑
-    video = global_playlist['videos'][next_index]
-    global_playlist['current_index'] = next_index
+
+    current_cat_idx = global_playlist['current_index']['category']
+    current_vid_idx = global_playlist['current_index']['video']
+
+    # 计算下一个视频的索引
+    next_cat_idx = current_cat_idx
+    next_vid_idx = current_vid_idx + 1
+
+    # 当前分类内是否还有下一个视频
+    if next_vid_idx >= len(global_playlist['categories'][current_cat_idx]['videos']):
+        # 当前分类已到末尾，检查是否有下一个分类
+        if current_cat_idx + 1 < len(global_playlist['categories']):
+            # 播放下一个分类的第一个视频
+            next_cat_idx = current_cat_idx + 1
+            next_vid_idx = 0
+        else:
+            # 所有分类都已播放完毕，循环到第一个视频
+            next_cat_idx = 0
+            next_vid_idx = 0
+
+    # 获取视频
+    category = global_playlist['categories'][next_cat_idx]
+    video = category['videos'][next_vid_idx]
+
+    global_playlist['current_index'] = {
+        'category': next_cat_idx,
+        'video': next_vid_idx
+    }
     global_playlist['update_ts'] = now
-    
+
     # 更新播放状态
     global_play_state.update({
         "video_url": video['url'],
@@ -569,16 +661,16 @@ def handle_play_next():
         "last_operation_device": device_status.get(sid, {}).get("device_id", sid[:8]),
         "last_operation_type": "user_action"
     })
-    
-    logger.info(f"设备 {sid[:8]} 播放下一个视频: {video['name']} (索引: {next_index})")
-    
+
+    logger.info(f"设备 {sid[:8]} 播放下一个视频: {video['name']} (分类: {category['name']}, 索引: {next_vid_idx})")
+
     # 广播播放列表更新
     socketio.emit('playlist_update', {
         **global_playlist,
         "timestamp": time.time(),
         "message": f"播放下一个: {video['name']}"
     })
-    
+
     # 广播播放状态更新
     socketio.emit('sync_all', {
         **global_play_state,
@@ -588,29 +680,46 @@ def handle_play_next():
 
 @socketio.on('play_previous')
 def handle_play_previous():
-    """播放上一个视频"""
+    """播放上一个视频（支持分类）"""
     global global_playlist
     global global_play_state
-    
+
     sid = request.sid
     now = time.time()
-    
-    if not global_playlist['videos']:
+
+    if not global_playlist['categories']:
         logger.warning(f"播放列表为空，无法播放上一个")
         return
-    
-    current_index = global_playlist['current_index']
-    prev_index = current_index - 1
-    
-    # 如果是第一个，循环到最后一个
-    if prev_index < 0:
-        prev_index = len(global_playlist['videos']) - 1
-    
-    # 调用 play_from_playlist 逻辑
-    video = global_playlist['videos'][prev_index]
-    global_playlist['current_index'] = prev_index
+
+    current_cat_idx = global_playlist['current_index']['category']
+    current_vid_idx = global_playlist['current_index']['video']
+
+    # 计算上一个视频的索引
+    prev_cat_idx = current_cat_idx
+    prev_vid_idx = current_vid_idx - 1
+
+    # 当前分类内是否还有上一个视频
+    if prev_vid_idx < 0:
+        # 当前分类已到开头，检查是否有上一个分类
+        if current_cat_idx > 0:
+            # 播放上一个分类的最后一个视频
+            prev_cat_idx = current_cat_idx - 1
+            prev_vid_idx = len(global_playlist['categories'][prev_cat_idx]['videos']) - 1
+        else:
+            # 所有分类都已播放完毕，循环到最后一个视频
+            prev_cat_idx = len(global_playlist['categories']) - 1
+            prev_vid_idx = len(global_playlist['categories'][prev_cat_idx]['videos']) - 1
+
+    # 获取视频
+    category = global_playlist['categories'][prev_cat_idx]
+    video = category['videos'][prev_vid_idx]
+
+    global_playlist['current_index'] = {
+        'category': prev_cat_idx,
+        'video': prev_vid_idx
+    }
     global_playlist['update_ts'] = now
-    
+
     # 更新播放状态
     global_play_state.update({
         "video_url": video['url'],
@@ -620,16 +729,16 @@ def handle_play_previous():
         "last_operation_device": device_status.get(sid, {}).get("device_id", sid[:8]),
         "last_operation_type": "user_action"
     })
-    
-    logger.info(f"设备 {sid[:8]} 播放上一个视频: {video['name']} (索引: {prev_index})")
-    
+
+    logger.info(f"设备 {sid[:8]} 播放上一个视频: {video['name']} (分类: {category['name']}, 索引: {prev_vid_idx})")
+
     # 广播播放列表更新
     socketio.emit('playlist_update', {
         **global_playlist,
         "timestamp": time.time(),
         "message": f"播放上一个: {video['name']}"
     })
-    
+
     # 广播播放状态更新
     socketio.emit('sync_all', {
         **global_play_state,
@@ -639,55 +748,94 @@ def handle_play_previous():
 
 @socketio.on('remove_video_by_id')
 def handle_remove_video_by_id(data):
-    """按ID删除视频记录"""
+    """按ID删除视频记录（支持分类）"""
     global global_playlist
-    
+
     sid = request.sid
     if not isinstance(data, dict):
         return
-    
+
     video_id = data.get('id')
     if not video_id or not isinstance(video_id, str):
         logger.warning(f"设备 {sid[:8]} 提供的视频ID无效")
         return
-    
-    # 查找视频
-    found_index = -1
-    for index, video in enumerate(global_playlist['videos']):
-        if video.get('id') == video_id:
-            found_index = index
+
+    # 在所有分类中查找视频
+    found_category_idx = -1
+    found_video_idx = -1
+    removed_video = None
+
+    for cat_idx, category in enumerate(global_playlist['categories']):
+        for vid_idx, video in enumerate(category['videos']):
+            if video.get('id') == video_id:
+                found_category_idx = cat_idx
+                found_video_idx = vid_idx
+                removed_video = video
+                break
+        if found_category_idx != -1:
             break
-    
-    if found_index == -1:
+
+    if found_category_idx == -1:
         logger.warning(f"设备 {sid[:8]} 未找到视频ID: {video_id}")
         return
-    
-    removed_video = global_playlist['videos'].pop(found_index)
-    logger.info(f"设备 {sid[:8]} 删除视频: {removed_video['name']} (ID: {video_id})")
-    
-    # 调整当前播放索引
-    if global_playlist['current_index'] == found_index:
-        # 删除的是当前播放的视频
-        if len(global_playlist['videos']) > 0:
-            global_playlist['current_index'] = max(0, found_index - 1)
-        else:
-            global_playlist['current_index'] = -1
-            # 清空当前播放
-            global_play_state.update({
-                "video_url": "",
-                "current_time": 0.0,
-                "is_playing": False
-            })
-            socketio.emit('sync_all', global_play_state)
-    elif global_playlist['current_index'] > found_index:
-        # 删除的是当前播放视频之前的视频，索引减1
-        global_playlist['current_index'] -= 1
-    
+
+    category_name = global_playlist['categories'][found_category_idx]['name']
+    removed_video = global_playlist['categories'][found_category_idx]['videos'].pop(found_video_idx)
+    logger.info(f"设备 {sid[:8]} 删除视频: {removed_video['name']} (ID: {video_id}) 从分类 '{category_name}'")
+
+    # 检查是否需要删除空分类
+    if len(global_playlist['categories'][found_category_idx]['videos']) == 0:
+        global_playlist['categories'].pop(found_category_idx)
+        logger.info(f"设备 {sid[:8]} 删除空分类: {category_name}")
+
+        # 调整当前播放索引
+        if global_playlist['current_index']['category'] == found_category_idx:
+            # 删除的是当前播放视频所在的分类
+            if global_playlist['categories']:
+                global_playlist['current_index'] = {
+                    'category': max(0, found_category_idx - 1),
+                    'video': 0
+                }
+            else:
+                global_playlist['current_index'] = {'category': -1, 'video': -1}
+                # 清空当前播放
+                global_play_state.update({
+                    "video_url": "",
+                    "current_time": 0.0,
+                    "is_playing": False
+                })
+                socketio.emit('sync_all', global_play_state)
+        elif global_playlist['current_index']['category'] > found_category_idx:
+            # 删除的是当前播放分类之前的分类
+            global_playlist['current_index']['category'] -= 1
+    else:
+        # 调整当前播放索引（同一分类内）
+        current_cat_idx = global_playlist['current_index']['category']
+        current_vid_idx = global_playlist['current_index']['video']
+
+        if current_cat_idx == found_category_idx:
+            if current_vid_idx == found_video_idx:
+                # 删除的是当前播放的视频
+                if len(global_playlist['categories'][found_category_idx]['videos']) > 0:
+                    global_playlist['current_index']['video'] = max(0, found_video_idx - 1)
+                else:
+                    global_playlist['current_index'] = {'category': -1, 'video': -1}
+                    # 清空当前播放
+                    global_play_state.update({
+                        "video_url": "",
+                        "current_time": 0.0,
+                        "is_playing": False
+                    })
+                    socketio.emit('sync_all', global_play_state)
+            elif current_vid_idx > found_video_idx:
+                # 删除的是当前播放视频之前的视频
+                global_playlist['current_index']['video'] -= 1
+
     global_playlist['update_ts'] = time.time()
-    
+
     # 保存到文件
     save_playlist_to_file()
-    
+
     # 广播播放列表更新
     socketio.emit('playlist_update', {
         **global_playlist,
@@ -699,33 +847,35 @@ def handle_remove_video_by_id(data):
 def handle_clear_playlist():
     """清空播放列表"""
     global global_playlist
-    
+
     sid = request.sid
-    
-    video_count = len(global_playlist['videos'])
-    global_playlist['videos'] = []
-    global_playlist['current_index'] = -1
+
+    # 计算总视频数
+    video_count = sum(len(cat['videos']) for cat in global_playlist['categories'])
+
+    global_playlist['categories'] = []
+    global_playlist['current_index'] = {'category': -1, 'video': -1}
     global_playlist['update_ts'] = time.time()
-    
+
     # 清空当前播放
     global_play_state.update({
         "video_url": "",
         "current_time": 0.0,
         "is_playing": False
     })
-    
+
     logger.info(f"设备 {sid[:8]} 清空播放列表 (删除了 {video_count} 个视频)")
-    
+
     # 保存到文件
     save_playlist_to_file()
-    
+
     # 广播播放列表更新
     socketio.emit('playlist_update', {
         **global_playlist,
         "timestamp": time.time(),
         "message": f"已清空播放列表 (删除了 {video_count} 个视频)"
     })
-    
+
     # 广播播放状态更新
     socketio.emit('sync_all', global_play_state)
 
@@ -865,11 +1015,12 @@ if __name__ == '__main__':
     logger.info("=" * 60)
     logger.info("启动视频同步播放系统")
     logger.info("=" * 60)
-    
+
     load_playlist_from_file()
-    
+
     logger.info(f"播放列表文件: {PLAYLIST_FILE}")
-    logger.info(f"当前播放列表: {len(global_playlist['videos'])} 个视频")
+    total_videos = sum(len(cat['videos']) for cat in global_playlist['categories'])
+    logger.info(f"当前播放列表: {len(global_playlist['categories'])} 个分类，{total_videos} 个视频")
     logger.info("=" * 60)
-    
+
     socketio.run(app, host='0.0.0.0', port=19134, debug=True, allow_unsafe_werkzeug=True)

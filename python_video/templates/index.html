@@ -36,7 +36,7 @@
                 grid-template-columns: 1fr;
             }
             .playlist-items {
-                max-height: 300px;
+                max-height: 400px;
             }
         }
 
@@ -64,6 +64,72 @@
             border: none;
             padding: 0;
             font-size: 22px;
+        }
+
+        /* 分类标题 */
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+
+        .category-header:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .category-header .category-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .category-header .category-expand-icon {
+            font-size: 18px;
+            transition: transform 0.3s;
+        }
+
+        .category-header.collapsed .category-expand-icon {
+            transform: rotate(-90deg);
+        }
+
+        .category-header .category-count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* 分类内容区域 */
+        .category-content {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            max-height: 1000px;
+            opacity: 1;
+        }
+
+        .category-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+            margin-bottom: 0;
+        }
+
+        .category-item {
+            margin-bottom: 15px;
         }
 
         /* 折叠/展开按钮 */
@@ -639,6 +705,7 @@
                 <div class="playlist-content" id="playlist-content">
                     <div class="playlist-controls">
                         <input type="text" id="playlist-url-input" class="url-input" placeholder="输入视频URL..." style="flex: 1;">
+                        <input type="text" id="playlist-category-input" class="url-input" placeholder="分类名称（可选）" style="flex: 1;">
                         <input type="text" id="playlist-name-input" class="url-input" placeholder="视频名称（可选）" style="flex: 1;">
                         <button class="btn btn-primary" onclick="addVideoToPlaylist()">
                             <span>+</span> 添加
@@ -918,8 +985,12 @@
         // ====================【播放列表操作函数】====================
 
         let playlistState = {
-            videos: [],
-            currentIndex: -1,
+            categories: [],
+            currentIndex: {
+                category: -1,
+                video: -1
+            },
+            expandedCategories: {},  // 记录每个分类的展开状态
             isExpanded: true
         };
 
@@ -943,23 +1014,27 @@
 
         function addVideoToPlaylist() {
             const urlInput = document.getElementById('playlist-url-input');
+            const categoryInput = document.getElementById('playlist-category-input');
             const nameInput = document.getElementById('playlist-name-input');
-            
+
             const url = urlInput.value.trim();
+            const category = categoryInput.value.trim();
             const name = nameInput.value.trim();
-            
+
             if (!url) {
                 showMessage('请输入视频URL', 'error');
                 return;
             }
-            
+
             socket.emit('add_to_playlist', {
                 video_url: url,
-                video_name: name
+                video_name: name,
+                category: category
             });
-            
+
             // 清空输入框
             urlInput.value = '';
+            categoryInput.value = '';
             nameInput.value = '';
             showMessage('正在添加视频...', 'info');
         }
@@ -969,8 +1044,11 @@
             showMessage('正在删除视频...', 'info');
         }
 
-        function playFromPlaylist(index) {
-            socket.emit('play_from_playlist', { index });
+        function playFromPlaylist(categoryIndex, videoIndex) {
+            socket.emit('play_from_playlist', {
+                category_index: categoryIndex,
+                video_index: videoIndex
+            });
             showMessage('正在播放...', 'info');
         }
 
@@ -992,42 +1070,99 @@
         }
 
         function updatePlaylistUI(playlist) {
-            playlistState.videos = playlist.videos || [];
-            playlistState.currentIndex = playlist.current_index || -1;
-            
-            // 更新播放列表计数
-            document.getElementById('playlist-count').textContent = playlistState.videos.length;
-            
+            playlistState.categories = playlist.categories || [];
+            playlistState.currentIndex = playlist.current_index || {
+                category: -1,
+                video: -1
+            };
+
+            // 计算总视频数
+            const totalVideos = playlistState.categories.reduce((sum, cat) => sum + cat.videos.length, 0);
+            document.getElementById('playlist-count').textContent = totalVideos;
+
             const playlistItems = document.getElementById('playlist-items');
-            
-            if (playlistState.videos.length === 0) {
+
+            if (!playlistState.categories || playlistState.categories.length === 0) {
                 playlistItems.innerHTML = '<div class="empty-playlist">播放列表为空，请添加视频</div>';
                 return;
             }
-            
+
             playlistItems.innerHTML = '';
-            
-            playlistState.videos.forEach((video, index) => {
-                const isActive = index === playlistState.currentIndex;
-                // 使用视频ID，如果没有则使用索引作为fallback
-                const videoId = video.id || `temp-${index}`;
-                
-                const item = document.createElement('div');
-                item.className = `playlist-item ${isActive ? 'active' : ''}`;
-                item.innerHTML = `
-                    <div class="playlist-item-index">${index + 1}</div>
-                    <div class="playlist-item-info" onclick="playFromPlaylist(${index})">
-                        <div class="playlist-item-name">${escapeHtml(video.name || '未命名视频')}</div>
-                        <div class="playlist-item-url">${escapeHtml(video.url || '')}</div>
+
+            // 遍历每个分类
+            playlistState.categories.forEach((category, catIndex) => {
+                const categoryItem = document.createElement('div');
+                categoryItem.className = 'category-item';
+
+                // 创建分类标题
+                const isExpanded = category.expanded !== false;  // 默认展开
+                const categoryHeader = document.createElement('div');
+                categoryHeader.className = `category-header ${isExpanded ? '' : 'collapsed'}`;
+                categoryHeader.onclick = () => toggleCategory(catIndex);
+                categoryHeader.innerHTML = `
+                    <div class="category-title">
+                        <span class="category-expand-icon">${isExpanded ? '▼' : '▶'}</span>
+                        <span>${escapeHtml(category.name || '未分类')}</span>
                     </div>
-                    <div class="playlist-item-actions">
-                        ${!isActive ? `<button class="playlist-btn-play" onclick="event.stopPropagation(); playFromPlaylist(${index})">播放</button>` : '<span style="color: #48bb78; font-size: 14px; font-weight: 600;">播放中</span>'}
-                        <button class="playlist-btn-delete" onclick="event.stopPropagation(); removeVideoFromPlaylist('${videoId}')">删除</button>
-                    </div>
+                    <div class="category-count">${category.videos.length} 个视频</div>
                 `;
-                
-                playlistItems.appendChild(item);
+
+                // 创建分类内容区域
+                const categoryContent = document.createElement('div');
+                categoryContent.className = `category-content ${isExpanded ? '' : 'collapsed'}`;
+
+                // 遍历分类下的视频
+                category.videos.forEach((video, vidIndex) => {
+                    const isActive = (
+                        playlistState.currentIndex.category === catIndex &&
+                        playlistState.currentIndex.video === vidIndex
+                    );
+                    const videoId = video.id || `temp-${catIndex}-${vidIndex}`;
+
+                    const item = document.createElement('div');
+                    item.className = `playlist-item ${isActive ? 'active' : ''}`;
+                    item.innerHTML = `
+                        <div class="playlist-item-index">${vidIndex + 1}</div>
+                        <div class="playlist-item-info" onclick="playFromPlaylist(${catIndex}, ${vidIndex})">
+                            <div class="playlist-item-name">${escapeHtml(video.name || '未命名视频')}</div>
+                            <div class="playlist-item-url">${escapeHtml(video.url || '')}</div>
+                        </div>
+                        <div class="playlist-item-actions">
+                            ${!isActive ? `<button class="playlist-btn-play" onclick="event.stopPropagation(); playFromPlaylist(${catIndex}, ${vidIndex})">播放</button>` : '<span style="color: #48bb78; font-size: 14px; font-weight: 600;">播放中</span>'}
+                            <button class="playlist-btn-delete" onclick="event.stopPropagation(); removeVideoFromPlaylist('${videoId}')">删除</button>
+                        </div>
+                    `;
+
+                    categoryContent.appendChild(item);
+                });
+
+                categoryItem.appendChild(categoryHeader);
+                categoryItem.appendChild(categoryContent);
+                playlistItems.appendChild(categoryItem);
             });
+        }
+
+        // 折叠/展开分类
+        function toggleCategory(categoryIndex) {
+            const categoryItem = document.querySelectorAll('.category-item')[categoryIndex];
+            const header = categoryItem.querySelector('.category-header');
+            const content = categoryItem.querySelector('.category-content');
+            const icon = header.querySelector('.category-expand-icon');
+
+            // 切换状态
+            const isCollapsed = header.classList.contains('collapsed');
+
+            if (isCollapsed) {
+                // 展开
+                header.classList.remove('collapsed');
+                content.classList.remove('collapsed');
+                icon.innerHTML = '▼';
+            } else {
+                // 折叠
+                header.classList.add('collapsed');
+                content.classList.add('collapsed');
+                icon.innerHTML = '▶';
+            }
         }
 
         function escapeHtml(text) {
