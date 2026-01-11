@@ -26,7 +26,9 @@ global_play_state = {
     "is_muted": True,  # 仅占位，无任何同步逻辑，音量完全独立
     "update_ts": time.time(),
     "session_id": str(uuid.uuid4())[:8],
-    "last_sync_operation": None
+    "last_sync_operation": None,
+    "last_operation_device": None,  # 记录最后一次操作变更的设备ID
+    "last_operation_type": None  # 记录最后一次操作类型: 'user_action' 或 'passive_update'
 }
 
 # 设备管理
@@ -140,7 +142,7 @@ def send_init_state():
 
 @socketio.on('send_state')
 def handle_state_change(data):
-    """处理状态变更 - 核心：双端优化根治状态竞争问题"""
+    """处理状态变更 - 核心：双端优化根治状态竞争问题 + 操作优先级机制"""
     global global_play_state
     
     sid = request.sid
@@ -153,8 +155,43 @@ def handle_state_change(data):
         if sid in device_status:
             device_status[sid]["last_seen"] = now
     
+    # ==========【新增：操作类型判断】==========
+    # 判断当前请求是用户主动操作还是被动状态上报
+    is_user_action = False
+    if "video_url" in data:
+        # 视频源变更：用户主动操作
+        is_user_action = True
+    elif "is_playing" in data and data["is_playing"] != global_play_state["is_playing"]:
+        # 播放/暂停状态变更：用户主动操作
+        is_user_action = True
+    # ========================================
+    
+    # ==========【新增：操作优先级保护】==========
+    # 在锁定时间内，高优先级操作不会被低优先级覆盖
     if now - global_play_state["update_ts"] < CONFIG["STATE_LOCK"]:
-        return
+        # 如果当前请求是低优先级的被动更新，且最后一次操作是用户主动暂停
+        if (not is_user_action and 
+            global_play_state.get("last_operation_type") == "user_action" and
+            global_play_state.get("is_playing") == False):
+            # 拒绝低优先级的播放状态覆盖，但允许进度更新
+            if "is_playing" in data and data["is_playing"] == True:
+                logger.debug(f"设备 {sid[:8]} 被动播放状态被拒绝（锁定中，上次操作为暂停）")
+                # 允许进度更新，但不改变播放状态
+                if "current_time" in data and global_play_state["video_url"]:
+                    current_time = float(data["current_time"])
+                    time_diff = abs(global_play_state["current_time"] - current_time)
+                    if time_diff > CONFIG["SYNC_THRESHOLD"]:
+                        global_play_state["current_time"] = current_time
+                        global_play_state["update_ts"] = now
+                        logger.debug(f"设备 {sid[:8]} 进度更新（不改变播放状态）")
+                return
+        # 如果当前请求是高优先级的用户操作，则强制通过
+        elif is_user_action:
+            pass
+        # 否则在锁定时间内直接返回
+        else:
+            return
+    # ==========================================
     
     need_broadcast = False
     operation_type = None
@@ -226,6 +263,11 @@ def handle_state_change(data):
     if need_broadcast:
         global_play_state["update_ts"] = now
         global_play_state["last_sync_operation"] = operation_type
+        # ==========【新增：记录操作来源】==========
+        device_id = device_status.get(sid, {}).get("device_id", sid[:8])
+        global_play_state["last_operation_device"] = device_id
+        global_play_state["last_operation_type"] = "user_action" if is_user_action else "passive_update"
+        # =======================================
         
         broadcast_data = {
             **global_play_state,
