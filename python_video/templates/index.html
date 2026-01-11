@@ -187,6 +187,130 @@
         .video-info-value { font-weight: 500; color: #2d3748; font-size: 15px; word-break: break-all; }
         
         .device-panel { marginTop: 10px; }
+        
+        /* 播放列表面板样式 */
+        .playlist-panel { }
+        .playlist-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto auto;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        @media (max-width: 768px) {
+            .playlist-controls {
+                grid-template-columns: 1fr;
+            }
+        }
+        .playlist-navigation {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            justify-content: center;
+        }
+        .playlist-items {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+        .playlist-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .playlist-item:last-child {
+            border-bottom: none;
+        }
+        .playlist-item:hover {
+            background: #f7fafc;
+        }
+        .playlist-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom: 1px solid #5a67d8;
+        }
+        .playlist-item.active .playlist-item-name,
+        .playlist-item.active .playlist-item-index {
+            color: white;
+        }
+        .playlist-item.active .playlist-item-url {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .playlist-item-index {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 14px;
+            min-width: 30px;
+            margin-right: 10px;
+        }
+        .playlist-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .playlist-item-name {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 15px;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .playlist-item-url {
+            color: #718096;
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .playlist-item-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: 15px;
+        }
+        .playlist-btn-play {
+            padding: 6px 14px;
+            background: #48bb78;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .playlist-btn-play:hover {
+            background: #38a169;
+            transform: scale(1.05);
+        }
+        .playlist-btn-delete {
+            padding: 6px 14px;
+            background: #f56565;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .playlist-btn-delete:hover {
+            background: #e53e3e;
+            transform: scale(1.05);
+        }
+        .empty-playlist {
+            padding: 40px 20px;
+            text-align: center;
+            color: #a0aec0;
+            font-size: 14px;
+        }
         .device-grid { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
@@ -385,6 +509,31 @@
             <h2>设备监控 (<span id="device-count">0</span> 台在线)</h2>
             <div id="device-grid" class="device-grid">
                 <div class="loading">正在加载设备列表...</div>
+            </div>
+        </div>
+
+        <div class="card playlist-panel">
+            <h2>播放列表 (<span id="playlist-count">0</span> 个视频)</h2>
+            <div class="playlist-controls">
+                <input type="text" id="playlist-url-input" class="url-input" placeholder="输入视频URL..." style="flex: 1;">
+                <input type="text" id="playlist-name-input" class="url-input" placeholder="视频名称（可选）" style="flex: 1;">
+                <button class="btn btn-primary" onclick="addVideoToPlaylist()">
+                    <span>+</span> 添加
+                </button>
+                <button class="btn btn-danger" onclick="clearPlaylist()">
+                    清空
+                </button>
+            </div>
+            <div class="playlist-navigation">
+                <button class="btn btn-info" onclick="playPrevious()">
+                    ◀ 上一个
+                </button>
+                <button class="btn btn-info" onclick="playNext()">
+                    下一个 ▶
+                </button>
+            </div>
+            <div id="playlist-items" class="playlist-items">
+                <div class="empty-playlist">播放列表为空，请添加视频</div>
             </div>
         </div>
 
@@ -601,6 +750,109 @@
             });
             showMessage('已清空视频', 'info');
         }
+
+        // ====================【播放列表操作函数】====================
+
+        let playlistState = {
+            videos: [],
+            currentIndex: -1
+        };
+
+        function addVideoToPlaylist() {
+            const urlInput = document.getElementById('playlist-url-input');
+            const nameInput = document.getElementById('playlist-name-input');
+            
+            const url = urlInput.value.trim();
+            const name = nameInput.value.trim();
+            
+            if (!url) {
+                showMessage('请输入视频URL', 'error');
+                return;
+            }
+            
+            socket.emit('add_to_playlist', {
+                video_url: url,
+                video_name: name
+            });
+            
+            // 清空输入框
+            urlInput.value = '';
+            nameInput.value = '';
+            showMessage('正在添加视频...', 'info');
+        }
+
+        function removeVideoFromPlaylist(index) {
+            socket.emit('remove_from_playlist', { index });
+            showMessage('正在删除视频...', 'info');
+        }
+
+        function playFromPlaylist(index) {
+            socket.emit('play_from_playlist', { index });
+            showMessage('正在播放...', 'info');
+        }
+
+        function playNext() {
+            socket.emit('play_next');
+            showMessage('切换到下一个视频...', 'info');
+        }
+
+        function playPrevious() {
+            socket.emit('play_previous');
+            showMessage('切换到上一个视频...', 'info');
+        }
+
+        function clearPlaylist() {
+            if (confirm('确定要清空播放列表吗？')) {
+                socket.emit('clear_playlist');
+                showMessage('正在清空播放列表...', 'info');
+            }
+        }
+
+        function updatePlaylistUI(playlist) {
+            playlistState.videos = playlist.videos || [];
+            playlistState.currentIndex = playlist.current_index || -1;
+            
+            // 更新播放列表计数
+            document.getElementById('playlist-count').textContent = playlistState.videos.length;
+            
+            const playlistItems = document.getElementById('playlist-items');
+            
+            if (playlistState.videos.length === 0) {
+                playlistItems.innerHTML = '<div class="empty-playlist">播放列表为空，请添加视频</div>';
+                return;
+            }
+            
+            playlistItems.innerHTML = '';
+            
+            playlistState.videos.forEach((video, index) => {
+                const isActive = index === playlistState.currentIndex;
+                
+                const item = document.createElement('div');
+                item.className = `playlist-item ${isActive ? 'active' : ''}`;
+                item.innerHTML = `
+                    <div class="playlist-item-index">${index + 1}</div>
+                    <div class="playlist-item-info" onclick="playFromPlaylist(${index})">
+                        <div class="playlist-item-name">${escapeHtml(video.name || '未命名视频')}</div>
+                        <div class="playlist-item-url">${escapeHtml(video.url || '')}</div>
+                    </div>
+                    <div class="playlist-item-actions">
+                        ${!isActive ? `<button class="playlist-btn-play" onclick="event.stopPropagation(); playFromPlaylist(${index})">播放</button>` : '<span style="color: #48bb78; font-size: 14px; font-weight: 600;">播放中</span>'}
+                        <button class="playlist-btn-delete" onclick="event.stopPropagation(); removeVideoFromPlaylist(${index})">删除</button>
+                    </div>
+                `;
+                
+                playlistItems.appendChild(item);
+            });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ============================================================
         
         function startHeartbeat() {
             setInterval(() => {
@@ -615,6 +867,7 @@
             updateConnectionStatus(true);
             addLog('✅ 已连接到服务器', 'success');
             socket.emit('get_init_state');
+            socket.emit('get_playlist');
             startHeartbeat();
         });
         
@@ -646,6 +899,18 @@
         socket.on('device_status_update', (data) => {
             updateDevicePanel(data);
         });
+        
+        // ====================【播放列表事件监听】====================
+        
+        socket.on('playlist_update', (data) => {
+            updatePlaylistUI(data);
+            
+            if (data.message) {
+                addLog(`📋 播放列表: ${data.message}`, 'info');
+            }
+        });
+        
+        // ============================================================
         
         function handleSync(state, isSelf) {
             const prefix = isSelf ? '🔄 初始化同步' : '🔄 全局同步';
@@ -852,6 +1117,8 @@
             // 初始加载状态
             document.getElementById('online-count').textContent = {{ online_count }};
             document.getElementById('device-count').textContent = {{ online_count }};
+            // 请求播放列表
+            socket.emit('get_playlist');
         });
     </script>
 </body>

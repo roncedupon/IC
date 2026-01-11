@@ -31,6 +31,13 @@ global_play_state = {
     "last_operation_type": None  # 记录最后一次操作类型: 'user_action' 或 'passive_update'
 }
 
+# 播放列表管理
+global_playlist = {
+    "videos": [],  # 视频列表 [{"url": "...", "name": "...", "added_at": timestamp}]
+    "current_index": -1,  # 当前播放的视频索引，-1表示未选择
+    "update_ts": time.time()
+}
+
 # 设备管理
 device_status = {}
 DEVICE_PREFIX = "DEV-"
@@ -291,6 +298,309 @@ def handle_force_sync():
         "timestamp": time.time(),
         "force_sync": True
     })
+
+# ====================【播放列表管理 Socket 事件】====================
+
+@socketio.on('get_playlist')
+def handle_get_playlist():
+    """获取播放列表"""
+    sid = request.sid
+    logger.debug(f"设备 {sid[:8]} 请求播放列表")
+    emit('playlist_update', {
+        **global_playlist,
+        "timestamp": time.time()
+    })
+
+@socketio.on('add_to_playlist')
+def handle_add_to_playlist(data):
+    """添加视频到播放列表"""
+    global global_playlist
+    
+    sid = request.sid
+    if not isinstance(data, dict):
+        return
+    
+    video_url = data.get('video_url', '').strip()
+    video_name = data.get('video_name', '').strip()
+    
+    if not video_url:
+        logger.warning(f"设备 {sid[:8]} 尝试添加空视频URL")
+        return
+    
+    # 如果没有提供名称，使用URL作为名称
+    if not video_name:
+        video_name = video_url.split('/')[-1].split('?')[0]
+        if len(video_name) > 50:
+            video_name = video_name[:50] + "..."
+    
+    video_name = video_name or f"视频 {len(global_playlist['videos']) + 1}"
+    
+    # 检查是否已存在
+    for video in global_playlist['videos']:
+        if video['url'] == video_url:
+            logger.info(f"设备 {sid[:8]} 添加的视频已存在: {video_name}")
+            emit('playlist_update', {
+                **global_playlist,
+                "timestamp": time.time(),
+                "message": "视频已存在于播放列表中"
+            })
+            return
+    
+    # 添加视频到播放列表
+    new_video = {
+        "url": video_url,
+        "name": video_name,
+        "added_at": time.time()
+    }
+    global_playlist['videos'].append(new_video)
+    global_playlist['update_ts'] = time.time()
+    
+    # 如果是第一个视频，自动设为当前索引
+    if global_playlist['current_index'] == -1:
+        global_playlist['current_index'] = 0
+    
+    logger.info(f"设备 {sid[:8]} 添加视频: {video_name} (索引: {len(global_playlist['videos']) - 1})")
+    
+    # 广播播放列表更新
+    socketio.emit('playlist_update', {
+        **global_playlist,
+        "timestamp": time.time(),
+        "message": f"已添加视频: {video_name}"
+    })
+
+@socketio.on('remove_from_playlist')
+def handle_remove_from_playlist(data):
+    """从播放列表删除视频"""
+    global global_playlist
+    
+    sid = request.sid
+    if not isinstance(data, dict):
+        return
+    
+    index = data.get('index')
+    if index is None or not isinstance(index, int):
+        logger.warning(f"设备 {sid[:8]} 提供的索引无效")
+        return
+    
+    if index < 0 or index >= len(global_playlist['videos']):
+        logger.warning(f"设备 {sid[:8]} 提供的索引超出范围: {index}")
+        return
+    
+    removed_video = global_playlist['videos'].pop(index)
+    logger.info(f"设备 {sid[:8]} 删除视频: {removed_video['name']} (索引: {index})")
+    
+    # 调整当前播放索引
+    if global_playlist['current_index'] == index:
+        # 删除的是当前播放的视频
+        if len(global_playlist['videos']) > 0:
+            global_playlist['current_index'] = max(0, index - 1)
+        else:
+            global_playlist['current_index'] = -1
+            # 清空当前播放
+            global_play_state.update({
+                "video_url": "",
+                "current_time": 0.0,
+                "is_playing": False
+            })
+            socketio.emit('sync_all', global_play_state)
+    elif global_playlist['current_index'] > index:
+        # 删除的是当前播放视频之前的视频，索引减1
+        global_playlist['current_index'] -= 1
+    
+    global_playlist['update_ts'] = time.time()
+    
+    # 广播播放列表更新
+    socketio.emit('playlist_update', {
+        **global_playlist,
+        "timestamp": time.time(),
+        "message": f"已删除视频: {removed_video['name']}"
+    })
+
+@socketio.on('play_from_playlist')
+def handle_play_from_playlist(data):
+    """从播放列表播放指定索引的视频"""
+    global global_playlist
+    global global_play_state
+    
+    sid = request.sid
+    now = time.time()
+    
+    if not isinstance(data, dict):
+        return
+    
+    index = data.get('index')
+    if index is None or not isinstance(index, int):
+        logger.warning(f"设备 {sid[:8]} 提供的索引无效")
+        return
+    
+    if index < 0 or index >= len(global_playlist['videos']):
+        logger.warning(f"设备 {sid[:8]} 提供的索引超出范围: {index}")
+        return
+    
+    video = global_playlist['videos'][index]
+    global_playlist['current_index'] = index
+    global_playlist['update_ts'] = now
+    
+    # 更新播放状态（遵循原有的同步逻辑）
+    global_play_state.update({
+        "video_url": video['url'],
+        "current_time": 0.0,
+        "is_playing": True,
+        "update_ts": now,
+        "last_operation_device": device_status.get(sid, {}).get("device_id", sid[:8]),
+        "last_operation_type": "user_action"
+    })
+    
+    logger.info(f"设备 {sid[:8]} 播放视频: {video['name']} (索引: {index})")
+    
+    # 广播播放列表更新
+    socketio.emit('playlist_update', {
+        **global_playlist,
+        "timestamp": time.time(),
+        "message": f"正在播放: {video['name']}"
+    })
+    
+    # 广播播放状态更新
+    socketio.emit('sync_all', {
+        **global_play_state,
+        "sync_id": str(uuid.uuid4())[:8],
+        "timestamp": now
+    })
+
+@socketio.on('play_next')
+def handle_play_next():
+    """播放下一个视频"""
+    global global_playlist
+    global global_play_state
+    
+    sid = request.sid
+    now = time.time()
+    
+    if not global_playlist['videos']:
+        logger.warning(f"播放列表为空，无法播放下一个")
+        return
+    
+    current_index = global_playlist['current_index']
+    next_index = current_index + 1
+    
+    # 如果是最后一个，循环到第一个
+    if next_index >= len(global_playlist['videos']):
+        next_index = 0
+    
+    # 调用 play_from_playlist 逻辑
+    video = global_playlist['videos'][next_index]
+    global_playlist['current_index'] = next_index
+    global_playlist['update_ts'] = now
+    
+    # 更新播放状态
+    global_play_state.update({
+        "video_url": video['url'],
+        "current_time": 0.0,
+        "is_playing": True,
+        "update_ts": now,
+        "last_operation_device": device_status.get(sid, {}).get("device_id", sid[:8]),
+        "last_operation_type": "user_action"
+    })
+    
+    logger.info(f"设备 {sid[:8]} 播放下一个视频: {video['name']} (索引: {next_index})")
+    
+    # 广播播放列表更新
+    socketio.emit('playlist_update', {
+        **global_playlist,
+        "timestamp": time.time(),
+        "message": f"播放下一个: {video['name']}"
+    })
+    
+    # 广播播放状态更新
+    socketio.emit('sync_all', {
+        **global_play_state,
+        "sync_id": str(uuid.uuid4())[:8],
+        "timestamp": now
+    })
+
+@socketio.on('play_previous')
+def handle_play_previous():
+    """播放上一个视频"""
+    global global_playlist
+    global global_play_state
+    
+    sid = request.sid
+    now = time.time()
+    
+    if not global_playlist['videos']:
+        logger.warning(f"播放列表为空，无法播放上一个")
+        return
+    
+    current_index = global_playlist['current_index']
+    prev_index = current_index - 1
+    
+    # 如果是第一个，循环到最后一个
+    if prev_index < 0:
+        prev_index = len(global_playlist['videos']) - 1
+    
+    # 调用 play_from_playlist 逻辑
+    video = global_playlist['videos'][prev_index]
+    global_playlist['current_index'] = prev_index
+    global_playlist['update_ts'] = now
+    
+    # 更新播放状态
+    global_play_state.update({
+        "video_url": video['url'],
+        "current_time": 0.0,
+        "is_playing": True,
+        "update_ts": now,
+        "last_operation_device": device_status.get(sid, {}).get("device_id", sid[:8]),
+        "last_operation_type": "user_action"
+    })
+    
+    logger.info(f"设备 {sid[:8]} 播放上一个视频: {video['name']} (索引: {prev_index})")
+    
+    # 广播播放列表更新
+    socketio.emit('playlist_update', {
+        **global_playlist,
+        "timestamp": time.time(),
+        "message": f"播放上一个: {video['name']}"
+    })
+    
+    # 广播播放状态更新
+    socketio.emit('sync_all', {
+        **global_play_state,
+        "sync_id": str(uuid.uuid4())[:8],
+        "timestamp": now
+    })
+
+@socketio.on('clear_playlist')
+def handle_clear_playlist():
+    """清空播放列表"""
+    global global_playlist
+    
+    sid = request.sid
+    
+    video_count = len(global_playlist['videos'])
+    global_playlist['videos'] = []
+    global_playlist['current_index'] = -1
+    global_playlist['update_ts'] = time.time()
+    
+    # 清空当前播放
+    global_play_state.update({
+        "video_url": "",
+        "current_time": 0.0,
+        "is_playing": False
+    })
+    
+    logger.info(f"设备 {sid[:8]} 清空播放列表 (删除了 {video_count} 个视频)")
+    
+    # 广播播放列表更新
+    socketio.emit('playlist_update', {
+        **global_playlist,
+        "timestamp": time.time(),
+        "message": f"已清空播放列表 (删除了 {video_count} 个视频)"
+    })
+    
+    # 广播播放状态更新
+    socketio.emit('sync_all', global_play_state)
+
+# ==================================================================
 
 def broadcast_device_status():
     with device_lock:
