@@ -12,7 +12,7 @@ import json
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 app.config['SECRET_KEY'] = 'video_sync_secure_key_' + str(uuid.uuid4())
 socketio = SocketIO(app, 
                    cors_allowed_origins="*", 
@@ -872,4 +872,4 @@ if __name__ == '__main__':
     logger.info(f"当前播放列表: {len(global_playlist['videos'])} 个视频")
     logger.info("=" * 60)
     
-    socketio.run(app, host='0.0.0.0', port=19134, debug=True)
+    socketio.run(app, host='0.0.0.0', port=19134, debug=True, allow_unsafe_werkzeug=True)

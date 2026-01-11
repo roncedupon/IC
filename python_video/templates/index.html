@@ -15,12 +15,134 @@
         }
         
         .container { 
-            max-width: 1400px; 
+            max-width: 1600px; 
             margin: 0 auto; 
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             overflow: hidden;
+        }
+
+        /* 主内容区域单列布局 */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .playlist-controls {
+                grid-template-columns: 1fr;
+            }
+            .playlist-items {
+                max-height: 300px;
+            }
+        }
+
+        /* 播放列表面板 */
+        .playlist-panel {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+
+        /* 播放列表标题栏 */
+        .playlist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+            flex-shrink: 0;
+        }
+
+        .playlist-header h2 {
+            margin-bottom: 0;
+            border: none;
+            padding: 0;
+            font-size: 22px;
+        }
+
+        /* 折叠/展开按钮 */
+        .toggle-playlist-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+
+        .toggle-playlist-btn:hover {
+            transform: rotate(180deg);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .toggle-playlist-btn.collapsed {
+            transform: rotate(0deg);
+        }
+
+        /* 播放列表内容区域 */
+        .playlist-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow: hidden;
+            transition: max-height 0.4s ease, opacity 0.3s ease;
+            max-height: 600px;
+            opacity: 1;
+        }
+
+        .playlist-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+
+        /* 确保标题和控制区域不被压缩 */
+        .playlist-controls,
+        .playlist-navigation {
+            flex-shrink: 0;
+        }
+
+        /* 播放列表项容器 */
+        .playlist-items {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+            padding: 8px;
+            position: relative;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e0 #f8fafc;
+            max-height: 450px;
+        }
+
+        /* 播放列表项样式调整 - 更紧凑 */
+        .playlist-item {
+            padding: 12px 14px;
+            margin-bottom: 6px;
+        }
+
+        .playlist-item-name {
+            font-size: 14px;
+        }
+
+        .playlist-item-url {
+            font-size: 11px;
         }
         
         .header { 
@@ -185,11 +307,8 @@
         .video-info-item { display: flex; flex-direction: column; }
         .video-info-label { font-weight: 600; color: #718096; margin-bottom: 5px; font-size: 13px; }
         .video-info-value { font-weight: 500; color: #2d3748; font-size: 15px; word-break: break-all; }
-        
-        .device-panel { marginTop: 10px; }
-        
-        /* 播放列表面板样式 */
-        .playlist-panel { }
+
+        /* 播放列表控制区域 */
         .playlist-controls {
             display: grid;
             grid-template-columns: 1fr 1fr auto auto;
@@ -202,53 +321,73 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* 播放列表导航按钮 */
         .playlist-navigation {
             display: flex;
             gap: 10px;
             margin-bottom: 15px;
             justify-content: center;
         }
-        .playlist-items {
-            max-height: 400px;
-            overflow-y: auto;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            background: #f8fafc;
+
+        /* Webkit 浏览器滚动条样式 */
+        .playlist-items::-webkit-scrollbar {
+            width: 10px;
+        }
+        .playlist-items::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 5px;
+        }
+        .playlist-items::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .playlist-items::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
         }
         .playlist-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 20px;
+            padding: 16px 18px;
             background: white;
-            border-bottom: 1px solid #e2e8f0;
+            border-radius: 10px;
+            margin-bottom: 8px;
             cursor: pointer;
-            transition: all 0.2s;
-        }
-        .playlist-item:last-child {
-            border-bottom: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid transparent;
         }
         .playlist-item:hover {
-            background: #f7fafc;
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-color: #667eea;
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
         }
         .playlist-item.active {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            border-bottom: 1px solid #5a67d8;
+            border-color: #5a67d8;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transform: scale(1.02);
         }
         .playlist-item.active .playlist-item-name,
         .playlist-item.active .playlist-item-index {
             color: white;
         }
         .playlist-item.active .playlist-item-url {
-            color: rgba(255, 255, 255, 0.8);
+            color: rgba(255, 255, 255, 0.85);
         }
         .playlist-item-index {
-            font-weight: 700;
-            color: #667eea;
-            font-size: 14px;
-            min-width: 30px;
-            margin-right: 10px;
+            font-weight: 800;
+            color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 15px;
+            min-width: 35px;
+            margin-right: 12px;
         }
         .playlist-item-info {
             flex: 1;
@@ -258,14 +397,14 @@
             font-weight: 600;
             color: #2d3748;
             font-size: 15px;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         .playlist-item-url {
             color: #718096;
-            font-size: 12px;
+            font-size: 11px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -273,29 +412,43 @@
         .playlist-item-actions {
             display: flex;
             gap: 8px;
-            margin-left: 15px;
+            margin-left: 12px;
+            flex-shrink: 0;
         }
         .playlist-btn-play {
-            padding: 6px 14px;
-            background: #48bb78;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
             color: white;
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
-            transition: all 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(72, 187, 120, 0.3);
         }
         .playlist-btn-play:hover {
-            background: #38a169;
-            transform: scale(1.05);
+            background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
         }
         .playlist-btn-delete {
-            padding: 6px 14px;
-            background: #f56565;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
             color: white;
             border: none;
             border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(245, 101, 101, 0.3);
+        }
+        .playlist-btn-delete:hover {
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4);
+        }
             cursor: pointer;
             font-size: 13px;
             font-weight: 600;
@@ -306,10 +459,23 @@
             transform: scale(1.05);
         }
         .empty-playlist {
-            padding: 40px 20px;
+            padding: 50px 30px;
             text-align: center;
             color: #a0aec0;
-            font-size: 14px;
+            font-size: 15px;
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-radius: 10px;
+            border: 2px dashed #cbd5e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .empty-playlist::before {
+            content: "📺";
+            font-size: 40px;
+            margin-bottom: 10px;
+            opacity: 0.6;
         }
         .device-grid { 
             display: grid; 
@@ -457,50 +623,73 @@
             </div>
         </div>
 
-        <div class="card">
-            <h2>视频控制</h2>
-            <div class="control-panel">
-                <input type="text" class="url-input" id="video-url" 
-                       placeholder="输入视频URL (支持MP4、M3U8、FLV等格式)" 
-                       value="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4">
-                <div class="btn-group">
-                    <button class="btn btn-primary" onclick="playVideo()">▶️ 播放/同步</button>
-                    <button class="btn btn-danger" onclick="pauseVideo()">⏸️ 暂停</button>
-                    <button class="btn btn-info" onclick="seekVideo(30)">⏩ +30秒</button>
-                    <button class="btn btn-info" onclick="seekVideo(-30)">⏪ -30秒</button>
-                    <button class="btn" onclick="forceSync()">🔄 强制同步</button>
-                    <button class="btn" onclick="clearVideo()">🗑️ 清空</button>
+        <!-- 主内容区域：单列布局 -->
+        <div class="main-content">
+            <!-- 播放列表面板 -->
+            <div class="card playlist-panel">
+                <!-- 播放列表标题栏 -->
+                <div class="playlist-header">
+                    <h2>播放列表 (<span id="playlist-count">0</span> 个视频)</h2>
+                    <button class="toggle-playlist-btn" id="toggle-playlist-btn" onclick="togglePlaylist()" title="折叠/展开播放列表">
+                        ▼
+                    </button>
                 </div>
-            </div>
-        </div>
 
-        <div class="card">
-            <h2>视频播放器</h2>
-            <div class="video-container">
-                <video id="player" controls playsinline preload="auto" crossorigin="anonymous">
-                    您的浏览器不支持HTML5视频播放
-                </video>
+                <!-- 播放列表内容区域 -->
+                <div class="playlist-content" id="playlist-content">
+                    <div class="playlist-controls">
+                        <input type="text" id="playlist-url-input" class="url-input" placeholder="输入视频URL..." style="flex: 1;">
+                        <input type="text" id="playlist-name-input" class="url-input" placeholder="视频名称（可选）" style="flex: 1;">
+                        <button class="btn btn-primary" onclick="addVideoToPlaylist()">
+                            <span>+</span> 添加
+                        </button>
+                        <button class="btn btn-danger" onclick="clearPlaylist()">
+                            清空
+                        </button>
+                    </div>
+                    <div class="playlist-navigation">
+                        <button class="btn btn-info" onclick="playPrevious()">
+                            ◀ 上一个
+                        </button>
+                        <button class="btn btn-info" onclick="playNext()">
+                            下一个 ▶
+                        </button>
+                    </div>
+                    <div id="playlist-items" class="playlist-items">
+                        <div class="empty-playlist">播放列表为空，请添加视频</div>
+                    </div>
+                </div>
             </div>
-            <div class="video-info">
-                <div class="video-info-item">
-                    <div class="video-info-label">当前视频:</div>
-                    <div class="video-info-value" id="current-url">无</div>
+
+            <!-- 视频播放器 -->
+            <div class="card">
+                <h2>视频播放器</h2>
+                <div class="video-container">
+                    <video id="player" controls playsinline preload="auto" crossorigin="anonymous">
+                        您的浏览器不支持HTML5视频播放
+                    </video>
                 </div>
-                <div class="video-info-item">
-                    <div class="video-info-label">播放状态:</div>
-                    <div class="video-info-value" id="player-state">等待播放</div>
-                </div>
-                <div class="video-info-item">
-                    <div class="video-info-label">播放进度:</div>
-                    <div class="video-info-value" id="progress-display">0:00 / 0:00</div>
-                </div>
-                <div class="video-info-item">
-                    <div class="video-info-label">加载速度:</div>
-                    <div class="video-info-value" id="load-speed">0 KB/s</div>
-                </div>
-                <div class="video-info-item">
-                    <div class="video-info-label">缓冲进度:</div>
-                    <div class="video-info-value" id="buffer-progress">0%</div>
+                <div class="video-info">
+                    <div class="video-info-item">
+                        <div class="video-info-label">当前视频:</div>
+                        <div class="video-info-value" id="current-url">无</div>
+                    </div>
+                    <div class="video-info-item">
+                        <div class="video-info-label">播放状态:</div>
+                        <div class="video-info-value" id="player-state">等待播放</div>
+                    </div>
+                    <div class="video-info-item">
+                        <div class="video-info-label">播放进度:</div>
+                        <div class="video-info-value" id="progress-display">0:00 / 0:00</div>
+                    </div>
+                    <div class="video-info-item">
+                        <div class="video-info-label">加载速度:</div>
+                        <div class="video-info-value" id="load-speed">0 KB/s</div>
+                    </div>
+                    <div class="video-info-item">
+                        <div class="video-info-label">缓冲进度:</div>
+                        <div class="video-info-value" id="buffer-progress">0%</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -509,31 +698,6 @@
             <h2>设备监控 (<span id="device-count">0</span> 台在线)</h2>
             <div id="device-grid" class="device-grid">
                 <div class="loading">正在加载设备列表...</div>
-            </div>
-        </div>
-
-        <div class="card playlist-panel">
-            <h2>播放列表 (<span id="playlist-count">0</span> 个视频)</h2>
-            <div class="playlist-controls">
-                <input type="text" id="playlist-url-input" class="url-input" placeholder="输入视频URL..." style="flex: 1;">
-                <input type="text" id="playlist-name-input" class="url-input" placeholder="视频名称（可选）" style="flex: 1;">
-                <button class="btn btn-primary" onclick="addVideoToPlaylist()">
-                    <span>+</span> 添加
-                </button>
-                <button class="btn btn-danger" onclick="clearPlaylist()">
-                    清空
-                </button>
-            </div>
-            <div class="playlist-navigation">
-                <button class="btn btn-info" onclick="playPrevious()">
-                    ◀ 上一个
-                </button>
-                <button class="btn btn-info" onclick="playNext()">
-                    下一个 ▶
-                </button>
-            </div>
-            <div id="playlist-items" class="playlist-items">
-                <div class="empty-playlist">播放列表为空，请添加视频</div>
             </div>
         </div>
 
@@ -755,8 +919,27 @@
 
         let playlistState = {
             videos: [],
-            currentIndex: -1
+            currentIndex: -1,
+            isExpanded: true
         };
+
+        // 折叠/展开播放列表
+        function togglePlaylist() {
+            const content = document.getElementById('playlist-content');
+            const toggleBtn = document.getElementById('toggle-playlist-btn');
+
+            playlistState.isExpanded = !playlistState.isExpanded;
+
+            if (playlistState.isExpanded) {
+                content.classList.remove('collapsed');
+                toggleBtn.classList.remove('collapsed');
+                toggleBtn.innerHTML = '▼';
+            } else {
+                content.classList.add('collapsed');
+                toggleBtn.classList.add('collapsed');
+                toggleBtn.innerHTML = '▲';
+            }
+        }
 
         function addVideoToPlaylist() {
             const urlInput = document.getElementById('playlist-url-input');
