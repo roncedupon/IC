@@ -89,7 +89,7 @@ class vrun(toolbox):
         
         os.chdir(self.args.dir)
         print(os.getcwd())
-        fsdb_file_name="waves.fsdb" if os.path.exists("waves.fsdb") else os.path.basename(self.args.dir)+".fsdb"
+        fsdb_file_name="wave.fsdb" if os.path.exists("wave.fsdb") else os.path.basename(self.args.dir)+".fsdb"
         if self.args.dir !=None:
             verdi_cmd=f"cd {self.args.dir}/../ && verdi -dbdir {self.args.dir}/simv.daidir/ -ssf {self.args.dir}/{fsdb_file_name} "
             if False:

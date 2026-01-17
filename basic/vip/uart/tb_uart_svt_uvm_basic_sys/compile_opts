@@ -1,7 +1,7 @@
-+incdir+$VIP2020_HOME/uart/src/sverilog/vcs \
-+incdir+$VIP2020_HOME/uart/include/sverilog \
-+incdir+$VIP2020_HOME/uart/src/verilog/vcs \
-+incdir+$VIP2020_HOME/uart/include/verilog \
++incdir+$VIP2020_HOME/src/sverilog/vcs \
++incdir+$VIP2020_HOME/include/sverilog \
++incdir+$VIP2020_HOME/src/verilog/vcs \
++incdir+$VIP2020_HOME/include/verilog \
 +incdir+$CUR_PROJ_HOME \
 +incdir+$CUR_PROJ_HOME/env \
 +incdir+$CUR_PROJ_HOME/hdl_interconnect \

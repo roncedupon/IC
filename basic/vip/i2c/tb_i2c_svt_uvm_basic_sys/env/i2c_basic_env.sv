@@ -111,7 +111,7 @@ class i2c_basic_env extends uvm_env ;
     i2c_system_env.slave[0].monitor.xact_observed_port.connect(sb.item_collected_slave);
 
     i2c_system_env.master[0].driver.pre_observed_port.connect(sb.item_collected_master_pre);
-    i2c_system_env.slave[0].driver.pre_observed_port.connect(sb.item_collected_slave_pre);
+    // i2c_system_env.slave[0].driver.pre_observed_port.connect(sb.item_collected_slave_pre);
 
     i2c_system_env.master[0].monitor.data_observed_port.connect(sb.item_collected_master_data);
     i2c_system_env.slave[0].monitor.data_observed_port.connect(sb.item_collected_slave_data);

@@ -1,4 +1,3 @@
-
 `include "uart_base_test.sv"
 `include "uart_directed_sequence.sv"
 
@@ -15,7 +14,7 @@
  */
 
 class directed_test extends uart_base_test;
-
+  svt_uart_configuration    uart2_cfg;
   /** UVM component utility macro */
   `uvm_component_utils(directed_test)
 
@@ -29,7 +28,19 @@ class directed_test extends uart_base_test;
     `uvm_info("build_phase", "Entered ...", UVM_LOW)
 
     super.build_phase(phase);
- 
+    uart2_cfg= svt_uart_configuration::type_id::create("uart2_cfg");
+    uart2_cfg.parity_type = svt_uart_configuration::NO_PARITY;       //ODND_PARITY check
+    uart2_cfg.baud_divisor =  156;//9600
+    uart2_cfg.handshake_type =  svt_uart_configuration::SOFTWARE;          
+    uart2_cfg.stop_bit =  svt_uart_configuration::ONE_BIT;
+    uart2_cfg.enable_dtr_dsr_handshake = 1'b0;    
+    uart2_cfg.enable_rts_cts_handshake = 1'b0;
+    uart2_cfg.enable_tx_rx_handshake = 1'b1;
+    uart2_cfg.data_pattern_xon = 'h48;    
+    uart2_cfg.data_width =  svt_uart_configuration::EIGHT_BIT;    
+    uart2_cfg.reasonable_receiver_buffer_size.constraint_mode(0);    
+    uart2_cfg.receiver_buffer_size = 1024;    
+    uvm_config_db#(svt_uart_configuration)::set(this,"env", "cfg",uart2_cfg);
     /** Disable the virtual default sequence on the the virtual sequencer started in the uart_base_test */
     uvm_config_db#(uvm_object_wrapper)::set(this, "env.sequencer.main_phase", "default_sequence", uart_null_virtual_sequence::type_id::get());
 

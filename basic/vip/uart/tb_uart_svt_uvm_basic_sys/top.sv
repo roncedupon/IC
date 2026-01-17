@@ -85,7 +85,10 @@ module test_top;
       SystemClock = ~SystemClock ;
     end
   end
-
+  initial begin
+    #1000ms; // Simulation timeout
+    `uvm_fatal("TIMEOUT", "Simulation timed out after 1000us");
+  end
   /**
    * Provide the UART SV interface to the UART ENV. This step
    * establishes the connection between the UART ENV and the HDL
@@ -111,7 +114,7 @@ module test_top;
   /** Optionally dump the simulation variables for waveform display. */
 `ifdef WAVES_FSDB
   initial begin
-    $fsdbDumpfile("test_top");
+    $fsdbDumpfile("wave.fsdb");
     $fsdbDumpvars;
   end
 `elsif WAVES_VCD

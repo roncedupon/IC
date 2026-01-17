@@ -69,12 +69,18 @@ class i2c_mst_directed_sequence extends uvm_sequence #(svt_i2c_master_transactio
     if (!$cast(i2c_cfg, cfg)) begin
       `svt_xvm_fatal("body", "Unable to cast the configuration to a svt_i2c_configuration class");
     end
-
-    `uvm_do_with(tx_xacts_m, 
+    `uvm_create(tx_xacts_m);
+    tx_xacts_m.RETRY_IF_NACK_ON_wt=10;
+    tx_xacts_m.RETRY_IF_NACK_OFF_wt=0;
+    `uvm_rand_send_with(tx_xacts_m, 
 		  {
 		    tx_xacts_m.cmd             == I2C_WRITE;
 		    tx_xacts_m.addr            == `SVT_I2C_SLAVE0_ADDRESS;
-		    tx_xacts_m.data.size()     == 64;
+		    tx_xacts_m.data.size()     == 15;
+        num_of_retry==7;
+
+        foreach(tx_xacts_m.data[i])
+          tx_xacts_m.data[i]        == 0;
 		    tx_xacts_m.sr_or_p_gen     == 0;
 		    tx_xacts_m.send_start_byte == 0;
 		  })
@@ -87,7 +93,7 @@ class i2c_mst_directed_sequence extends uvm_sequence #(svt_i2c_master_transactio
     if(i2c_cfg.enable_put_response == 1)
       get_response(rsp);
 
-    `uvm_info("body", "Exiting ...", UVM_DEBUG)
+    `uvm_info("body", "Exiting ...", UVM_LOW)
   endtask : body
 
 endclass : i2c_mst_directed_sequence 
