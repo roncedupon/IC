@@ -514,15 +514,6 @@
             transform: translateY(-2px) scale(1.05);
             box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4);
         }
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        .playlist-btn-delete:hover {
-            background: #e53e3e;
-            transform: scale(1.05);
-        }
         .empty-playlist {
             padding: 50px 30px;
             text-align: center;
@@ -1355,7 +1346,9 @@
         
         function handleSync(state, isSelf) {
             const prefix = isSelf ? '🔄 初始化同步' : '🔄 全局同步';
-            addLog(`${prefix}: ${state.is_playing ? '播放' : '暂停'} @ ${state.current_time.toFixed(1)}s`, 'info', state.sync_id);
+            // 只有当有实质变化时才记录日志，避免刷屏
+            // 但对于调试Seek问题，保留详细日志
+            // addLog(`${prefix}: ${state.is_playing ? '播放' : '暂停'} @ ${state.current_time.toFixed(1)}s`, 'info', state.sync_id);
             
             syncSession = state.session_id;
             document.getElementById('session-id').textContent = syncSession;
@@ -1395,8 +1388,15 @@
             }
             
             if (state.video_url && Math.abs(player.currentTime - state.current_time) > SYNC_THRESHOLD) {
+                // 如果当前正在拖动，忽略外部同步，防止跳回
                 if (!playerState.isDragging) {
                     const wasPlaying = playerState.isPlaying;
+                    
+                    // 日志：确认收到了Seek指令
+                    if (state.last_sync_operation === 'seek') {
+                         addLog(`🔄 同步跳转到 ${state.current_time.toFixed(2)}s`, 'info');
+                    }
+                    
                     if(wasPlaying) player.pause();
                     player.currentTime = state.current_time.toFixed(2);
                     if(wasPlaying) player.play().catch(err => console.warn("音频对齐兜底:", err));
@@ -1465,7 +1465,7 @@
             
             player.addEventListener('seeking', () => {
                 playerState.isDragging = true;
-                addLog('⏩ 正在跳转...', 'info');
+                // addLog('⏩ 正在跳转...', 'info');
             });
             
             player.addEventListener('seeked', () => {
@@ -1487,7 +1487,7 @@
             player.addEventListener('waiting', () => {
                 if (!playerState.isBuffering) {
                     playerState.isBuffering = true;
-                    addLog('⏳ 缓冲中...', 'info');
+                    // addLog('⏳ 缓冲中...', 'info');
                     showMessage('缓冲中...', 'warning');
                     
                     socket.emit('send_state', { 
@@ -1510,7 +1510,7 @@
             player.addEventListener('playing', () => {
                 if (playerState.isBuffering) {
                     playerState.isBuffering = false;
-                    addLog('✅ 缓冲完成，继续播放', 'success');
+                    // addLog('✅ 缓冲完成，继续播放', 'success');
                     showMessage('缓冲完成', 'success');
                     
                     socket.emit('send_state', { 
