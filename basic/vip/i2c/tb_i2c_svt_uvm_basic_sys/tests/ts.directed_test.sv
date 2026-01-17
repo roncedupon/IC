@@ -35,7 +35,7 @@ class directed_test extends i2c_base_test;
     uvm_config_db#(uvm_object_wrapper)::set(this, "env.i2c_system_env.master[0].sequencer.main_phase", "default_sequence", i2c_mst_directed_sequence::type_id::get());
  
     /** Apply the slave directed i2c sequence to the i2c slave sequencer */
-    uvm_config_db#(uvm_object_wrapper)::set(this, "env.i2c_system_env.slave[0].sequencer.main_phase", "default_sequence", i2c_slv_directed_sequence::type_id::get());
+    // uvm_config_db#(uvm_object_wrapper)::set(this, "env.i2c_system_env.slave[0].sequencer.main_phase", "default_sequence", i2c_slv_directed_sequence::type_id::get());
   
     `uvm_info("build_phase", "Exited ...", UVM_LOW)
 

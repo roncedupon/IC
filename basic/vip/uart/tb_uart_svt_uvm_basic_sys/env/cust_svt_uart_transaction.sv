@@ -26,7 +26,7 @@ class cust_svt_uart_transaction extends svt_uart_transaction ;
   `uvm_object_utils_end
 
   constraint cmd_type {
-    packet_count == uart_pkt_count;
+    // packet_count == uart_pkt_count;
     inter_cycle_delay == 100;
   }
 

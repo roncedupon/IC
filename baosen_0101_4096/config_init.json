@@ -1,0 +1,2408 @@
+{
+	"logic_die_id" : 
+	[
+		0,
+		1,
+		2,
+		3,
+		4,
+		5,
+		6,
+		7
+	],
+	"project" : "BW01",
+	"release-data" : "2025-07-09",
+	"tasks" : 
+	[
+		{
+			"layers" : 
+			[
+				{
+					"L0_id" : 0,
+					"L2_id" : 0,
+					"flash_die_id" : 0,
+					"instructions" : 
+					[
+						{
+							"description" : "Config Single Register with address and data from payload.",
+							"domain" : 
+							[
+								{
+									"description" : "include packet type, id, size",
+									"fields" : 
+									[
+										{
+											"bit_position" : 0,
+											"bit_width" : 24,
+											"description" : "Reserve For BD.",
+											"name" : "TaskID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 24,
+											"bit_width" : 4,
+											"description" : "The L0 Logic ID will be mapped to the physical ID within the Controller.",
+											"name" : "L0LogicID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 32,
+											"bit_width" : 14,
+											"description" : "payload data length (unit Byte) for this packet, When ConfigSingle Read or Clear mode,fixed Zero.",
+											"name" : "PacketSize",
+											"value" : 102
+										}
+									],
+									"name" : "Packet"
+								},
+								{
+									"description" : "",
+									"fields" : 
+									[
+										{
+											"bit_position" : 64,
+											"bit_width" : 8,
+											"description" : "Instruction opcode.",
+											"name" : "Opcode",
+											"value" : 33
+										},
+										{
+											"bit_position" : 72,
+											"bit_width" : 12,
+											"description" : "Use for Debug",
+											"name" : "InstrID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 84,
+											"bit_width" : 1,
+											"description" : "when set to 1, an interrupt is triggered when the insturction done.",
+											"name" : "IntrEN",
+											"value" : 1
+										},
+										{
+											"bit_position" : 85,
+											"bit_width" : 1,
+											"description" : "When barrier takes effect, the current instructions stop execution after parsing completed.",
+											"name" : "BarrierEN",
+											"value" : 0
+										},
+										{
+											"bit_position" : 86,
+											"bit_width" : 2,
+											"description" : "Used for multitask debug, the barrier takes effect when instruction's barrier id matches the barrier ID in the register configuration, and barrier enable is set to 1.",
+											"name" : "BarrierID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 88,
+											"bit_width" : 2,
+											"description" : "Suppports instruction extension length, reserved.",
+											"name" : "Ext",
+											"value" : 0
+										}
+									],
+									"name" : "Control"
+								},
+								{
+									"description" : "For Config Register Addr",
+									"fields" : 
+									[
+										{
+											"bit_position" : 128,
+											"bit_width" : 16,
+											"description" : "Config register valid number = ConfigNum + 1",
+											"name" : "ConfigNum",
+											"value" : 16
+										}
+									],
+									"name" : "ConfigParameter"
+								}
+							],
+							"name" : "configsingle",
+							"opcode" : "0x21"
+						}
+					]
+				}
+			],
+			"task_id" : 0
+		},
+		{
+			"layers" : 
+			[
+				{
+					"L0_id" : 0,
+					"L2_id" : 0,
+					"flash_die_id" : 0,
+					"instructions" : 
+					[
+						{
+							"description" : "Config Register with random address and data from instruction.",
+							"domain" : 
+							[
+								{
+									"description" : "include packet type, id, size",
+									"fields" : 
+									[
+										{
+											"bit_position" : 0,
+											"bit_width" : 24,
+											"description" : "Reserve For BD.",
+											"name" : "TaskID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 24,
+											"bit_width" : 4,
+											"description" : "The L0 Logic ID will be mapped to the physical ID within the Controller.",
+											"name" : "L0LogicID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 32,
+											"bit_width" : 14,
+											"description" : "payload data length (unit Byte) for this packet, When ConfigImm,fixed Zero.",
+											"name" : "PacketSize",
+											"value" : 0
+										}
+									],
+									"name" : "Packet"
+								},
+								{
+									"description" : "",
+									"fields" : 
+									[
+										{
+											"bit_position" : 64,
+											"bit_width" : 8,
+											"description" : "Instruction opcode.",
+											"name" : "Opcode",
+											"value" : 32
+										},
+										{
+											"bit_position" : 72,
+											"bit_width" : 12,
+											"description" : "Use for Debug",
+											"name" : "InstrID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 84,
+											"bit_width" : 1,
+											"description" : "when set to 1, an interrupt is triggered when the insturction done.",
+											"name" : "IntrEN",
+											"value" : 1
+										},
+										{
+											"bit_position" : 85,
+											"bit_width" : 1,
+											"description" : "When barrier takes effect, the current instructions stop execution after parsing completed.",
+											"name" : "BarrierEN",
+											"value" : 0
+										},
+										{
+											"bit_position" : 86,
+											"bit_width" : 2,
+											"description" : "Used for multitask debug, the barrier takes effect when instruction's barrier id matches the barrier ID in the register configuration, and barrier enable is set to 1.",
+											"name" : "BarrierID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 88,
+											"bit_width" : 2,
+											"description" : "Suppports instruction extension length, reserved.",
+											"name" : "Ext",
+											"value" : 0
+										},
+										{
+											"bit_position" : 90,
+											"bit_width" : 4,
+											"description" : "Config register valid number = ConfigNum + 1",
+											"name" : "ConfigNum",
+											"value" : 1
+										}
+									],
+									"name" : "Control"
+								},
+								{
+									"description" : "For Config Register Addr and data",
+									"fields" : 
+									[
+										{
+											"bit_position" : 128,
+											"bit_width" : 16,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigAddr0",
+											"value" : 1652
+										},
+										{
+											"bit_position" : 160,
+											"bit_width" : 32,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigData0",
+											"value" : 4294304
+										}
+									],
+									"name" : "Config0"
+								},
+								{
+									"description" : "For Config Register Addr and data",
+									"fields" : 
+									[
+										{
+											"bit_position" : 192,
+											"bit_width" : 16,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigAddr1",
+											"value" : 8368
+										},
+										{
+											"bit_position" : 224,
+											"bit_width" : 32,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigData1",
+											"value" : 3148880
+										}
+									],
+									"name" : "Config1"
+								},
+								{
+									"description" : "For Config Register Addr and data",
+									"fields" : 
+									[
+										{
+											"bit_position" : 256,
+											"bit_width" : 16,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigAddr2",
+											"value" : 0
+										},
+										{
+											"bit_position" : 288,
+											"bit_width" : 32,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigData2",
+											"value" : 0
+										}
+									],
+									"name" : "Config2"
+								},
+								{
+									"description" : "For Config Register Addr and data",
+									"fields" : 
+									[
+										{
+											"bit_position" : 320,
+											"bit_width" : 16,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigAddr3",
+											"value" : 0
+										},
+										{
+											"bit_position" : 352,
+											"bit_width" : 32,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigData3",
+											"value" : 0
+										}
+									],
+									"name" : "Config3"
+								}
+							],
+							"name" : "configimm",
+							"opcode" : "0x20"
+						}
+					]
+				},
+				{
+					"L0_id" : 0,
+					"L2_id" : 0,
+					"flash_die_id" : 0,
+					"instructions" : 
+					[
+						{
+							"description" : "Bypass data from input to output, for debug.",
+							"domain" : 
+							[
+								{
+									"description" : "include packet type, id, size",
+									"fields" : 
+									[
+										{
+											"bit_position" : 0,
+											"bit_width" : 24,
+											"description" : "Reserve For BD.",
+											"name" : "TaskID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 24,
+											"bit_width" : 4,
+											"description" : "Not use in control instruction.",
+											"name" : "L0LogicID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 32,
+											"bit_width" : 14,
+											"description" : "Fixed0 in control instruction.",
+											"name" : "PacketSize",
+											"value" : 0
+										}
+									],
+									"name" : "Packet"
+								},
+								{
+									"description" : "",
+									"fields" : 
+									[
+										{
+											"bit_position" : 64,
+											"bit_width" : 8,
+											"description" : "Instruction opcode.",
+											"name" : "Opcode",
+											"value" : 65
+										},
+										{
+											"bit_position" : 72,
+											"bit_width" : 12,
+											"description" : "Use for Debug",
+											"name" : "InstrID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 84,
+											"bit_width" : 1,
+											"description" : "when set to 1, an interrupt is triggered when the insturction done.",
+											"name" : "IntrEN",
+											"value" : 1
+										},
+										{
+											"bit_position" : 85,
+											"bit_width" : 1,
+											"description" : "When barrier takes effect, the current instructions stop execution after parsing completed.",
+											"name" : "BarrierEN",
+											"value" : 0
+										},
+										{
+											"bit_position" : 86,
+											"bit_width" : 2,
+											"description" : "Used for multitask debug, the barrier takes effect when instruction's barrier id matches the barrier ID in the register configuration, and barrier enable is set to 1.",
+											"name" : "BarrierID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 88,
+											"bit_width" : 2,
+											"description" : "Suppports instruction extension length, reserved.",
+											"name" : "Ext",
+											"value" : 0
+										}
+									],
+									"name" : "Control"
+								},
+								{
+									"description" : "delay parameter",
+									"fields" : 
+									[
+										{
+											"bit_position" : 128,
+											"bit_width" : 24,
+											"description" : "Delay cycle number in 1GHz.",
+											"name" : "DelayNum",
+											"value" : 5000
+										}
+									],
+									"name" : "DelayParameter"
+								}
+							],
+							"name" : "delay",
+							"opcode" : "0x41"
+						}
+					]
+				},
+				{
+					"L0_id" : 0,
+					"L2_id" : 0,
+					"flash_die_id" : 0,
+					"instructions" : 
+					[
+						{
+							"description" : "Wait pipeline empty.",
+							"domain" : 
+							[
+								{
+									"description" : "include packet type, id, size",
+									"fields" : 
+									[
+										{
+											"bit_position" : 0,
+											"bit_width" : 24,
+											"description" : "Reserve For BD.",
+											"name" : "TaskID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 24,
+											"bit_width" : 4,
+											"description" : "Not use in control instruction.",
+											"name" : "L0LogicID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 32,
+											"bit_width" : 14,
+											"description" : "Fixed0 in control instruction.",
+											"name" : "PacketSize",
+											"value" : 0
+										}
+									],
+									"name" : "Packet"
+								},
+								{
+									"description" : "",
+									"fields" : 
+									[
+										{
+											"bit_position" : 64,
+											"bit_width" : 8,
+											"description" : "Instruction opcode.",
+											"name" : "Opcode",
+											"value" : 64
+										},
+										{
+											"bit_position" : 72,
+											"bit_width" : 12,
+											"description" : "Use for Debug",
+											"name" : "InstrID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 84,
+											"bit_width" : 1,
+											"description" : "when set to 1, an interrupt is triggered when the insturction done.",
+											"name" : "IntrEN",
+											"value" : 1
+										},
+										{
+											"bit_position" : 85,
+											"bit_width" : 1,
+											"description" : "When barrier takes effect, the current instructions stop execution after parsing completed.",
+											"name" : "BarrierEN",
+											"value" : 0
+										},
+										{
+											"bit_position" : 86,
+											"bit_width" : 2,
+											"description" : "Used for multitask debug, the barrier takes effect when instruction's barrier id matches the barrier ID in the register configuration, and barrier enable is set to 1.",
+											"name" : "BarrierID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 88,
+											"bit_width" : 2,
+											"description" : "Suppports instruction extension length, reserved.",
+											"name" : "Ext",
+											"value" : 0
+										}
+									],
+									"name" : "Control"
+								}
+							],
+							"name" : "fence",
+							"opcode" : "0x40"
+						}
+					]
+				}
+			],
+			"task_id" : 1
+		},
+		{
+			"layers" : 
+			[
+				{
+					"L0_id" : 0,
+					"L2_id" : 0,
+					"flash_die_id" : 0,
+					"instructions" : 
+					[
+						{
+							"description" : "Config Burst Register with base address from instruction and data from payload.",
+							"domain" : 
+							[
+								{
+									"description" : "include packet type, id, size",
+									"fields" : 
+									[
+										{
+											"bit_position" : 0,
+											"bit_width" : 24,
+											"description" : "Reserve For BD.",
+											"name" : "TaskID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 24,
+											"bit_width" : 4,
+											"description" : "The L0 Logic ID will be mapped to the physical ID within the Controller.",
+											"name" : "L0LogicID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 32,
+											"bit_width" : 14,
+											"description" : "payload data length (unit Byte) for this packet.",
+											"name" : "PacketSize",
+											"value" : 192
+										}
+									],
+									"name" : "Packet"
+								},
+								{
+									"description" : "",
+									"fields" : 
+									[
+										{
+											"bit_position" : 64,
+											"bit_width" : 8,
+											"description" : "Instruction opcode.",
+											"name" : "Opcode",
+											"value" : 34
+										},
+										{
+											"bit_position" : 72,
+											"bit_width" : 12,
+											"description" : "Use for Debug",
+											"name" : "InstrID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 84,
+											"bit_width" : 1,
+											"description" : "when set to 1, an interrupt is triggered when the insturction done.",
+											"name" : "IntrEN",
+											"value" : 1
+										},
+										{
+											"bit_position" : 85,
+											"bit_width" : 1,
+											"description" : "When barrier takes effect, the current instructions stop execution after parsing completed.",
+											"name" : "BarrierEN",
+											"value" : 0
+										},
+										{
+											"bit_position" : 86,
+											"bit_width" : 2,
+											"description" : "Used for multitask debug, the barrier takes effect when instruction's barrier id matches the barrier ID in the register configuration, and barrier enable is set to 1.",
+											"name" : "BarrierID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 88,
+											"bit_width" : 2,
+											"description" : "Suppports instruction extension length, reserved.",
+											"name" : "Ext",
+											"value" : 0
+										}
+									],
+									"name" : "Control"
+								},
+								{
+									"description" : "For Config Register Addr",
+									"fields" : 
+									[
+										{
+											"bit_position" : 128,
+											"bit_width" : 16,
+											"description" : "For Config Register Addr unit Byte, required 4B aligned.",
+											"name" : "BaseAddr",
+											"value" : 2704
+										},
+										{
+											"bit_position" : 144,
+											"bit_width" : 16,
+											"description" : "For ConfigBurst Length. unit 4B, burstlength + 1 = number of 4B.",
+											"name" : "BurstLength",
+											"value" : 47
+										},
+										{
+											"bit_position" : 160,
+											"bit_width" : 1,
+											"description" : "For Burst operation, Fixed or incremental.",
+											"name" : "Incr",
+											"value" : 1
+										}
+									],
+									"name" : "ConfigParameter"
+								}
+							],
+							"name" : "configburst",
+							"opcode" : "0x22"
+						}
+					]
+				},
+				{
+					"L0_id" : 0,
+					"L2_id" : 0,
+					"flash_die_id" : 0,
+					"instructions" : 
+					[
+						{
+							"description" : "Config Single Register with address and data from payload.",
+							"domain" : 
+							[
+								{
+									"description" : "include packet type, id, size",
+									"fields" : 
+									[
+										{
+											"bit_position" : 0,
+											"bit_width" : 24,
+											"description" : "Reserve For BD.",
+											"name" : "TaskID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 24,
+											"bit_width" : 4,
+											"description" : "The L0 Logic ID will be mapped to the physical ID within the Controller.",
+											"name" : "L0LogicID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 32,
+											"bit_width" : 14,
+											"description" : "payload data length (unit Byte) for this packet, When ConfigSingle Read or Clear mode,fixed Zero.",
+											"name" : "PacketSize",
+											"value" : 42
+										}
+									],
+									"name" : "Packet"
+								},
+								{
+									"description" : "",
+									"fields" : 
+									[
+										{
+											"bit_position" : 64,
+											"bit_width" : 8,
+											"description" : "Instruction opcode.",
+											"name" : "Opcode",
+											"value" : 33
+										},
+										{
+											"bit_position" : 72,
+											"bit_width" : 12,
+											"description" : "Use for Debug",
+											"name" : "InstrID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 84,
+											"bit_width" : 1,
+											"description" : "when set to 1, an interrupt is triggered when the insturction done.",
+											"name" : "IntrEN",
+											"value" : 1
+										},
+										{
+											"bit_position" : 85,
+											"bit_width" : 1,
+											"description" : "When barrier takes effect, the current instructions stop execution after parsing completed.",
+											"name" : "BarrierEN",
+											"value" : 0
+										},
+										{
+											"bit_position" : 86,
+											"bit_width" : 2,
+											"description" : "Used for multitask debug, the barrier takes effect when instruction's barrier id matches the barrier ID in the register configuration, and barrier enable is set to 1.",
+											"name" : "BarrierID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 88,
+											"bit_width" : 2,
+											"description" : "Suppports instruction extension length, reserved.",
+											"name" : "Ext",
+											"value" : 0
+										}
+									],
+									"name" : "Control"
+								},
+								{
+									"description" : "For Config Register Addr",
+									"fields" : 
+									[
+										{
+											"bit_position" : 128,
+											"bit_width" : 16,
+											"description" : "Config register valid number = ConfigNum + 1",
+											"name" : "ConfigNum",
+											"value" : 6
+										}
+									],
+									"name" : "ConfigParameter"
+								}
+							],
+							"name" : "configsingle",
+							"opcode" : "0x21"
+						}
+					]
+				},
+				{
+					"L0_id" : 0,
+					"L2_id" : 0,
+					"flash_die_id" : 0,
+					"instructions" : 
+					[
+						{
+							"description" : "Wait pipeline empty.",
+							"domain" : 
+							[
+								{
+									"description" : "include packet type, id, size",
+									"fields" : 
+									[
+										{
+											"bit_position" : 0,
+											"bit_width" : 24,
+											"description" : "Reserve For BD.",
+											"name" : "TaskID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 24,
+											"bit_width" : 4,
+											"description" : "Not use in control instruction.",
+											"name" : "L0LogicID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 32,
+											"bit_width" : 14,
+											"description" : "Fixed0 in control instruction.",
+											"name" : "PacketSize",
+											"value" : 0
+										}
+									],
+									"name" : "Packet"
+								},
+								{
+									"description" : "",
+									"fields" : 
+									[
+										{
+											"bit_position" : 64,
+											"bit_width" : 8,
+											"description" : "Instruction opcode.",
+											"name" : "Opcode",
+											"value" : 64
+										},
+										{
+											"bit_position" : 72,
+											"bit_width" : 12,
+											"description" : "Use for Debug",
+											"name" : "InstrID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 84,
+											"bit_width" : 1,
+											"description" : "when set to 1, an interrupt is triggered when the insturction done.",
+											"name" : "IntrEN",
+											"value" : 1
+										},
+										{
+											"bit_position" : 85,
+											"bit_width" : 1,
+											"description" : "When barrier takes effect, the current instructions stop execution after parsing completed.",
+											"name" : "BarrierEN",
+											"value" : 0
+										},
+										{
+											"bit_position" : 86,
+											"bit_width" : 2,
+											"description" : "Used for multitask debug, the barrier takes effect when instruction's barrier id matches the barrier ID in the register configuration, and barrier enable is set to 1.",
+											"name" : "BarrierID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 88,
+											"bit_width" : 2,
+											"description" : "Suppports instruction extension length, reserved.",
+											"name" : "Ext",
+											"value" : 0
+										}
+									],
+									"name" : "Control"
+								}
+							],
+							"name" : "fence",
+							"opcode" : "0x40"
+						}
+					]
+				}
+			],
+			"task_id" : 2
+		},
+		{
+			"layers" : 
+			[
+				{
+					"L0_id" : 0,
+					"L2_id" : 0,
+					"flash_die_id" : 0,
+					"instructions" : 
+					[
+						{
+							"description" : "Config Burst Register with base address from instruction and data from payload.",
+							"domain" : 
+							[
+								{
+									"description" : "include packet type, id, size",
+									"fields" : 
+									[
+										{
+											"bit_position" : 0,
+											"bit_width" : 24,
+											"description" : "Reserve For BD.",
+											"name" : "TaskID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 24,
+											"bit_width" : 4,
+											"description" : "The L0 Logic ID will be mapped to the physical ID within the Controller.",
+											"name" : "L0LogicID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 32,
+											"bit_width" : 14,
+											"description" : "payload data length (unit Byte) for this packet.",
+											"name" : "PacketSize",
+											"value" : 880
+										}
+									],
+									"name" : "Packet"
+								},
+								{
+									"description" : "",
+									"fields" : 
+									[
+										{
+											"bit_position" : 64,
+											"bit_width" : 8,
+											"description" : "Instruction opcode.",
+											"name" : "Opcode",
+											"value" : 34
+										},
+										{
+											"bit_position" : 72,
+											"bit_width" : 12,
+											"description" : "Use for Debug",
+											"name" : "InstrID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 84,
+											"bit_width" : 1,
+											"description" : "when set to 1, an interrupt is triggered when the insturction done.",
+											"name" : "IntrEN",
+											"value" : 1
+										},
+										{
+											"bit_position" : 85,
+											"bit_width" : 1,
+											"description" : "When barrier takes effect, the current instructions stop execution after parsing completed.",
+											"name" : "BarrierEN",
+											"value" : 0
+										},
+										{
+											"bit_position" : 86,
+											"bit_width" : 2,
+											"description" : "Used for multitask debug, the barrier takes effect when instruction's barrier id matches the barrier ID in the register configuration, and barrier enable is set to 1.",
+											"name" : "BarrierID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 88,
+											"bit_width" : 2,
+											"description" : "Suppports instruction extension length, reserved.",
+											"name" : "Ext",
+											"value" : 0
+										}
+									],
+									"name" : "Control"
+								},
+								{
+									"description" : "For Config Register Addr",
+									"fields" : 
+									[
+										{
+											"bit_position" : 128,
+											"bit_width" : 16,
+											"description" : "For Config Register Addr unit Byte, required 4B aligned.",
+											"name" : "BaseAddr",
+											"value" : 12288
+										},
+										{
+											"bit_position" : 144,
+											"bit_width" : 16,
+											"description" : "For ConfigBurst Length. unit 4B, burstlength + 1 = number of 4B.",
+											"name" : "BurstLength",
+											"value" : 219
+										},
+										{
+											"bit_position" : 160,
+											"bit_width" : 1,
+											"description" : "For Burst operation, Fixed or incremental.",
+											"name" : "Incr",
+											"value" : 1
+										}
+									],
+									"name" : "ConfigParameter"
+								}
+							],
+							"name" : "configburst",
+							"opcode" : "0x22"
+						}
+					]
+				},
+				{
+					"L0_id" : 0,
+					"L2_id" : 0,
+					"flash_die_id" : 0,
+					"instructions" : 
+					[
+						{
+							"description" : "Config Burst Register with base address from instruction and data from payload.",
+							"domain" : 
+							[
+								{
+									"description" : "include packet type, id, size",
+									"fields" : 
+									[
+										{
+											"bit_position" : 0,
+											"bit_width" : 24,
+											"description" : "Reserve For BD.",
+											"name" : "TaskID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 24,
+											"bit_width" : 4,
+											"description" : "The L0 Logic ID will be mapped to the physical ID within the Controller.",
+											"name" : "L0LogicID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 32,
+											"bit_width" : 14,
+											"description" : "payload data length (unit Byte) for this packet.",
+											"name" : "PacketSize",
+											"value" : 748
+										}
+									],
+									"name" : "Packet"
+								},
+								{
+									"description" : "",
+									"fields" : 
+									[
+										{
+											"bit_position" : 64,
+											"bit_width" : 8,
+											"description" : "Instruction opcode.",
+											"name" : "Opcode",
+											"value" : 34
+										},
+										{
+											"bit_position" : 72,
+											"bit_width" : 12,
+											"description" : "Use for Debug",
+											"name" : "InstrID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 84,
+											"bit_width" : 1,
+											"description" : "when set to 1, an interrupt is triggered when the insturction done.",
+											"name" : "IntrEN",
+											"value" : 1
+										},
+										{
+											"bit_position" : 85,
+											"bit_width" : 1,
+											"description" : "When barrier takes effect, the current instructions stop execution after parsing completed.",
+											"name" : "BarrierEN",
+											"value" : 0
+										},
+										{
+											"bit_position" : 86,
+											"bit_width" : 2,
+											"description" : "Used for multitask debug, the barrier takes effect when instruction's barrier id matches the barrier ID in the register configuration, and barrier enable is set to 1.",
+											"name" : "BarrierID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 88,
+											"bit_width" : 2,
+											"description" : "Suppports instruction extension length, reserved.",
+											"name" : "Ext",
+											"value" : 0
+										}
+									],
+									"name" : "Control"
+								},
+								{
+									"description" : "For Config Register Addr",
+									"fields" : 
+									[
+										{
+											"bit_position" : 128,
+											"bit_width" : 16,
+											"description" : "For Config Register Addr unit Byte, required 4B aligned.",
+											"name" : "BaseAddr",
+											"value" : 13312
+										},
+										{
+											"bit_position" : 144,
+											"bit_width" : 16,
+											"description" : "For ConfigBurst Length. unit 4B, burstlength + 1 = number of 4B.",
+											"name" : "BurstLength",
+											"value" : 186
+										},
+										{
+											"bit_position" : 160,
+											"bit_width" : 1,
+											"description" : "For Burst operation, Fixed or incremental.",
+											"name" : "Incr",
+											"value" : 1
+										}
+									],
+									"name" : "ConfigParameter"
+								}
+							],
+							"name" : "configburst",
+							"opcode" : "0x22"
+						}
+					]
+				},
+				{
+					"L0_id" : 0,
+					"L2_id" : 0,
+					"flash_die_id" : 0,
+					"instructions" : 
+					[
+						{
+							"description" : "Config Burst Register with base address from instruction and data from payload.",
+							"domain" : 
+							[
+								{
+									"description" : "include packet type, id, size",
+									"fields" : 
+									[
+										{
+											"bit_position" : 0,
+											"bit_width" : 24,
+											"description" : "Reserve For BD.",
+											"name" : "TaskID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 24,
+											"bit_width" : 4,
+											"description" : "The L0 Logic ID will be mapped to the physical ID within the Controller.",
+											"name" : "L0LogicID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 32,
+											"bit_width" : 14,
+											"description" : "payload data length (unit Byte) for this packet.",
+											"name" : "PacketSize",
+											"value" : 780
+										}
+									],
+									"name" : "Packet"
+								},
+								{
+									"description" : "",
+									"fields" : 
+									[
+										{
+											"bit_position" : 64,
+											"bit_width" : 8,
+											"description" : "Instruction opcode.",
+											"name" : "Opcode",
+											"value" : 34
+										},
+										{
+											"bit_position" : 72,
+											"bit_width" : 12,
+											"description" : "Use for Debug",
+											"name" : "InstrID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 84,
+											"bit_width" : 1,
+											"description" : "when set to 1, an interrupt is triggered when the insturction done.",
+											"name" : "IntrEN",
+											"value" : 1
+										},
+										{
+											"bit_position" : 85,
+											"bit_width" : 1,
+											"description" : "When barrier takes effect, the current instructions stop execution after parsing completed.",
+											"name" : "BarrierEN",
+											"value" : 0
+										},
+										{
+											"bit_position" : 86,
+											"bit_width" : 2,
+											"description" : "Used for multitask debug, the barrier takes effect when instruction's barrier id matches the barrier ID in the register configuration, and barrier enable is set to 1.",
+											"name" : "BarrierID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 88,
+											"bit_width" : 2,
+											"description" : "Suppports instruction extension length, reserved.",
+											"name" : "Ext",
+											"value" : 0
+										}
+									],
+									"name" : "Control"
+								},
+								{
+									"description" : "For Config Register Addr",
+									"fields" : 
+									[
+										{
+											"bit_position" : 128,
+											"bit_width" : 16,
+											"description" : "For Config Register Addr unit Byte, required 4B aligned.",
+											"name" : "BaseAddr",
+											"value" : 14336
+										},
+										{
+											"bit_position" : 144,
+											"bit_width" : 16,
+											"description" : "For ConfigBurst Length. unit 4B, burstlength + 1 = number of 4B.",
+											"name" : "BurstLength",
+											"value" : 194
+										},
+										{
+											"bit_position" : 160,
+											"bit_width" : 1,
+											"description" : "For Burst operation, Fixed or incremental.",
+											"name" : "Incr",
+											"value" : 1
+										}
+									],
+									"name" : "ConfigParameter"
+								}
+							],
+							"name" : "configburst",
+							"opcode" : "0x22"
+						}
+					]
+				},
+				{
+					"L0_id" : 0,
+					"L2_id" : 0,
+					"flash_die_id" : 0,
+					"instructions" : 
+					[
+						{
+							"description" : "Wait pipeline empty.",
+							"domain" : 
+							[
+								{
+									"description" : "include packet type, id, size",
+									"fields" : 
+									[
+										{
+											"bit_position" : 0,
+											"bit_width" : 24,
+											"description" : "Reserve For BD.",
+											"name" : "TaskID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 24,
+											"bit_width" : 4,
+											"description" : "Not use in control instruction.",
+											"name" : "L0LogicID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 32,
+											"bit_width" : 14,
+											"description" : "Fixed0 in control instruction.",
+											"name" : "PacketSize",
+											"value" : 0
+										}
+									],
+									"name" : "Packet"
+								},
+								{
+									"description" : "",
+									"fields" : 
+									[
+										{
+											"bit_position" : 64,
+											"bit_width" : 8,
+											"description" : "Instruction opcode.",
+											"name" : "Opcode",
+											"value" : 64
+										},
+										{
+											"bit_position" : 72,
+											"bit_width" : 12,
+											"description" : "Use for Debug",
+											"name" : "InstrID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 84,
+											"bit_width" : 1,
+											"description" : "when set to 1, an interrupt is triggered when the insturction done.",
+											"name" : "IntrEN",
+											"value" : 1
+										},
+										{
+											"bit_position" : 85,
+											"bit_width" : 1,
+											"description" : "When barrier takes effect, the current instructions stop execution after parsing completed.",
+											"name" : "BarrierEN",
+											"value" : 0
+										},
+										{
+											"bit_position" : 86,
+											"bit_width" : 2,
+											"description" : "Used for multitask debug, the barrier takes effect when instruction's barrier id matches the barrier ID in the register configuration, and barrier enable is set to 1.",
+											"name" : "BarrierID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 88,
+											"bit_width" : 2,
+											"description" : "Suppports instruction extension length, reserved.",
+											"name" : "Ext",
+											"value" : 0
+										}
+									],
+									"name" : "Control"
+								}
+							],
+							"name" : "fence",
+							"opcode" : "0x40"
+						}
+					]
+				}
+			],
+			"task_id" : 3
+		},
+		{
+			"layers" : 
+			[
+				{
+					"L0_id" : 0,
+					"L2_id" : 0,
+					"flash_die_id" : 0,
+					"instructions" : 
+					[
+						{
+							"description" : "Config Burst Register with base address from instruction and data from payload.",
+							"domain" : 
+							[
+								{
+									"description" : "include packet type, id, size",
+									"fields" : 
+									[
+										{
+											"bit_position" : 0,
+											"bit_width" : 24,
+											"description" : "Reserve For BD.",
+											"name" : "TaskID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 24,
+											"bit_width" : 4,
+											"description" : "The L0 Logic ID will be mapped to the physical ID within the Controller.",
+											"name" : "L0LogicID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 32,
+											"bit_width" : 14,
+											"description" : "payload data length (unit Byte) for this packet, When ConfigBurst Read or Clear mode,fixed Zero.",
+											"name" : "PacketSize",
+											"value" : 4224
+										}
+									],
+									"name" : "Packet"
+								},
+								{
+									"description" : "",
+									"fields" : 
+									[
+										{
+											"bit_position" : 64,
+											"bit_width" : 8,
+											"description" : "Instruction opcode.",
+											"name" : "Opcode",
+											"value" : 36
+										},
+										{
+											"bit_position" : 72,
+											"bit_width" : 12,
+											"description" : "Use for Debug",
+											"name" : "InstrID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 84,
+											"bit_width" : 1,
+											"description" : "when set to 1, an interrupt is triggered when the insturction done.",
+											"name" : "IntrEN",
+											"value" : 1
+										},
+										{
+											"bit_position" : 85,
+											"bit_width" : 1,
+											"description" : "When barrier takes effect, the current instructions stop execution after parsing completed.",
+											"name" : "BarrierEN",
+											"value" : 0
+										},
+										{
+											"bit_position" : 86,
+											"bit_width" : 2,
+											"description" : "Used for multitask debug, the barrier takes effect when instruction's barrier id matches the barrier ID in the register configuration, and barrier enable is set to 1.",
+											"name" : "BarrierID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 88,
+											"bit_width" : 2,
+											"description" : "Suppports instruction extension length, reserved.",
+											"name" : "Ext",
+											"value" : 0
+										}
+									],
+									"name" : "Control"
+								},
+								{
+									"description" : "For Config Register Addr",
+									"fields" : 
+									[
+										{
+											"bit_position" : 128,
+											"bit_width" : 16,
+											"description" : "For Write Buffer Base Addr, unit 128B.",
+											"name" : "BaseAddr",
+											"value" : 0
+										},
+										{
+											"bit_position" : 144,
+											"bit_width" : 16,
+											"description" : "For ConfigBurst Length, unit 128B. burstlength + 1 = number of 128B.",
+											"name" : "BurstLength",
+											"value" : 32
+										}
+									],
+									"name" : "WriteBufferParameter"
+								}
+							],
+							"name" : "writetiabuffer",
+							"opcode" : "0x24"
+						},
+						{
+							"description" : "Config Burst Register with base address from instruction and data from payload.",
+							"domain" : 
+							[
+								{
+									"description" : "include packet type, id, size",
+									"fields" : 
+									[
+										{
+											"bit_position" : 0,
+											"bit_width" : 24,
+											"description" : "Reserve For BD.",
+											"name" : "TaskID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 24,
+											"bit_width" : 4,
+											"description" : "The L0 Logic ID will be mapped to the physical ID within the Controller.",
+											"name" : "L0LogicID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 32,
+											"bit_width" : 14,
+											"description" : "payload data length (unit Byte) for this packet, When ConfigBurst Read or Clear mode,fixed Zero.",
+											"name" : "PacketSize",
+											"value" : 4224
+										}
+									],
+									"name" : "Packet"
+								},
+								{
+									"description" : "",
+									"fields" : 
+									[
+										{
+											"bit_position" : 64,
+											"bit_width" : 8,
+											"description" : "Instruction opcode.",
+											"name" : "Opcode",
+											"value" : 36
+										},
+										{
+											"bit_position" : 72,
+											"bit_width" : 12,
+											"description" : "Use for Debug",
+											"name" : "InstrID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 84,
+											"bit_width" : 1,
+											"description" : "when set to 1, an interrupt is triggered when the insturction done.",
+											"name" : "IntrEN",
+											"value" : 1
+										},
+										{
+											"bit_position" : 85,
+											"bit_width" : 1,
+											"description" : "When barrier takes effect, the current instructions stop execution after parsing completed.",
+											"name" : "BarrierEN",
+											"value" : 0
+										},
+										{
+											"bit_position" : 86,
+											"bit_width" : 2,
+											"description" : "Used for multitask debug, the barrier takes effect when instruction's barrier id matches the barrier ID in the register configuration, and barrier enable is set to 1.",
+											"name" : "BarrierID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 88,
+											"bit_width" : 2,
+											"description" : "Suppports instruction extension length, reserved.",
+											"name" : "Ext",
+											"value" : 0
+										}
+									],
+									"name" : "Control"
+								},
+								{
+									"description" : "For Config Register Addr",
+									"fields" : 
+									[
+										{
+											"bit_position" : 128,
+											"bit_width" : 16,
+											"description" : "For Write Buffer Base Addr, unit 128B.",
+											"name" : "BaseAddr",
+											"value" : 33
+										},
+										{
+											"bit_position" : 144,
+											"bit_width" : 16,
+											"description" : "For ConfigBurst Length, unit 128B. burstlength + 1 = number of 128B.",
+											"name" : "BurstLength",
+											"value" : 32
+										}
+									],
+									"name" : "WriteBufferParameter"
+								}
+							],
+							"name" : "writetiabuffer",
+							"opcode" : "0x24"
+						},
+						{
+							"description" : "Config Burst Register with base address from instruction and data from payload.",
+							"domain" : 
+							[
+								{
+									"description" : "include packet type, id, size",
+									"fields" : 
+									[
+										{
+											"bit_position" : 0,
+											"bit_width" : 24,
+											"description" : "Reserve For BD.",
+											"name" : "TaskID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 24,
+											"bit_width" : 4,
+											"description" : "The L0 Logic ID will be mapped to the physical ID within the Controller.",
+											"name" : "L0LogicID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 32,
+											"bit_width" : 14,
+											"description" : "payload data length (unit Byte) for this packet, When ConfigBurst Read or Clear mode,fixed Zero.",
+											"name" : "PacketSize",
+											"value" : 4224
+										}
+									],
+									"name" : "Packet"
+								},
+								{
+									"description" : "",
+									"fields" : 
+									[
+										{
+											"bit_position" : 64,
+											"bit_width" : 8,
+											"description" : "Instruction opcode.",
+											"name" : "Opcode",
+											"value" : 37
+										},
+										{
+											"bit_position" : 72,
+											"bit_width" : 12,
+											"description" : "Use for Debug",
+											"name" : "InstrID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 84,
+											"bit_width" : 1,
+											"description" : "when set to 1, an interrupt is triggered when the insturction done.",
+											"name" : "IntrEN",
+											"value" : 1
+										},
+										{
+											"bit_position" : 85,
+											"bit_width" : 1,
+											"description" : "When barrier takes effect, the current instructions stop execution after parsing completed.",
+											"name" : "BarrierEN",
+											"value" : 0
+										},
+										{
+											"bit_position" : 86,
+											"bit_width" : 2,
+											"description" : "Used for multitask debug, the barrier takes effect when instruction's barrier id matches the barrier ID in the register configuration, and barrier enable is set to 1.",
+											"name" : "BarrierID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 88,
+											"bit_width" : 2,
+											"description" : "Suppports instruction extension length, reserved.",
+											"name" : "Ext",
+											"value" : 0
+										}
+									],
+									"name" : "Control"
+								},
+								{
+									"description" : "For Config Register Addr",
+									"fields" : 
+									[
+										{
+											"bit_position" : 128,
+											"bit_width" : 16,
+											"description" : "For Write Buffer Base Addr, unit 128B.",
+											"name" : "BaseAddr",
+											"value" : 0
+										},
+										{
+											"bit_position" : 144,
+											"bit_width" : 16,
+											"description" : "For ConfigBurst Length, unit 128B. burstlength + 1 = number of 128B.",
+											"name" : "BurstLength",
+											"value" : 32
+										}
+									],
+									"name" : "WriteBufferParameter"
+								}
+							],
+							"name" : "writecompbuffer",
+							"opcode" : "0x25"
+						},
+						{
+							"description" : "Config Burst Register with base address from instruction and data from payload.",
+							"domain" : 
+							[
+								{
+									"description" : "include packet type, id, size",
+									"fields" : 
+									[
+										{
+											"bit_position" : 0,
+											"bit_width" : 24,
+											"description" : "Reserve For BD.",
+											"name" : "TaskID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 24,
+											"bit_width" : 4,
+											"description" : "The L0 Logic ID will be mapped to the physical ID within the Controller.",
+											"name" : "L0LogicID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 32,
+											"bit_width" : 14,
+											"description" : "payload data length (unit Byte) for this packet, When ConfigBurst Read or Clear mode,fixed Zero.",
+											"name" : "PacketSize",
+											"value" : 4224
+										}
+									],
+									"name" : "Packet"
+								},
+								{
+									"description" : "",
+									"fields" : 
+									[
+										{
+											"bit_position" : 64,
+											"bit_width" : 8,
+											"description" : "Instruction opcode.",
+											"name" : "Opcode",
+											"value" : 37
+										},
+										{
+											"bit_position" : 72,
+											"bit_width" : 12,
+											"description" : "Use for Debug",
+											"name" : "InstrID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 84,
+											"bit_width" : 1,
+											"description" : "when set to 1, an interrupt is triggered when the insturction done.",
+											"name" : "IntrEN",
+											"value" : 1
+										},
+										{
+											"bit_position" : 85,
+											"bit_width" : 1,
+											"description" : "When barrier takes effect, the current instructions stop execution after parsing completed.",
+											"name" : "BarrierEN",
+											"value" : 0
+										},
+										{
+											"bit_position" : 86,
+											"bit_width" : 2,
+											"description" : "Used for multitask debug, the barrier takes effect when instruction's barrier id matches the barrier ID in the register configuration, and barrier enable is set to 1.",
+											"name" : "BarrierID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 88,
+											"bit_width" : 2,
+											"description" : "Suppports instruction extension length, reserved.",
+											"name" : "Ext",
+											"value" : 0
+										}
+									],
+									"name" : "Control"
+								},
+								{
+									"description" : "For Config Register Addr",
+									"fields" : 
+									[
+										{
+											"bit_position" : 128,
+											"bit_width" : 16,
+											"description" : "For Write Buffer Base Addr, unit 128B.",
+											"name" : "BaseAddr",
+											"value" : 924
+										},
+										{
+											"bit_position" : 144,
+											"bit_width" : 16,
+											"description" : "For ConfigBurst Length, unit 128B. burstlength + 1 = number of 128B.",
+											"name" : "BurstLength",
+											"value" : 32
+										}
+									],
+									"name" : "WriteBufferParameter"
+								}
+							],
+							"name" : "writecompbuffer",
+							"opcode" : "0x25"
+						}
+					]
+				},
+				{
+					"L0_id" : 0,
+					"L2_id" : 0,
+					"flash_die_id" : 0,
+					"instructions" : 
+					[
+						{
+							"description" : "Wait pipeline empty.",
+							"domain" : 
+							[
+								{
+									"description" : "include packet type, id, size",
+									"fields" : 
+									[
+										{
+											"bit_position" : 0,
+											"bit_width" : 24,
+											"description" : "Reserve For BD.",
+											"name" : "TaskID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 24,
+											"bit_width" : 4,
+											"description" : "Not use in control instruction.",
+											"name" : "L0LogicID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 32,
+											"bit_width" : 14,
+											"description" : "Fixed0 in control instruction.",
+											"name" : "PacketSize",
+											"value" : 0
+										}
+									],
+									"name" : "Packet"
+								},
+								{
+									"description" : "",
+									"fields" : 
+									[
+										{
+											"bit_position" : 64,
+											"bit_width" : 8,
+											"description" : "Instruction opcode.",
+											"name" : "Opcode",
+											"value" : 64
+										},
+										{
+											"bit_position" : 72,
+											"bit_width" : 12,
+											"description" : "Use for Debug",
+											"name" : "InstrID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 84,
+											"bit_width" : 1,
+											"description" : "when set to 1, an interrupt is triggered when the insturction done.",
+											"name" : "IntrEN",
+											"value" : 1
+										},
+										{
+											"bit_position" : 85,
+											"bit_width" : 1,
+											"description" : "When barrier takes effect, the current instructions stop execution after parsing completed.",
+											"name" : "BarrierEN",
+											"value" : 0
+										},
+										{
+											"bit_position" : 86,
+											"bit_width" : 2,
+											"description" : "Used for multitask debug, the barrier takes effect when instruction's barrier id matches the barrier ID in the register configuration, and barrier enable is set to 1.",
+											"name" : "BarrierID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 88,
+											"bit_width" : 2,
+											"description" : "Suppports instruction extension length, reserved.",
+											"name" : "Ext",
+											"value" : 0
+										}
+									],
+									"name" : "Control"
+								}
+							],
+							"name" : "fence",
+							"opcode" : "0x40"
+						}
+					]
+				}
+			],
+			"task_id" : 4
+		},
+		{
+			"layers" : 
+			[
+				{
+					"L0_id" : 0,
+					"L2_id" : 0,
+					"flash_die_id" : 0,
+					"instructions" : 
+					[
+						{
+							"description" : "Config Register with random address and data from instruction.",
+							"domain" : 
+							[
+								{
+									"description" : "include packet type, id, size",
+									"fields" : 
+									[
+										{
+											"bit_position" : 0,
+											"bit_width" : 24,
+											"description" : "Reserve For BD.",
+											"name" : "TaskID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 24,
+											"bit_width" : 4,
+											"description" : "The L0 Logic ID will be mapped to the physical ID within the Controller.",
+											"name" : "L0LogicID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 32,
+											"bit_width" : 14,
+											"description" : "payload data length (unit Byte) for this packet, When ConfigImm,fixed Zero.",
+											"name" : "PacketSize",
+											"value" : 0
+										}
+									],
+									"name" : "Packet"
+								},
+								{
+									"description" : "",
+									"fields" : 
+									[
+										{
+											"bit_position" : 64,
+											"bit_width" : 8,
+											"description" : "Instruction opcode.",
+											"name" : "Opcode",
+											"value" : 32
+										},
+										{
+											"bit_position" : 72,
+											"bit_width" : 12,
+											"description" : "Use for Debug",
+											"name" : "InstrID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 84,
+											"bit_width" : 1,
+											"description" : "when set to 1, an interrupt is triggered when the insturction done.",
+											"name" : "IntrEN",
+											"value" : 1
+										},
+										{
+											"bit_position" : 85,
+											"bit_width" : 1,
+											"description" : "When barrier takes effect, the current instructions stop execution after parsing completed.",
+											"name" : "BarrierEN",
+											"value" : 0
+										},
+										{
+											"bit_position" : 86,
+											"bit_width" : 2,
+											"description" : "Used for multitask debug, the barrier takes effect when instruction's barrier id matches the barrier ID in the register configuration, and barrier enable is set to 1.",
+											"name" : "BarrierID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 88,
+											"bit_width" : 2,
+											"description" : "Suppports instruction extension length, reserved.",
+											"name" : "Ext",
+											"value" : 0
+										},
+										{
+											"bit_position" : 90,
+											"bit_width" : 4,
+											"description" : "Config register valid number = ConfigNum + 1",
+											"name" : "ConfigNum",
+											"value" : 1
+										}
+									],
+									"name" : "Control"
+								},
+								{
+									"description" : "For Config Register Addr and data",
+									"fields" : 
+									[
+										{
+											"bit_position" : 128,
+											"bit_width" : 16,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigAddr0",
+											"value" : 1812
+										},
+										{
+											"bit_position" : 160,
+											"bit_width" : 32,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigData0",
+											"value" : 0
+										}
+									],
+									"name" : "Config0"
+								},
+								{
+									"description" : "For Config Register Addr and data",
+									"fields" : 
+									[
+										{
+											"bit_position" : 192,
+											"bit_width" : 16,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigAddr1",
+											"value" : 1816
+										},
+										{
+											"bit_position" : 224,
+											"bit_width" : 32,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigData1",
+											"value" : 1392508949
+										}
+									],
+									"name" : "Config1"
+								},
+								{
+									"description" : "For Config Register Addr and data",
+									"fields" : 
+									[
+										{
+											"bit_position" : 256,
+											"bit_width" : 16,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigAddr2",
+											"value" : 0
+										},
+										{
+											"bit_position" : 288,
+											"bit_width" : 32,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigData2",
+											"value" : 0
+										}
+									],
+									"name" : "Config2"
+								},
+								{
+									"description" : "For Config Register Addr and data",
+									"fields" : 
+									[
+										{
+											"bit_position" : 320,
+											"bit_width" : 16,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigAddr3",
+											"value" : 0
+										},
+										{
+											"bit_position" : 352,
+											"bit_width" : 32,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigData3",
+											"value" : 0
+										}
+									],
+									"name" : "Config3"
+								}
+							],
+							"name" : "configimm",
+							"opcode" : "0x20"
+						}
+					]
+				},
+				{
+					"L0_id" : 0,
+					"L2_id" : 0,
+					"flash_die_id" : 0,
+					"instructions" : 
+					[
+						{
+							"description" : "Wait pipeline empty.",
+							"domain" : 
+							[
+								{
+									"description" : "include packet type, id, size",
+									"fields" : 
+									[
+										{
+											"bit_position" : 0,
+											"bit_width" : 24,
+											"description" : "Reserve For BD.",
+											"name" : "TaskID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 24,
+											"bit_width" : 4,
+											"description" : "Not use in control instruction.",
+											"name" : "L0LogicID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 32,
+											"bit_width" : 14,
+											"description" : "Fixed0 in control instruction.",
+											"name" : "PacketSize",
+											"value" : 0
+										}
+									],
+									"name" : "Packet"
+								},
+								{
+									"description" : "",
+									"fields" : 
+									[
+										{
+											"bit_position" : 64,
+											"bit_width" : 8,
+											"description" : "Instruction opcode.",
+											"name" : "Opcode",
+											"value" : 64
+										},
+										{
+											"bit_position" : 72,
+											"bit_width" : 12,
+											"description" : "Use for Debug",
+											"name" : "InstrID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 84,
+											"bit_width" : 1,
+											"description" : "when set to 1, an interrupt is triggered when the insturction done.",
+											"name" : "IntrEN",
+											"value" : 1
+										},
+										{
+											"bit_position" : 85,
+											"bit_width" : 1,
+											"description" : "When barrier takes effect, the current instructions stop execution after parsing completed.",
+											"name" : "BarrierEN",
+											"value" : 0
+										},
+										{
+											"bit_position" : 86,
+											"bit_width" : 2,
+											"description" : "Used for multitask debug, the barrier takes effect when instruction's barrier id matches the barrier ID in the register configuration, and barrier enable is set to 1.",
+											"name" : "BarrierID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 88,
+											"bit_width" : 2,
+											"description" : "Suppports instruction extension length, reserved.",
+											"name" : "Ext",
+											"value" : 0
+										}
+									],
+									"name" : "Control"
+								}
+							],
+							"name" : "fence",
+							"opcode" : "0x40"
+						}
+					]
+				}
+			],
+			"task_id" : 5
+		},
+		{
+			"layers" : 
+			[
+				{
+					"L0_id" : 0,
+					"L2_id" : 0,
+					"flash_die_id" : 0,
+					"instructions" : 
+					[
+						{
+							"description" : "Config Register with random address and data from instruction.",
+							"domain" : 
+							[
+								{
+									"description" : "include packet type, id, size",
+									"fields" : 
+									[
+										{
+											"bit_position" : 0,
+											"bit_width" : 24,
+											"description" : "Reserve For BD.",
+											"name" : "TaskID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 24,
+											"bit_width" : 4,
+											"description" : "The L0 Logic ID will be mapped to the physical ID within the Controller.",
+											"name" : "L0LogicID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 32,
+											"bit_width" : 14,
+											"description" : "payload data length (unit Byte) for this packet, When ConfigImm,fixed Zero.",
+											"name" : "PacketSize",
+											"value" : 0
+										}
+									],
+									"name" : "Packet"
+								},
+								{
+									"description" : "",
+									"fields" : 
+									[
+										{
+											"bit_position" : 64,
+											"bit_width" : 8,
+											"description" : "Instruction opcode.",
+											"name" : "Opcode",
+											"value" : 32
+										},
+										{
+											"bit_position" : 72,
+											"bit_width" : 12,
+											"description" : "Use for Debug",
+											"name" : "InstrID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 84,
+											"bit_width" : 1,
+											"description" : "when set to 1, an interrupt is triggered when the insturction done.",
+											"name" : "IntrEN",
+											"value" : 1
+										},
+										{
+											"bit_position" : 85,
+											"bit_width" : 1,
+											"description" : "When barrier takes effect, the current instructions stop execution after parsing completed.",
+											"name" : "BarrierEN",
+											"value" : 0
+										},
+										{
+											"bit_position" : 86,
+											"bit_width" : 2,
+											"description" : "Used for multitask debug, the barrier takes effect when instruction's barrier id matches the barrier ID in the register configuration, and barrier enable is set to 1.",
+											"name" : "BarrierID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 88,
+											"bit_width" : 2,
+											"description" : "Suppports instruction extension length, reserved.",
+											"name" : "Ext",
+											"value" : 0
+										},
+										{
+											"bit_position" : 90,
+											"bit_width" : 4,
+											"description" : "Config register valid number = ConfigNum + 1",
+											"name" : "ConfigNum",
+											"value" : 0
+										}
+									],
+									"name" : "Control"
+								},
+								{
+									"description" : "For Config Register Addr and data",
+									"fields" : 
+									[
+										{
+											"bit_position" : 128,
+											"bit_width" : 16,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigAddr0",
+											"value" : 1652
+										},
+										{
+											"bit_position" : 160,
+											"bit_width" : 32,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigData0",
+											"value" : 21071520
+										}
+									],
+									"name" : "Config0"
+								},
+								{
+									"description" : "For Config Register Addr and data",
+									"fields" : 
+									[
+										{
+											"bit_position" : 192,
+											"bit_width" : 16,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigAddr1",
+											"value" : 0
+										},
+										{
+											"bit_position" : 224,
+											"bit_width" : 32,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigData1",
+											"value" : 0
+										}
+									],
+									"name" : "Config1"
+								},
+								{
+									"description" : "For Config Register Addr and data",
+									"fields" : 
+									[
+										{
+											"bit_position" : 256,
+											"bit_width" : 16,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigAddr2",
+											"value" : 0
+										},
+										{
+											"bit_position" : 288,
+											"bit_width" : 32,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigData2",
+											"value" : 0
+										}
+									],
+									"name" : "Config2"
+								},
+								{
+									"description" : "For Config Register Addr and data",
+									"fields" : 
+									[
+										{
+											"bit_position" : 320,
+											"bit_width" : 16,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigAddr3",
+											"value" : 0
+										},
+										{
+											"bit_position" : 352,
+											"bit_width" : 32,
+											"description" : "For Config Register Addr.",
+											"name" : "ConfigData3",
+											"value" : 0
+										}
+									],
+									"name" : "Config3"
+								}
+							],
+							"name" : "configimm",
+							"opcode" : "0x20"
+						}
+					]
+				},
+				{
+					"L0_id" : 0,
+					"L2_id" : 0,
+					"flash_die_id" : 0,
+					"instructions" : 
+					[
+						{
+							"description" : "Wait pipeline empty.",
+							"domain" : 
+							[
+								{
+									"description" : "include packet type, id, size",
+									"fields" : 
+									[
+										{
+											"bit_position" : 0,
+											"bit_width" : 24,
+											"description" : "Reserve For BD.",
+											"name" : "TaskID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 24,
+											"bit_width" : 4,
+											"description" : "Not use in control instruction.",
+											"name" : "L0LogicID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 32,
+											"bit_width" : 14,
+											"description" : "Fixed0 in control instruction.",
+											"name" : "PacketSize",
+											"value" : 0
+										}
+									],
+									"name" : "Packet"
+								},
+								{
+									"description" : "",
+									"fields" : 
+									[
+										{
+											"bit_position" : 64,
+											"bit_width" : 8,
+											"description" : "Instruction opcode.",
+											"name" : "Opcode",
+											"value" : 64
+										},
+										{
+											"bit_position" : 72,
+											"bit_width" : 12,
+											"description" : "Use for Debug",
+											"name" : "InstrID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 84,
+											"bit_width" : 1,
+											"description" : "when set to 1, an interrupt is triggered when the insturction done.",
+											"name" : "IntrEN",
+											"value" : 1
+										},
+										{
+											"bit_position" : 85,
+											"bit_width" : 1,
+											"description" : "When barrier takes effect, the current instructions stop execution after parsing completed.",
+											"name" : "BarrierEN",
+											"value" : 0
+										},
+										{
+											"bit_position" : 86,
+											"bit_width" : 2,
+											"description" : "Used for multitask debug, the barrier takes effect when instruction's barrier id matches the barrier ID in the register configuration, and barrier enable is set to 1.",
+											"name" : "BarrierID",
+											"value" : 0
+										},
+										{
+											"bit_position" : 88,
+											"bit_width" : 2,
+											"description" : "Suppports instruction extension length, reserved.",
+											"name" : "Ext",
+											"value" : 0
+										}
+									],
+									"name" : "Control"
+								}
+							],
+							"name" : "fence",
+							"opcode" : "0x40"
+						}
+					]
+				}
+			],
+			"task_id" : 6
+		}
+	],
+	"version" : "1.6c"
+}

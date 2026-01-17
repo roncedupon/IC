@@ -84,7 +84,7 @@ class uart_directed_sequence extends uvm_sequence #(svt_uart_transaction);
       /** Inject the directed transaction in the output stream of Uart sequencer.*/
       // `uvm_send(tx_xact)  
       // `uvm_create(tx_xact)
-      // // tx_xact.reasonable_constraint_mode(0);
+      // tx_xact.reasonable_constraint_mode(0);
       // tx_xact.direction = 0; // 0 - TX , 1 - RX      
       // `uvm_rand_send_with(tx_xact,{
 
@@ -100,23 +100,37 @@ class uart_directed_sequence extends uvm_sequence #(svt_uart_transaction);
       // if(uart_cfg.enable_put_response == 1)
       //   get_response(rsp);
       // rsp.print();
-      #100us;
+
       uart_rx(32);
 
       `uvm_info("body", $sformatf("UART PACKET %0d sent successfully", loop+1), UVM_LOW)
-      #100000;
+
     end
     `uvm_info("body", "UART PACKET has finished", UVM_LOW)
     `uvm_info("body", "Exiting ...", UVM_LOW)
   endtask : body
 
     task uart_rx(int received_bytes);
-        `uvm_create(tx_xact);        
-        tx_xact.direction           = 1;//RX                    
+        `uvm_create(tx_xact);
+        if(p_sequencer.get_full_name() == "uvm_test_top.env.dte_agent.sequencer")begin
+          #300us;
+          received_bytes=100;
+        end
+        else begin
+          received_bytes=30;
+          #200us;
+        end
+        `uvm_info(get_full_name(),$sformatf("name of p_sequencer is %s",p_sequencer.get_full_name()),UVM_LOW);
+        tx_xact.direction           = 0;//RX                    
         `uvm_rand_send_with(tx_xact,{
-            tx_xact.packet_count        == received_bytes;
-            tx_xact.inter_cycle_delay   == 80;  
-        });   
+
+
+          tx_xact.inter_cycle_delay == 100;
+          tx_xact.packet_count == received_bytes;
+          foreach(tx_xact.payload[i]) {
+            tx_xact.payload[i] == i;
+          }
+        });
         `uvm_info(get_full_name(),$sformatf("waiting for cpu send back %d",received_bytes),UVM_LOW);
         tx_xact.print();       
         get_response(rsp);

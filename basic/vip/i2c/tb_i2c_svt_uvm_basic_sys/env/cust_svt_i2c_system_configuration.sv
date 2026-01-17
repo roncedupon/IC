@@ -29,7 +29,7 @@ class cust_svt_i2c_system_configuration extends svt_i2c_system_configuration;
 
     /** Set mode */
     this.master_cfg[0].is_active = 1;
-    this.slave_cfg[0].is_active = 1;
+    this.slave_cfg[0].is_active = 0;
 
   endfunction : new
 
