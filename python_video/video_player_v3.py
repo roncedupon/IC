@@ -266,6 +266,9 @@ def handle_state_change(data):
     elif "is_playing" in data and data["is_playing"] != global_play_state["is_playing"]:
         # 播放/暂停状态变更：用户主动操作
         is_user_action = True
+    elif data.get('seek') or data.get('user_action'):
+        # 前端标注的seek或明确的user_action
+        is_user_action = True
     # ========================================
     
     # ==========【新增：操作优先级保护】==========
@@ -353,12 +356,13 @@ def handle_state_change(data):
         
         time_diff = abs(global_play_state["current_time"] - current_time)
         # ============【后端核心优化2：只处理主动大跨度跳转，忽略微小进度飘移】============
-        if time_diff > CONFIG["SYNC_THRESHOLD"]:
+        # 仅接受明确的用户操作（如seek）来更新全局进度，忽略被动的timeupdate上报
+        if is_user_action and time_diff > CONFIG["SYNC_THRESHOLD"]:
             global_play_state["current_time"] = current_time
             need_broadcast = True
             operation_type = "seek"
             logger.debug(f"设备 {sid[:8]} 主动跳转进度: {current_time:.1f}s")
-        # ==============================================================================
+    # ==============================================================================
 
     # 无音量同步逻辑，完全保留独立控制
 

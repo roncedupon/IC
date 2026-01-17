@@ -358,7 +358,6 @@
             display: block; 
             outline: none;
         }
-        
         .video-info { 
             margin-top: 15px; 
             color: #4a5568; 
@@ -1305,13 +1304,16 @@
                 updatePlayerState();
                 
                 const now = Date.now();
-                if (playerState.isPlaying && now - playerState.lastSyncTs > SYNC_INTERVAL) {
-                    if (!playerState.isDragging) {
-                        // ============【前端核心优化：被动同步 只上报进度，不带任何状态字段】============
-                        socket.emit('send_state', { 
-                            current_time: player.currentTime.toFixed(2)
+                // 移除频繁的被动进度同步：仅上报指标，避免频繁改变全局状态
+                if (now - playerState.lastSyncTs > SPEED_REPORT_INTERVAL) {
+                    // 周期性上报指标（已在单独定时器做过一次，但保留一次轻量上报作为补充）
+                    if (socket.connected) {
+                        socket.emit('report_player_metrics', {
+                            load_speed: playerState.loadSpeed,
+                            buffer_progress: playerState.bufferProgress,
+                            is_playing: playerState.isPlaying,
+                            is_buffering: playerState.isBuffering
                         });
-                        // =====================================================================
                     }
                     playerState.lastSyncTs = now;
                 }
@@ -1347,10 +1349,12 @@
             player.addEventListener('seeked', () => {
                 playerState.isDragging = false;
                 playerState.currentTime = player.currentTime;
+                // 标记为用户主动seek，服务器将把它视为高优先级操作
                 socket.emit('send_state', { 
                     current_time: player.currentTime.toFixed(2),
                     is_buffering: playerState.isBuffering,
-                    is_playing: playerState.isPlaying
+                    is_playing: playerState.isPlaying,
+                    seek: true
                 });
                 addLog(`⏩ 跳转到 ${formatTime(player.currentTime)}`, 'info');
             });
