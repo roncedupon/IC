@@ -358,7 +358,6 @@
             display: block; 
             outline: none;
         }
-        
         .video-info { 
             margin-top: 15px; 
             color: #4a5568; 
@@ -514,15 +513,6 @@
             background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
             transform: translateY(-2px) scale(1.05);
             box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4);
-        }
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        .playlist-btn-delete:hover {
-            background: #e53e3e;
-            transform: scale(1.05);
         }
         .empty-playlist {
             padding: 50px 30px;
@@ -730,7 +720,7 @@
 
             <!-- 视频播放器 -->
             <div class="card">
-                <h2>视频播放器</h2>
+                <h2>视频播放器 <button class="btn btn-primary" style="margin-left:12px; padding:6px 12px; font-size:14px;" onclick="forceSync()">🔄 强制同步</button></h2>
                 <div class="video-container">
                     <video id="player" controls playsinline preload="auto" crossorigin="anonymous">
                         您的浏览器不支持HTML5视频播放
@@ -811,6 +801,20 @@
             const mins = Math.floor(seconds / 60);
             const secs = Math.floor(seconds % 60);
             return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Helper: 检查目标时间是否已缓冲
+        function isBufferedForTarget(target) {
+            try {
+                for (let i = 0; i < player.buffered.length; i++) {
+                    const start = player.buffered.start(i);
+                    const end = player.buffered.end(i);
+                    if (start <= target && end >= target + 0.1) return true;
+                }
+            } catch (e) {
+                return false;
+            }
+            return false;
         }
         
         function addLog(message, type = 'info', syncId = '') {
@@ -969,8 +973,14 @@
         }
         
         function forceSync() {
-            socket.emit('request_force_sync');
-            showMessage('已发送强制同步指令', 'info');
+            // 发送当前进度与视频信息作为强制同步的基准
+            socket.emit('request_force_sync', {
+                current_time: player.currentTime,
+                video_url: playerState.currentVideoUrl
+            });
+            showMessage('已发送强制同步指令，等待其它设备就绪', 'info');
+            // 发起者先暂停，等待其他设备缓冲完成再由服务器发起开始
+            try { player.pause(); } catch (e) {}
         }
         
         function clearVideo() {
@@ -1219,6 +1229,108 @@
         socket.on('device_status_update', (data) => {
             updateDevicePanel(data);
         });
+
+        // Server tells the requester to wait for other devices to prepare
+        socket.on('force_sync_wait', (data) => {
+            const syncId = data && data.sync_id;
+            addLog(`🔐 已发起强制同步 (ID: ${syncId})，等待 ${data.pending_count} 台设备就绪`, 'info', syncId);
+            showMessage('等待其他设备缓冲...', 'info');
+        });
+
+        // Server requests this client to prepare (load/seek/buffer)
+        socket.on('force_sync_request', (data) => {
+            if (!data) return;
+            const syncId = data.sync_id;
+            const target = parseFloat(data.target_time || 0);
+            const url = data.video_url || '';
+            const master = data.master_device_id || '';
+
+            addLog(`🛠️ 收到强制同步准备请求 (来自 ${master}) @ ${target.toFixed(2)}s`, 'info', syncId);
+
+            // 如果视频不同，先切换
+            if (url && url !== playerState.currentVideoUrl) {
+                playerState.currentVideoUrl = url;
+                player.src = url;
+                document.getElementById('current-url').textContent = url.length > 60 ? url.substring(0,60)+'...' : url;
+                player.load();
+            }
+
+            // 安全跳转到目标并等待缓冲
+            const prepareAndNotify = () => {
+                try { player.currentTime = target; } catch (e) {}
+
+                // 如果已缓冲足够则立即就绪
+                if (isBufferedForTarget(target + 0.5) || player.readyState >= 3) {
+                    socket.emit('force_sync_ready', { sync_id: syncId });
+                    addLog(`✅ 已就绪，等待开始 (ID: ${syncId})`, 'success', syncId);
+                    return;
+                }
+
+                // 否则监听缓冲事件
+                let resumed = false;
+                const onReady = () => {
+                    if (isBufferedForTarget(target + 0.5) || player.readyState >= 3) {
+                        if (!resumed) {
+                            resumed = true;
+                            socket.emit('force_sync_ready', { sync_id: syncId });
+                            addLog(`✅ 已就绪，等待开始 (ID: ${syncId})`, 'success', syncId);
+                            player.removeEventListener('progress', onReady);
+                            player.removeEventListener('canplay', onReady);
+                        }
+                    }
+                };
+
+                player.addEventListener('progress', onReady);
+                player.addEventListener('canplay', onReady);
+
+                // 超时兜底
+                setTimeout(() => {
+                    if (!resumed) {
+                        player.removeEventListener('progress', onReady);
+                        player.removeEventListener('canplay', onReady);
+                        socket.emit('force_sync_ready', { sync_id: syncId });
+                        addLog(`⚠️ 就绪超时，仍然通知服务器开始 (ID: ${syncId})`, 'warning', syncId);
+                    }
+                }, (data.buffer_margin || 1.5) * 1000 * 3);
+            };
+
+            // Ensure metadata loaded before seeking
+            if (player.readyState === 0) {
+                const metaHandler = () => {
+                    prepareAndNotify();
+                    player.removeEventListener('loadedmetadata', metaHandler);
+                };
+                player.addEventListener('loadedmetadata', metaHandler);
+            } else {
+                prepareAndNotify();
+            }
+        });
+
+        // Server tells all devices to start force-sync play now
+        socket.on('force_sync_start', (data) => {
+            if (!data) return;
+            const syncId = data.sync_id;
+            const target = parseFloat(data.target_time || 0);
+            const url = data.video_url || '';
+            addLog(`🚀 强制同步开始 (ID: ${syncId}) @ ${target.toFixed(2)}s`, 'success', syncId);
+
+            // 调整视频并播放
+            if (url && url !== playerState.currentVideoUrl) {
+                playerState.currentVideoUrl = url;
+                player.src = url;
+                document.getElementById('current-url').textContent = url.length > 60 ? url.substring(0,60)+'...' : url;
+                player.load();
+                const once = () => {
+                    try { player.currentTime = target; } catch (e) {}
+                    player.play().catch(()=>{});
+                    player.removeEventListener('loadedmetadata', once);
+                };
+                player.addEventListener('loadedmetadata', once);
+            } else {
+                try { player.currentTime = target; } catch (e) {}
+                player.play().catch(()=>{});
+            }
+        });
         
         // ====================【播放列表事件监听】====================
         
@@ -1234,7 +1346,9 @@
         
         function handleSync(state, isSelf) {
             const prefix = isSelf ? '🔄 初始化同步' : '🔄 全局同步';
-            addLog(`${prefix}: ${state.is_playing ? '播放' : '暂停'} @ ${state.current_time.toFixed(1)}s`, 'info', state.sync_id);
+            // 只有当有实质变化时才记录日志，避免刷屏
+            // 但对于调试Seek问题，保留详细日志
+            // addLog(`${prefix}: ${state.is_playing ? '播放' : '暂停'} @ ${state.current_time.toFixed(1)}s`, 'info', state.sync_id);
             
             syncSession = state.session_id;
             document.getElementById('session-id').textContent = syncSession;
@@ -1274,8 +1388,15 @@
             }
             
             if (state.video_url && Math.abs(player.currentTime - state.current_time) > SYNC_THRESHOLD) {
+                // 如果当前正在拖动，忽略外部同步，防止跳回
                 if (!playerState.isDragging) {
                     const wasPlaying = playerState.isPlaying;
+                    
+                    // 日志：确认收到了Seek指令
+                    if (state.last_sync_operation === 'seek') {
+                         addLog(`🔄 同步跳转到 ${state.current_time.toFixed(2)}s`, 'info');
+                    }
+                    
                     if(wasPlaying) player.pause();
                     player.currentTime = state.current_time.toFixed(2);
                     if(wasPlaying) player.play().catch(err => console.warn("音频对齐兜底:", err));
@@ -1305,13 +1426,16 @@
                 updatePlayerState();
                 
                 const now = Date.now();
-                if (playerState.isPlaying && now - playerState.lastSyncTs > SYNC_INTERVAL) {
-                    if (!playerState.isDragging) {
-                        // ============【前端核心优化：被动同步 只上报进度，不带任何状态字段】============
-                        socket.emit('send_state', { 
-                            current_time: player.currentTime.toFixed(2)
+                // 移除频繁的被动进度同步：仅上报指标，避免频繁改变全局状态
+                if (now - playerState.lastSyncTs > SPEED_REPORT_INTERVAL) {
+                    // 周期性上报指标（已在单独定时器做过一次，但保留一次轻量上报作为补充）
+                    if (socket.connected) {
+                        socket.emit('report_player_metrics', {
+                            load_speed: playerState.loadSpeed,
+                            buffer_progress: playerState.bufferProgress,
+                            is_playing: playerState.isPlaying,
+                            is_buffering: playerState.isBuffering
                         });
-                        // =====================================================================
                     }
                     playerState.lastSyncTs = now;
                 }
@@ -1341,16 +1465,18 @@
             
             player.addEventListener('seeking', () => {
                 playerState.isDragging = true;
-                addLog('⏩ 正在跳转...', 'info');
+                // addLog('⏩ 正在跳转...', 'info');
             });
             
             player.addEventListener('seeked', () => {
                 playerState.isDragging = false;
                 playerState.currentTime = player.currentTime;
+                // 标记为用户主动seek，服务器将把它视为高优先级操作
                 socket.emit('send_state', { 
                     current_time: player.currentTime.toFixed(2),
                     is_buffering: playerState.isBuffering,
-                    is_playing: playerState.isPlaying
+                    is_playing: playerState.isPlaying,
+                    seek: true
                 });
                 addLog(`⏩ 跳转到 ${formatTime(player.currentTime)}`, 'info');
             });
@@ -1361,7 +1487,7 @@
             player.addEventListener('waiting', () => {
                 if (!playerState.isBuffering) {
                     playerState.isBuffering = true;
-                    addLog('⏳ 缓冲中...', 'info');
+                    // addLog('⏳ 缓冲中...', 'info');
                     showMessage('缓冲中...', 'warning');
                     
                     socket.emit('send_state', { 
@@ -1384,7 +1510,7 @@
             player.addEventListener('playing', () => {
                 if (playerState.isBuffering) {
                     playerState.isBuffering = false;
-                    addLog('✅ 缓冲完成，继续播放', 'success');
+                    // addLog('✅ 缓冲完成，继续播放', 'success');
                     showMessage('缓冲完成', 'success');
                     
                     socket.emit('send_state', { 

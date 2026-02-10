@@ -48,6 +48,10 @@ device_status = {}
 DEVICE_PREFIX = "DEV-"
 device_lock = threading.Lock()
 
+# 强制同步会话管理
+force_sync_sessions = {}
+force_sync_lock = threading.Lock()
+
 # 配置参数 【保留所有原有优化参数】
 CONFIG = {
     "STATE_LOCK": 0.3,           
@@ -244,7 +248,7 @@ def send_init_state():
 
 @socketio.on('send_state')
 def handle_state_change(data):
-    """处理状态变更 - 核心：双端优化根治状态竞争问题 + 操作优先级机制"""
+    """处理状态变更 - 修复核心同步问题"""
     global global_play_state
     
     sid = request.sid
@@ -257,18 +261,23 @@ def handle_state_change(data):
         if sid in device_status:
             device_status[sid]["last_seen"] = now
     
-    # ==========【新增：操作类型判断】==========
+    # ==========【操作类型判断】==========
     # 判断当前请求是用户主动操作还是被动状态上报
     is_user_action = False
+    is_explicit_seek = data.get('seek', False) # 明确的Seek操作标记
+    
     if "video_url" in data:
         # 视频源变更：用户主动操作
         is_user_action = True
     elif "is_playing" in data and data["is_playing"] != global_play_state["is_playing"]:
         # 播放/暂停状态变更：用户主动操作
         is_user_action = True
+    elif is_explicit_seek or data.get('user_action'):
+        # 前端标注的seek或明确的user_action
+        is_user_action = True
     # ========================================
     
-    # ==========【新增：操作优先级保护】==========
+    # ==========【操作优先级保护】==========
     # 在锁定时间内，高优先级操作不会被低优先级覆盖
     if now - global_play_state["update_ts"] < CONFIG["STATE_LOCK"]:
         # 如果当前请求是低优先级的被动更新，且最后一次操作是用户主动暂停
@@ -278,14 +287,6 @@ def handle_state_change(data):
             # 拒绝低优先级的播放状态覆盖，但允许进度更新
             if "is_playing" in data and data["is_playing"] == True:
                 logger.debug(f"设备 {sid[:8]} 被动播放状态被拒绝（锁定中，上次操作为暂停）")
-                # 允许进度更新，但不改变播放状态
-                if "current_time" in data and global_play_state["video_url"]:
-                    current_time = float(data["current_time"])
-                    time_diff = abs(global_play_state["current_time"] - current_time)
-                    if time_diff > CONFIG["SYNC_THRESHOLD"]:
-                        global_play_state["current_time"] = current_time
-                        global_play_state["update_ts"] = now
-                        logger.debug(f"设备 {sid[:8]} 进度更新（不改变播放状态）")
                 return
         # 如果当前请求是高优先级的用户操作，则强制通过
         elif is_user_action:
@@ -323,6 +324,7 @@ def handle_state_change(data):
             return
         
         is_buffering = data.get("is_buffering", False)
+        # 如果是因为缓冲导致的暂停/播放切换，可以记录但可能不广播（视情况而定），这里保持原逻辑
         if is_buffering and global_play_state["is_playing"]:
             logger.debug(f"设备 {sid[:8]} 缓冲中，忽略暂停状态")
             operation_type = "buffering_ignore"
@@ -332,35 +334,36 @@ def handle_state_change(data):
             operation_type = "play_pause"
             logger.info(f"设备 {sid[:8]} {'播放' if data['is_playing'] else '暂停'}")
     
-    # ============【后端核心优化1：全局暂停时，忽略所有纯进度更新请求 【根治状态竞争】============
-    # 核心逻辑：全局是暂停状态 → 只处理主动操作，不处理被动的进度上报
-    allow_progress_update = True
+    # ============【修复：进度更新逻辑】============
+    # 判断是否允许更新进度
+    # 规则：
+    # 1. 如果全局正在播放，允许更新。
+    # 2. 如果全局暂停，【拒绝被动更新】，但【允许主动Seek操作】。
+    
+    should_process_time = True
     if global_play_state["is_playing"] is False:
-        # 全局暂停时，仅允许【手动拖动跳转/主动seek】，拒绝timeupdate的被动进度上报
-        allow_progress_update = False
-        logger.debug(f"全局暂停中，忽略设备 {sid[:8]} 的被动进度上报")
-    # ======================================================================================
-
-    # 3. 进度变更
-    if "current_time" in data and global_play_state["video_url"] and allow_progress_update:
+        if not is_user_action:
+            should_process_time = False
+            # logger.debug(f"全局暂停中，忽略设备 {sid[:8]} 的被动进度上报")
+    
+    # 3. 进度变更处理
+    if "current_time" in data and global_play_state["video_url"] and should_process_time:
         current_time = float(data["current_time"])
         
         if current_time < 0:
             return
-        
-        if current_time < CONFIG["MIN_VALID_TIME"] and global_play_state["current_time"] > 1:
-            return
-        
+            
         time_diff = abs(global_play_state["current_time"] - current_time)
-        # ============【后端核心优化2：只处理主动大跨度跳转，忽略微小进度飘移】============
-        if time_diff > CONFIG["SYNC_THRESHOLD"]:
+        
+        # ============【核心修复点】============
+        # 只要是 is_explicit_seek (用户拖动进度条)，无论时间差多小，都必须执行！
+        # 或者是其他的 user_action 且时间差超过阈值
+        if is_user_action and (time_diff > CONFIG["SYNC_THRESHOLD"] or is_explicit_seek):
             global_play_state["current_time"] = current_time
             need_broadcast = True
             operation_type = "seek"
-            logger.debug(f"设备 {sid[:8]} 主动跳转进度: {current_time:.1f}s")
-        # ==============================================================================
-
-    # 无音量同步逻辑，完全保留独立控制
+            logger.info(f"设备 {sid[:8]} 主动跳转进度: {current_time:.2f}s (差值: {time_diff:.2f})")
+    # ==============================================================================
 
     if need_broadcast:
         global_play_state["update_ts"] = now
@@ -374,25 +377,150 @@ def handle_state_change(data):
         broadcast_data = {
             **global_play_state,
             "sync_id": str(uuid.uuid4())[:8],
-            "timestamp": now
+            "timestamp": now,
+            "trigger_by": sid # 标记谁触发的，前端可用
         }
         
         try:
+            # 广播给所有人（包括自己，为了确认状态一致，或skip_sid=sid根据前端需求）
+            # 通常Seek操作广播给除自己以外的人，因为自己已经跳过去了
             socketio.emit('sync_all', broadcast_data, skip_sid=sid)
             logger.debug(f"广播 {operation_type} 状态")
         except Exception as e:
             logger.error(f"广播失败: {e}")
 
 @socketio.on('request_force_sync')
-def handle_force_sync():
+def handle_force_sync(data):
     sid = request.sid
+    if not isinstance(data, dict):
+        data = {}
+
     logger.info(f"设备 {sid[:8]} 请求强制同步")
-    emit('sync_all', {
-        **global_play_state,
-        "sync_id": str(uuid.uuid4())[:8],
-        "timestamp": time.time(),
-        "force_sync": True
+
+    # 使用前端传来的目标时间/视频，否则使用当前全局状态
+    target_time = None
+    video_url = None
+    if isinstance(data, dict):
+        target_time = data.get('current_time')
+        video_url = data.get('video_url')
+
+    if target_time is None:
+        target_time = global_play_state.get('current_time', 0.0)
+    if video_url is None:
+        video_url = global_play_state.get('video_url', '')
+
+    # 收集需要准备的设备（除发起者外的所有在线设备）
+    with device_lock:
+        pending_sids = [s for s in device_status.keys() if s != sid]
+
+    sync_id = str(uuid.uuid4())[:8]
+
+    # 如果没有其他设备，直接更新并广播立即开始
+    if not pending_sids:
+        global_play_state.update({
+            'video_url': video_url,
+            'current_time': float(target_time),
+            'is_playing': True,
+            'update_ts': time.time()
+        })
+        socketio.emit('sync_all', {
+            **global_play_state,
+            'sync_id': sync_id,
+            'timestamp': time.time()
+        })
+        logger.info(f"强制同步：无其他设备，直接开始 (sync_id={sync_id})")
+        return
+
+    session = {
+        'sync_id': sync_id,
+        'master_sid': sid,
+        'target_time': float(target_time),
+        'video_url': video_url,
+        'pending': set(pending_sids),
+        'ready': set(),
+        'created_at': time.time()
+    }
+
+    with force_sync_lock:
+        force_sync_sessions[sync_id] = session
+
+    master_device_id = device_status.get(sid, {}).get('device_id', sid[:8])
+
+    # 通知其他设备准备（加载/跳转/缓冲）
+    for psid in pending_sids:
+        try:
+            socketio.emit('force_sync_request', {
+                'sync_id': sync_id,
+                'master_device_id': master_device_id,
+                'target_time': session['target_time'],
+                'video_url': session['video_url'],
+                'buffer_margin': CONFIG.get('MAX_BUFFER_SYNC_DELAY', 1.5)
+            }, to=psid)
+        except Exception as e:
+            logger.error(f"发送 force_sync_request 到 {psid[:8]} 失败: {e}")
+
+    # 通知发起者等待其它设备准备完毕
+    try:
+        socketio.emit('force_sync_wait', {
+            'sync_id': sync_id,
+            'pending_count': len(pending_sids)
+        }, to=sid)
+    except Exception:
+        pass
+
+    # 设置超时保护：超过一定时间仍未准备完则强制开始
+    def _force_start_on_timeout(sid_sync):
+        with force_sync_lock:
+            sess = force_sync_sessions.get(sid_sync)
+            if not sess:
+                return
+            logger.info(f"force_sync {sid_sync} 超时，强制开始（准备数 {len(sess['ready'])}/{len(sess['pending'])}）")
+        _start_force_sync(sid_sync)
+
+    threading.Timer(CONFIG.get('MAX_BUFFER_SYNC_DELAY', 1.5) * 5, _force_start_on_timeout, args=(sync_id,)).start()
+
+
+def _start_force_sync(sync_id):
+    """内部：当所有设备就绪或超时时调用，开始同步播放并清理会话"""
+    with force_sync_lock:
+        sess = force_sync_sessions.pop(sync_id, None)
+
+    if not sess:
+        return
+
+    master_sid = sess['master_sid']
+    target_time = sess['target_time']
+    video_url = sess['video_url']
+
+    # 更新全局播放状态并广播开始播放
+    global_play_state.update({
+        'video_url': video_url,
+        'current_time': target_time,
+        'is_playing': True,
+        'update_ts': time.time(),
+        'last_operation_device': device_status.get(master_sid, {}).get('device_id', master_sid[:8]),
+        'last_operation_type': 'user_action'
     })
+
+    broadcast_data = {
+        **global_play_state,
+        'sync_id': sync_id,
+        'timestamp': time.time(),
+        'force_sync_start': True
+    }
+
+    try:
+        # 先通知所有目标设备（包括发起者）开始播放
+        socketio.emit('force_sync_start', {
+            'sync_id': sync_id,
+            'target_time': target_time,
+            'video_url': video_url
+        })
+
+        # 也发送一次常规同步状态
+        socketio.emit('sync_all', broadcast_data)
+    except Exception as e:
+        logger.error(f"启动强制同步失败: {e}")
 
 # ====================【播放列表管理 Socket 事件】====================
 
@@ -405,6 +533,31 @@ def handle_get_playlist():
         **global_playlist,
         "timestamp": time.time()
     })
+
+
+@socketio.on('force_sync_ready')
+def handle_force_sync_ready(data):
+    """客户端在准备好缓冲后调用，通知服务器该设备已就绪"""
+    sid = request.sid
+    if not isinstance(data, dict):
+        return
+    sync_id = data.get('sync_id')
+    if not sync_id:
+        return
+
+    with force_sync_lock:
+        sess = force_sync_sessions.get(sync_id)
+        if not sess:
+            logger.debug(f"收到未知 force_sync_ready: {sync_id} 来自 {sid[:8]}")
+            return
+        sess['ready'].add(sid)
+        logger.info(f"force_sync {sync_id} 就绪: {len(sess['ready'])}/{len(sess['pending'])}")
+
+        # 如果所有待准备设备都就绪，开始播放
+        if sess['ready'] >= sess['pending']:
+            logger.info(f"force_sync {sync_id} 所有设备就绪，开始播放")
+            # 在单独线程中启动，避免阻塞当前socket处理
+            threading.Thread(target=_start_force_sync, args=(sync_id,), daemon=True).start()
 
 @socketio.on('add_to_playlist')
 def handle_add_to_playlist(data):
@@ -1013,7 +1166,7 @@ def api_control():
 if __name__ == '__main__':
     # 启动时加载播放列表
     logger.info("=" * 60)
-    logger.info("启动视频同步播放系统")
+    logger.info("启动视频同步播放系统 - v3.1 Fixed")
     logger.info("=" * 60)
 
     load_playlist_from_file()
