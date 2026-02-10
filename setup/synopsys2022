@@ -9,6 +9,7 @@ export SOFTWARE_INSTALLED_HOME=/mnt/disk_0/softwares
 Install_Home=$SOFTWARE_INSTALLED_HOME/synopsys2022
 export DVE_HOME=$Install_Home/vcs/T-2022.06-SP2
 export VCS_HOME=$Install_Home/vcs/T-2022.06-SP2
+export DC_HOME=$Install_Home/syn/U-2022.12-SP7
 # export VCS_MX_HOME=$Install_Home/vcs-mx/O-2018.09-SP2
 # export LD_LIBRARY_PATH=$Install_Home/verdi/T-2022.06/share/PLI/VCS/LINUX64
 

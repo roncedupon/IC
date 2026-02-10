@@ -1,26 +1,18 @@
-
-class uvm_typed_callbacks#(type T=int);
-
-
-  static string m_typename;
-
-  typedef uvm_typed_callbacks#(T) this_type;
-  typedef uvm_callbacks_base      super_type;
-
-  //The actual global object from the derivative class. Note that this is
-  //just a reference to the object that is generated in the derived class.
-  static this_type m_t_inst;
-
-  static function this_type m_initialize();
-
-    return m_t_inst;
-  endfunction
-
-  //Type checking interface: is given ~obj~ of type T?
-  virtual function bit m_am_i_a(int obj);
-    T this_type;
-    if (obj == null)
-      return 1;
-    return($cast(this_type,obj));
-  endfunction
-endclass
+module test;
+  int word_num;
+  int counter;
+  initial begin
+    counter=0;
+    word_num  = 6*32*1024/4;//length=1-->32KB
+    
+    for(int i=0;i<word_num/32;i++) begin
+        for(int j=0;j<4;j++) begin
+            for(int k=0;k<8;k++) begin
+                counter=counter+1;
+                $display("counter = %0d", counter);
+            end
+        end
+    end
+    $display("word_num = %0d", word_num);    
+  end
+endmodule
