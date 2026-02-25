@@ -1,0 +1,17 @@
+# 使用 iverilog 编译运行（默认使用 -g2012 标准）
+python vrun.py -iverilog -top your_file.sv
+
+# 指定额外的编译选项
+python vrun.py -iverilog -top your_file.sv -iverilog_opts "-g2012 -Wall"
+
+# 使用文件列表
+python vrun.py -iverilog -f filelist.f -top your_file.sv
+
+# 仅编译
+python vrun.py -iverilog -top your_file.sv -only_compile
+
+# 仅运行（使用已编译的文件）
+python vrun.py -iverilog -top your_file.sv -only_run
+
+# 生成 VCD 波形
+python vrun.py -iverilog -top your_file.sv -vcds
