@@ -1,46 +1,96 @@
-
-`include "uvm_pkg.sv"
 `include "uvm_macros.svh"
+`include "uvm_pkg.sv"
 import uvm_pkg::*;
-// 1. 定义一个简单的UVM事务类（模拟你的tsu2nsu_transaction）
-class my_transaction extends uvm_sequence_item;
-  // 定义多个测试字段（模拟你的tr_type、tsu_nsu_wcmd、wcmd_flag等）
-  int a;          // 需要打印的字段1
-  int b;          // 不需要打印的字段
-  bit [7:0] c;    // 需要打印的字段2
-  string d;       // 不需要打印的字段
 
-  // UVM宏注册（保持默认即可，无需修改宏参数）
-  `uvm_object_utils(my_transaction)
+// ===================== 父类：包含所有字段 =====================
+class tsu2nsu_transaction extends uvm_sequence_item;
+  // 1. 你关心的RCMD字段（需要打印的）
+  rand bit [31:0] rcmd_nsu_addr_l;
+  rand bit [31:0] rcmd_nsu_addr_h;
+  rand bit [15:0] rcmd_length;
+  rand bit [7:0]  rcmd_ost_id;
+  rand bit [31:0] rcmd_mask_l;
+  rand bit [31:0] rcmd_mask_h;
+  rand bit [15:0] rcmd_rsv2;
+  rand bit        rcmd_end_flag;
+  rand bit        rcmd_start_flag;
+  rand bit [7:0]  rcmd_rsv3;
+  rand bit        rcmd_fast_read_flag;
+  rand bit        rcmd_io_read_flag;
+  rand bit        rcmd_nsu_hw_sw;
+  rand bit [3:0]  rcmd_vld_num;
 
-  // 构造函数
-  function new(string name = "my_transaction");
+  // 2. 其他无关字段（不需要打印的）
+  rand bit [63:0] other_field1;
+  rand bit [127:0] other_field2;
+  rand bit [7:0] other_flag;
+
+  // 父类注册：可选（若注册则包含所有字段，不注册则仅子类生效）
+  `uvm_object_utils_begin(tsu2nsu_transaction)
+    `uvm_field_int(other_field1, UVM_ALL_ON)  // 其他字段
+    `uvm_field_int(other_field2, UVM_ALL_ON)
+    `uvm_field_int(other_flag, UVM_ALL_ON)
+  `uvm_object_utils_end
+
+  function new(string name = "tsu2nsu_transaction");
     super.new(name);
   endfunction
 endclass
 
-// 2. 测试模块（核心演示逻辑）
-module test_printer_demo;
+// ===================== 子类：仅注册需要打印的字段 =====================
+class tsu2nsu_rcmd_only_trans extends tsu2nsu_transaction;
+  // 子类仅注册RCMD相关字段（核心：只保留需要打印的）
+  `uvm_object_utils_begin(tsu2nsu_rcmd_only_trans)
+    `uvm_field_int(rcmd_nsu_addr_l,  UVM_ALL_ON)
+    `uvm_field_int(rcmd_nsu_addr_h,  UVM_ALL_ON)
+    `uvm_field_int(rcmd_length,      UVM_ALL_ON)
+    `uvm_field_int(rcmd_ost_id,      UVM_ALL_ON)
+    `uvm_field_int(rcmd_mask_l,      UVM_ALL_ON)
+    `uvm_field_int(rcmd_mask_h,      UVM_ALL_ON)
+    `uvm_field_int(rcmd_rsv2,        UVM_ALL_ON)
+    `uvm_field_int(rcmd_end_flag,    UVM_ALL_ON)
+    `uvm_field_int(rcmd_start_flag,  UVM_ALL_ON)
+    `uvm_field_int(rcmd_rsv3,        UVM_ALL_ON)
+    `uvm_field_int(rcmd_fast_read_flag, UVM_ALL_ON)
+    `uvm_field_int(rcmd_io_read_flag,   UVM_ALL_ON)
+    `uvm_field_int(rcmd_nsu_hw_sw,      UVM_ALL_ON)
+    `uvm_field_int(rcmd_vld_num,        UVM_ALL_ON)
+  `uvm_object_utils_end
+
+  function new(string name = "tsu2nsu_rcmd_only_trans");
+    super.new(name);
+  endfunction
+endclass
+
+// ===================== 测试模块 =====================
+module uvm_subclass_print_demo;
   initial begin
-    // 创建事务实例并赋值
-    uvm_table_printer my_printer;    
-    my_transaction tr = new();
-    tr.a = 100;
-    tr.b = 200;
-    tr.c = 8'hAB;
-    tr.d = "hello";
+    // 1. 创建父类实例（包含所有字段）
+    tsu2nsu_transaction parent_trans;
+    tsu2nsu_rcmd_only_trans child_trans;    
+    parent_trans = tsu2nsu_transaction::type_id::create("parent_trans");
+    
+    // 2. 创建子类实例（仅打印RCMD字段）
 
-    // ========== 核心：创建自定义printer，仅包含需要的字段 ==========
-    my_printer = new();  // 创建表格型printer（UVM默认格式）
-    my_printer.include_field("a");         // 仅包含字段a
-    my_printer.include_field("c");         // 仅包含字段c
-    // 注意：不写的字段会被自动排除，无需额外排除
+    child_trans = tsu2nsu_rcmd_only_trans::type_id::create("child_trans");
 
-    // ========== 打印对比 ==========
-    $display("===== 默认打印（所有字段） =====");
-    tr.print();  // 默认打印所有字段（a/b/c/d）
+    // 3. 随机化父类（模拟实际数据）
+    if(!parent_trans.randomize()) begin
+      `uvm_error("RAND_ERR", "Parent transaction randomization failed!")
+    end
 
-    $display("\n===== 自定义打印（仅a和c） =====");
-    tr.print(my_printer);  // 仅打印包含的字段（a和c）
+    // 4. 将父类数据赋值给子类（子类继承所有字段，仅打印注册的）
+    child_trans.copy(parent_trans);
+
+    // 5. 打印对比
+    // 父类打印：包含所有字段（RCMD + 其他字段）
+    `uvm_info("PARENT_PRINT", "============= Parent Transaction (All Fields) =============", UVM_LOW)
+    parent_trans.print();
+
+    // 子类打印：仅打印注册的RCMD字段
+    `uvm_info("CHILD_PRINT", "============= Child Transaction (Only RCMD Fields) =============", UVM_LOW)
+    child_trans.print();
+
+    $finish;
   end
 endmodule
