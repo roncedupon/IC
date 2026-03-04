@@ -79,11 +79,7 @@ module tb_plane_sel_final;
         for (int i=0; i<res.round_num; i++) begin
             $display("第%0d轮 - 起始地址：0x%0h, plane_sel：%8b", 
                      i+1, res.nsu_addr_que[i], res.plane_sel[i]);
-        end
-        foreach(res.plane_sel[i]) begin
-            $display("第%0d轮 - 起始地址：0x%0h, plane_sel：%8b", 
-                     i+1, res.nsu_addr_que[i], res.plane_sel[i]);
-        end        
+        end    
         $display("----------------------------------------");
     endtask
 
@@ -116,6 +112,17 @@ module tb_plane_sel_final;
         res      = calc_plane_sel(nsu_addr, mask);
         print_result(nsu_addr, mask, res);
 
+
+
+        nsu_addr = 0;
+        mask     = 32'b0000001;
+        res      = calc_plane_sel(nsu_addr, mask);
+        print_result(nsu_addr, mask, res);
+
+        nsu_addr = 0;
+        mask     = 32'b0000110;
+        res      = calc_plane_sel(nsu_addr, mask);
+        print_result(nsu_addr, mask, res);        
         $finish;
     end
 endmodule
