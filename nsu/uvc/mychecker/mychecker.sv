@@ -84,7 +84,7 @@ class `CLASS_NAME_DEFINE extends uvm_component;
     //-------------------------------------------------------------------------
     // 待检查的配置跟踪表 (按 instruction_index 和 group_id 索引)
     //-------------------------------------------------------------------------
-    bit [15:0] pending_instr_idx [$];
+    logic pending_instr_exists [bit [15:0]];  // 关联数组：标记 instruction_index 是否存在
     group_check_config_t pending_config [bit [15:0]][1:0];  // [instr_idx][group_id: 0 或 1]
     
     //-------------------------------------------------------------------------
@@ -276,10 +276,8 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
             pending_config[grp_cfg.instruction_index][gid] = grp_cfg;
         end
         
-        // 记录 pending instruction index
-        if (!pending_instr_idx.exists(group_tr.tr[0].instruction_index)) begin
-            pending_instr_idx.push_back(group_tr.tr[0].instruction_index);
-        end
+        // 记录 pending instruction index (使用关联数组标记存在)
+        pending_instr_exists[group_tr.tr[0].instruction_index] = 1'b1;
         
         `uvm_info(get_type_name(), $sformatf("Registered config for instr_idx=%0h (2 groups, waiting for resp/offwbf)", 
             group_tr.tr[0].instruction_index), UVM_MEDIUM)
@@ -313,7 +311,7 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
             resp.instruction_index, resp.plane_pair_ondec_flag, resp.plane_crc_err), UVM_LOW)
         
         // 查找匹配的期望配置
-        if (pending_config.exists(resp.instruction_index)) begin
+        if (pending_instr_exists[resp.instruction_index]) begin
             status = CHECK_PASS;
             fail_reason = "";
             matched_gid = -1;
@@ -447,7 +445,7 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
             offwbf_tr.instruction_index, offwbf_tr.nsu_ost_id, offwbf_tr.src_mem_addr, offwbf_tr.offwbf_start), UVM_LOW)
         
         // 查找匹配的期望配置
-        if (pending_config.exists(offwbf_tr.instruction_index)) begin
+        if (pending_instr_exists[offwbf_tr.instruction_index]) begin
             status = CHECK_PASS;
             fail_reason = "";
             matched_gid = -1;
