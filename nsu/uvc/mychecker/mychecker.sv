@@ -16,11 +16,6 @@
 
 package ondec2nsu_checker_pkg;
     
-    import uvm_pkg::*;
-    `include "uvm_macros.svh"
-    import nsu_cpu_transactions_pkg::*;
-    import nsu2offwbf_transaction_pkg::*;
-
     //=========================================================================
     // 检查状态枚举
     //=========================================================================
@@ -57,7 +52,7 @@ package ondec2nsu_checker_pkg;
     } group_check_config_t;
 
 endpackage
-
+class nsu2offwbf_transaction;endclass
 `define CLASS_NAME_DEFINE ondec2nsu_checker
 
 //=============================================================================
@@ -69,8 +64,7 @@ class `CLASS_NAME_DEFINE extends uvm_component;
     `uvm_component_utils(`CLASS_NAME_DEFINE)
 
     import ondec2nsu_checker_pkg::*;
-    import nsu_cpu_transactions_pkg::*;
-    import nsu2offwbf_transaction_pkg::*;
+
 
     //-------------------------------------------------------------------------
     // FIFO 定义
@@ -181,6 +175,9 @@ endclass : ondec2nsu_checker
 task `CLASS_NAME_DEFINE::check_ondec_cmd();
     ondec2nsu_group_transaction group_tr;
     group_check_config_t grp_cfg;
+    int pp_base;
+    logic group_need_deep_resp;
+    logic group_need_offwbf;
     
     forever begin
         // =========================================================
@@ -196,7 +193,7 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
         // 第二步：按 group 处理 (Group 0: PP[0:3], Group 1: PP[4:7])
         // =========================================================
         for (int gid = 0; gid < 2; gid++) begin
-            int pp_base = gid * 4;  // Group 0: pp_base=0, Group 1: pp_base=4
+            pp_base = gid * 4;  // Group 0: pp_base=0, Group 1: pp_base=4
             
             `uvm_info(get_type_name(), $sformatf("  Processing Group%0d (PP[%0d:%0d])", 
                 gid, pp_base, pp_base+3), UVM_MEDIUM)
@@ -233,8 +230,8 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
             // =========================================================
             // 第三步：判断 group 需要什么响应
             // =========================================================
-            logic group_need_deep_resp = 1'b0;
-            logic group_need_offwbf = 1'b0;
+            group_need_deep_resp = 1'b0;
+            group_need_offwbf = 1'b0;
             
             // 遍历 group 内 4 个 plane_pair，判断是否需要 deep_resp 或 offwbf
             for (int pp = 0; pp < 4; pp++) begin
@@ -299,7 +296,11 @@ endtask : check_ondec_cmd
 //-----------------------------------------------------------------------------
 task `CLASS_NAME_DEFINE::check_deep_read_resp();
     nsu2cpu_deep_resp_transaction resp;
-    
+    check_status_e status;
+    string fail_reason;
+    int matched_gid;
+    int pp_idx;
+    group_check_config_t cfg;
     forever begin
         deep_read_resp_fifo.get(resp);
         total_resp_count++;
@@ -309,13 +310,13 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
         
         // 查找匹配的期望配置
         if (pending_config.exists(resp.instruction_index)) begin
-            check_status_e status = CHECK_PASS;
-            string fail_reason = "";
-            int matched_gid = -1;
+            status = CHECK_PASS;
+            fail_reason = "";
+            matched_gid = -1;
             
             // 遍历 2 个 group，找到匹配的 group (通过 ost_id)
             for (int gid = 0; gid < 2; gid++) begin
-                auto cfg = pending_config[resp.instruction_index][gid];
+                cfg = pending_config[resp.instruction_index][gid];
                 
                 if (!cfg.valid) continue;
                 
@@ -332,7 +333,7 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                         
                         // 只检查期望上报 deep_resp 的 plane_pair
                         if (!cfg.dec_suc[pp] && cfg.crc_pass[pp]) begin
-                            int pp_idx = gid * 4 + pp;  // 全局 plane_pair 索引
+                            pp_idx = gid * 4 + pp;  // 全局 plane_pair 索引
                             
                             // 检查译码状态 (plane_pair_ondec_flag: 0=成功，1=失败)
                             if (cfg.dec_suc[pp] != !resp.plane_pair_ondec_flag[pp_idx]) begin
@@ -423,7 +424,10 @@ endtask : check_deep_read_resp
 //-----------------------------------------------------------------------------
 task `CLASS_NAME_DEFINE::check_offwbf_cmd();
     nsu2offwbf_transaction offwbf_tr;
-    
+    check_status_e status;
+    string fail_reason;
+    int matched_gid;
+    group_check_config_t cfg;
     forever begin
         offwbf_cmd_fifo.get(offwbf_tr);
         total_offwbf_count++;
@@ -433,13 +437,13 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
         
         // 查找匹配的期望配置
         if (pending_config.exists(offwbf_tr.instruction_index)) begin
-            check_status_e status = CHECK_PASS;
-            string fail_reason = "";
-            int matched_gid = -1;
+            status = CHECK_PASS;
+            fail_reason = "";
+            matched_gid = -1;
             
             // 遍历 2 个 group，找到匹配的 group (通过 ost_id)
             for (int gid = 0; gid < 2; gid++) begin
-                auto cfg = pending_config[offwbf_tr.instruction_index][gid];
+                cfg = pending_config[offwbf_tr.instruction_index][gid];
                 
                 if (!cfg.valid) continue;
                 
