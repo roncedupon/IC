@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NSU Meta 数据处理可视化</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #eee;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #00d9ff;
+            text-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+        }
+        h2 {
+            color: #00d9ff;
+            margin: 20px 0 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #00d9ff;
+        }
+        h3 {
+            color: #ffa500;
+            margin: 15px 0 10px;
+        }
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        /* 状态机图 */
+        .state-machine {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .state {
+            width: 140px;
+            height: 70px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .state.idle { background: linear-gradient(145deg, #2d3436, #636e72); }
+        .state.judge { background: linear-gradient(145deg, #0c2461, #1e3799); }
+        .state.process { background: linear-gradient(145deg, #0a3d62, #1e8449); }
+        .state.done { background: linear-gradient(145deg, #1e8449, #27ae60); }
+        .state.active {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(0, 217, 255, 0.8);
+        }
+        .state-name {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        .state-code {
+            font-size: 10px;
+            margin-top: 5px;
+            opacity: 0.6;
+        }
+        .arrow {
+            display: flex;
+            align-items: center;
+            color: #00d9ff;
+            font-size: 24px;
+        }
+        /* 数据流图 */
+        .data-flow {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .flow-block {
+            background: rgba(0, 217, 255, 0.1);
+            border: 2px solid #00d9ff;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .flow-block:hover {
+            background: rgba(0, 217, 255, 0.2);
+            transform: translateY(-5px);
+        }
+        .flow-block.input { border-color: #ffa500; background: rgba(255, 165, 0, 0.1); }
+        .flow-block.process { border-color: #00ff88; background: rgba(0, 255, 136, 0.1); }
+        .flow-block.output { border-color: #ff6b6b; background: rgba(255, 107, 107, 0.1); }
+        .flow-block h4 {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .flow-block ul {
+            list-style: none;
+            font-size: 12px;
+            text-align: left;
+        }
+        .flow-block li {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        /* Plane 选择器 */
+        .plane-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .plane-group {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 15px;
+            flex: 1;
+            min-width: 300px;
+        }
+        .plane-group h4 {
+            color: #ffa500;
+            margin-bottom: 10px;
+        }
+        .plane-bits {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .plane-bit {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #2d3436;
+            border: 2px solid #636e72;
+        }
+        .plane-bit.active {
+            background: linear-gradient(145deg, #00b894, #00cec9);
+            border-color: #00ff88;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+        }
+        .plane-bit:hover {
+            transform: scale(1.1);
+        }
+        .plane-bit .num {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .plane-bit .label {
+            font-size: 10px;
+            opacity: 0.7;
+        }
+        /* 交互控制 */
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background: linear-gradient(145deg, #00b894, #00cec9);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 206, 201, 0.4);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #00d9ff;
+            border: 1px solid #00d9ff;
+        }
+        .btn-secondary:hover {
+            background: rgba(0, 217, 255, 0.2);
+        }
+        /* 数据显示 */
+        .data-display {
+            background: #0d1117;
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+        .data-row {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            padding: 10px;
+            background: rgba(0, 217, 255, 0.05);
+            border-radius: 5px;
+        }
+        .data-label {
+            width: 150px;
+            color: #00d9ff;
+            font-weight: bold;
+        }
+        .data-value {
+            flex: 1;
+            color: #00ff88;
+        }
+        .data-value.highlight {
+            background: rgba(255, 165, 0, 0.2);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        /* 表格 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        th {
+            background: rgba(0, 217, 255, 0.2);
+            color: #00d9ff;
+        }
+        tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        /* 时序图 */
+        .timing-diagram {
+            background: #0d1117;
+            border-radius: 10px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+        .timing-row {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            height: 30px;
+        }
+        .timing-label {
+            width: 120px;
+            font-size: 12px;
+            color: #00d9ff;
+        }
+        .timing-wave {
+            flex: 1;
+            height: 25px;
+            background: rgba(255,255,255,0.05);
+            position: relative;
+        }
+        .wave-segment {
+            position: absolute;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: white;
+        }
+        .wave-high {
+            background: linear-gradient(180deg, #00b894 0%, #00cec9 100%);
+            top: 2px;
+            height: 21px;
+        }
+        .wave-low {
+            background: transparent;
+            border: 1px solid #636e72;
+            top: 10px;
+            height: 5px;
+        }
+        /* 动画 */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse {
+            animation: pulse 1s infinite;
+        }
+        @keyframes flow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+        .flow-arrow {
+            background: linear-gradient(90deg, transparent, #00d9ff, transparent);
+            background-size: 200% 100%;
+            animation: flow 1.5s infinite;
+        }
+        /* 工具提示 */
+        .tooltip {
+            position: relative;
+        }
+        .tooltip:hover::after {
+            content: attr(data-tip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a2e;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 100;
+            border: 1px solid #00d9ff;
+        }
+        /* 进度条 */
+        .progress-container {
+            margin: 20px 0;
+        }
+        .progress-bar {
+            height: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00b894, #00cec9);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 NSU Meta 数据处理可视化演示</h1>
+        
+        <!-- 模块概述 -->
+        <div class="section">
+            <h2>📦 模块概述</h2>
+            <p><strong>nsu_write_meta_ctrl</strong> 是 NSU (NAND Storage Unit) 的 meta 数据写入控制模块，负责将 meta 数据通过 AXI 接口写入内存。</p>
+            <br>
+            <table>
+                <tr>
+                    <th>参数</th>
+                    <th>值</th>
+                    <th>说明</th>
+                </tr>
+                <tr>
+                    <td>DATA_WIDTH</td>
+                    <td>256</td>
+                    <td>数据位宽</td>
+                </tr>
+                <tr>
+                    <td>ADDR_WIDTH</td>
+                    <td>34</td>
+                    <td>地址位宽</td>
+                </tr>
+                <tr>
+                    <td>Plane 数量</td>
+                    <td>8</td>
+                    <td>支持 8 个 plane，分为 2 组 (Group0: 0-3, Group1: 4-7)</td>
+                </tr>
+                <tr>
+                    <td>Meta 数据格式</td>
+                    <td>128bit × 8</td>
+                    <td>每个 plane 对应 128bit meta 数据</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- 状态机 -->
+        <div class="section">
+            <h2>🔄 状态机流程</h2>
+            <div class="state-machine" id="stateMachine">
+                <div class="state idle" data-state="IDLE_STATE" onclick="setActiveState(this)">
+                    <span class="state-name">空闲</span>
+                    <span class="state-code">IDLE_STATE</span>
+                </div>
+                <div class="arrow">→</div>
+                <div class="state judge" data-state="JUDGE0_STATE" onclick="setActiveState(this)">
+                    <span class="state-name">判断 Group0</span>
+                    <span class="state-code">JUDGE0_STATE</span>
+                </div>
+                <div class="arrow">→</div>
+                <div class="state process" data-state="META_DATA0_STATE" onclick="setActiveState(this)">
+                    <span class="state-name">处理 Group0</span>
+                    <span class="state-code">META_DATA0_STATE</span>
+                </div>
+                <div class="arrow">→</div>
+                <div class="state judge" data-state="JUDGE1_STATE" onclick="setActiveState(this)">
+                    <span class="state-name">判断 Group1</span>
+                    <span class="state-code">JUDGE1_STATE</span>
+                </div>
+                <div class="arrow">→</div>
+                <div class="state process" data-state="META_DATA1_STATE" onclick="setActiveState(this)">
+                    <span class="state-name">处理 Group1</span>
+                    <span class="state-code">META_DATA1_STATE</span>
+                </div>
+                <div class="arrow">→</div>
+                <div class="state done" data-state="DONE_STATE" onclick="setActiveState(this)">
+                    <span class="state-name">完成</span>
+                    <span class="state-code">DONE_STATE</span>
+                </div>
+            </div>
+            <div class="controls">
+                <button class="btn btn-primary" onclick="animateStateMachine()">▶ 播放动画</button>
+                <button class="btn btn-secondary" onclick="resetStateMachine()">↺ 重置</button>
+            </div>
+            <div id="stateDesc" class="data-display" style="margin-top: 15px;">
+                <p>点击状态节点或播放动画查看状态转换详情</p>
+            </div>
+        </div>
+
+        <!-- Plane 选择交互 -->
+        <div class="section">
+            <h2>🎚️ Plane 选择器</h2>
+            <p>点击选择需要写入 meta 数据的 plane：</p>
+            <div class="plane-selector">
+                <div class="plane-group">
+                    <h4>Group 0 (PP[0:3])</h4>
+                    <div class="plane-bits">
+                        <div class="plane-bit" data-plane="0" onclick="togglePlane(this)">
+                            <span class="num">0</span>
+                            <span class="label">Plane 0</span>
+                        </div>
+                        <div class="plane-bit" data-plane="1" onclick="togglePlane(this)">
+                            <span class="num">1</span>
+                            <span class="label">Plane 1</span>
+                        </div>
+                        <div class="plane-bit" data-plane="2" onclick="togglePlane(this)">
+                            <span class="num">2</span>
+                            <span class="label">Plane 2</span>
+                        </div>
+                        <div class="plane-bit" data-plane="3" onclick="togglePlane(this)">
+                            <span class="num">3</span>
+                            <span class="label">Plane 3</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="plane-group">
+                    <h4>Group 1 (PP[4:7])</h4>
+                    <div class="plane-bits">
+                        <div class="plane-bit" data-plane="4" onclick="togglePlane(this)">
+                            <span class="num">4</span>
+                            <span class="label">Plane 4</span>
+                        </div>
+                        <div class="plane-bit" data-plane="5" onclick="togglePlane(this)">
+                            <span class="num">5</span>
+                            <span class="label">Plane 5</span>
+                        </div>
+                        <div class="plane-bit" data-plane="6" onclick="togglePlane(this)">
+                            <span class="num">6</span>
+                            <span class="label">Plane 6</span>
+                        </div>
+                        <div class="plane-bit" data-plane="7" onclick="togglePlane(this)">
+                            <span class="num">7</span>
+                            <span class="label">Plane 7</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="planeResult" class="data-display">
+                <div class="data-row">
+                    <span class="data-label">plane_sel:</span>
+                    <span class="data-value" id="planeSelValue">8'b0000_0000</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Group0 数量:</span>
+                    <span class="data-value" id="group0Num">0</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Group1 数量:</span>
+                    <span class="data-value" id="group1Num">0</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Group0 AXI Len:</span>
+                    <span class="data-value" id="group0Len">0</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Group1 AXI Len:</span>
+                    <span class="data-value" id="group1Len">0</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Group0 Mask:</span>
+                    <span class="data-value" id="group0Mask">6'b00_0000</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Group1 Mask:</span>
+                    <span class="data-value" id="group1Mask">6'b00_0000</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据流 -->
+        <div class="section">
+            <h2>📊 数据流向</h2>
+            <div class="data-flow">
+                <div class="flow-block input">
+                    <h4>📥 输入</h4>
+                    <ul>
+                        <li>meta0_addr (32bit)</li>
+                        <li>metal_addr (32bit)</li>
+                        <li>plane_sel (8bit)</li>
+                        <li>meta_data0 (32bit×8)</li>
+                        <li>meta_data1 (8bit×8)</li>
+                        <li>meta_data2 (32bit×8)</li>
+                        <li>meta_data3 (8bit×8)</li>
+                    </ul>
+                </div>
+                <div class="flow-block process">
+                    <h4>⚙️ 处理</h4>
+                    <ul>
+                        <li>Plane 分组 (Group0/1)</li>
+                        <li>Meta 数据拼接 (128bit)</li>
+                        <li>AXI 长度计算</li>
+                        <li>掩码生成</li>
+                        <li>地址对齐处理</li>
+                    </ul>
+                </div>
+                <div class="flow-block process">
+                    <h4>📤 FIFO</h4>
+                    <ul>
+                        <li>meta_axi_awfifo</li>
+                        <li>meta_dat_fifo</li>
+                        <li>深度: 2</li>
+                        <li>位宽: 256+32+1</li>
+                    </ul>
+                </div>
+                <div class="flow-block output">
+                    <h4>📤 输出 (AXI)</h4>
+                    <ul>
+                        <li>lm_wid (10bit)</li>
+                        <li>lm_waddr (34bit)</li>
+                        <li>lm_wlen (9bit)</li>
+                        <li>lm_wdat (256bit)</li>
+                        <li>lm_wmask (32bit)</li>
+                        <li>lm_wdat_last (1bit)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meta 数据结构 -->
+        <div class="section">
+            <h2>📝 Meta 数据结构</h2>
+            <p>每个 plane 的 meta 数据由 4 部分组成，共 128bit：</p>
+            <table>
+                <tr>
+                    <th>字段</th>
+                    <th>位宽</th>
+                    <th>来源</th>
+                    <th>说明</th>
+                </tr>
+                <tr>
+                    <td>meta_data0</td>
+                    <td>32bit</td>
+                    <td>Index 7 (bits [31:0])</td>
+                    <td>Meta 数据第 0 部分</td>
+                </tr>
+                <tr>
+                    <td>meta_data1</td>
+                    <td>8bit</td>
+                    <td>Index 8 (bits [7:0])</td>
+                    <td>Meta 数据第 1 部分</td>
+                </tr>
+                <tr>
+                    <td>meta_data2</td>
+                    <td>32bit</td>
+                    <td>Index 9 (bits [31:0])</td>
+                    <td>Meta 数据第 2 部分</td>
+                </tr>
+                <tr>
+                    <td>meta_data3</td>
+                    <td>8bit</td>
+                    <td>Index 10 (bits [7:0])</td>
+                    <td>Meta 数据第 3 部分</td>
+                </tr>
+            </table>
+            <br>
+            <h3>拼接示例</h3>
+            <div class="data-display">
+                <div class="data-row">
+                    <span class="data-label">wr_meta_data[i]:</span>
+                    <span class="data-value">{meta_data3[i], meta_data2[i], meta_data1[i], meta_data0[i]}</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">位宽:</span>
+                    <span class="data-value">128bit = 8bit + 32bit + 8bit + 32bit</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- AXI 长度计算 -->
+        <div class="section">
+            <h2>📐 AXI 写入长度计算规则</h2>
+            <p>根据 plane 数量和地址对齐情况计算 AXI 突发长度：</p>
+            <table>
+                <tr>
+                    <th>Plane 数量</th>
+                    <th>地址[4] = 0</th>
+                    <th>地址[4] = 1</th>
+                    <th>说明</th>
+                </tr>
+                <tr>
+                    <td>0 或 1</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>单个 plane，无需额外 burst</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>0</td>
+                    <td>1</td>
+                    <td>2 个 plane，地址对齐决定长度</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>1</td>
+                    <td>1</td>
+                    <td>3 个 plane，固定长度 1</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>1</td>
+                    <td>2</td>
+                    <td>4 个 plane，地址对齐决定长度</td>
+                </tr>
+            </table>
+            <br>
+            <div class="progress-container">
+                <label>数据量进度条演示：</label>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%;">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mask 计算 -->
+        <div class="section">
+            <h2>🎭 写掩码 (Write Mask) 计算</h2>
+            <p>根据 plane 数量和地址对齐生成 6bit 掩码：</p>
+            <table>
+                <tr>
+                    <th>Plane 数量</th>
+                    <th>地址[4] = 0</th>
+                    <th>地址[4] = 1</th>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>6'b00_0001</td>
+                    <td>6'b00_0010</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>6'b00_0011</td>
+                    <td>6'b00_0110</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>6'b00_0111</td>
+                    <td>6'b00_1110</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>6'b00_1111</td>
+                    <td>6'b01_1110</td>
+                </tr>
+            </table>
+            <br>
+            <h3>Mask 映射到 WSTRB</h3>
+            <div class="data-display">
+                <p>mask_temp[1] → lm_wmask[31:16] (高 16bit)</p>
+                <p>mask_temp[0] → lm_wmask[15:0] (低 16bit)</p>
+                <p>每个 mask bit 扩展为 16bit 的 strobe 信号</p>
+            </div>
+        </div>
+
+        <!-- 时序图 -->
+        <div class="section">
+            <h2>⏱️ 典型时序</h2>
+            <div class="timing-diagram" id="timingDiagram">
+                <!-- 动态生成 -->
+            </div>
+            <div class="controls" style="margin-top: 15px;">
+                <button class="btn btn-primary" onclick="generateTiming()">生成时序图</button>
+            </div>
+        </div>
+
+        <!-- 代码示例 -->
+        <div class="section">
+            <h2>💻 关键代码片段</h2>
+            <h3>Meta 数据拼接</h3>
+            <div class="data-display">
+                <pre>
+generate
+    for(i=0; i&lt;8; i=i+1) begin
+        assign wr_meta_data[i] = {meta_data3[i], meta_data2[i], 
+                                   meta_data1[i], meta_data0[i]};
+    end
+endgenerate
+                </pre>
+            </div>
+            <h3>Group 数据组装</h3>
+            <div class="data-display">
+                <pre>
+case(plane_sel[3:0])
+    4'b0001: group0_meta_dat &lt;= {384'd0, wr_meta_data[0]};
+    4'b0011: group0_meta_dat &lt;= {256'd0, wr_meta_data[1], wr_meta_data[0]};
+    4'b0111: group0_meta_dat &lt;= {128'd0, wr_meta_data[2], 
+                                  wr_meta_data[1], wr_meta_data[0]};
+    4'b1111: group0_meta_dat &lt;= {wr_meta_data[3], wr_meta_data[2], 
+                                  wr_meta_data[1], wr_meta_data[0]};
+    ...
+endcase
+                </pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 状态描述
+        const stateDescriptions = {
+            'IDLE_STATE': '空闲状态：等待 start 信号触发，初始化所有计数器和标志位。',
+            'JUDGE0_STATE': '判断 Group0：检查 plane_sel[3:0] 是否有有效位，决定是否处理 Group0 的 meta 数据。',
+            'META_DATA0_STATE': '处理 Group0：根据 plane_sel 组装 meta 数据，通过 FIFO 发送到 AXI 接口。',
+            'JUDGE1_STATE': '判断 Group1：检查 plane_sel[7:4] 是否有有效位，决定是否处理 Group1 的 meta 数据。',
+            'META_DATA1_STATE': '处理 Group1：根据 plane_sel 组装 meta 数据，通过 FIFO 发送到 AXI 接口。',
+            'DONE_STATE': '完成状态：等待所有 AXI 写响应返回，设置 done 信号。'
+        };
+
+        // 设置活动状态
+        function setActiveState(element) {
+            document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
+            element.classList.add('active');
+            const state = element.dataset.state;
+            document.getElementById('stateDesc').innerHTML = `<p><strong>${state}:</strong> ${stateDescriptions[state]}</p>`;
+        }
+
+        // 状态机动画
+        let animationInterval;
+        function animateStateMachine() {
+            const states = document.querySelectorAll('.state');
+            let index = 0;
+            
+            if (animationInterval) clearInterval(animationInterval);
+            
+            animationInterval = setInterval(() => {
+                states.forEach(s => s.classList.remove('active'));
+                states[index].classList.add('active');
+                const state = states[index].dataset.state;
+                document.getElementById('stateDesc').innerHTML = `<p><strong>${state}:</strong> ${stateDescriptions[state]}</p>`;
+                index = (index + 1) % states.length;
+                
+                // 更新进度条
+                const progress = Math.round((index / (states.length - 1)) * 100);
+                document.getElementById('progressFill').style.width = progress + '%';
+                document.getElementById('progressFill').textContent = progress + '%';
+            }, 1000);
+        }
+
+        // 重置状态机
+        function resetStateMachine() {
+            if (animationInterval) clearInterval(animationInterval);
+            document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
+            document.getElementById('stateDesc').innerHTML = '<p>点击状态节点或播放动画查看状态转换详情</p>';
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('progressFill').textContent = '0%';
+        }
+
+        // Plane 选择
+        let planeSel = 0;
+        function togglePlane(element) {
+            const plane = parseInt(element.dataset.plane);
+            planeSel ^= (1 << plane);
+            element.classList.toggle('active');
+            updatePlaneResult();
+        }
+
+        // 更新 Plane 结果
+        function updatePlaneResult() {
+            // 计算 plane_sel 显示
+            const binStr = planeSel.toString(2).padStart(8, '0');
+            document.getElementById('planeSelValue').textContent = `8'b${binStr.slice(0,4)}_${binStr.slice(4)}`;
+            
+            // 计算 Group0 和 Group1 数量
+            const group0Num = ((planeSel >> 0) & 1) + ((planeSel >> 1) & 1) + 
+                              ((planeSel >> 2) & 1) + ((planeSel >> 3) & 1);
+            const group1Num = ((planeSel >> 4) & 1) + ((planeSel >> 5) & 1) + 
+                              ((planeSel >> 6) & 1) + ((planeSel >> 7) & 1);
+            
+            document.getElementById('group0Num').textContent = group0Num;
+            document.getElementById('group1Num').textContent = group1Num;
+            
+            // 计算 AXI 长度 (假设地址[4] = 0)
+            const group0Len = calculateAxiLen(group0Num, 0);
+            const group1Len = calculateAxiLen(group1Num, 0);
+            
+            document.getElementById('group0Len').textContent = group0Len;
+            document.getElementById('group1Len').textContent = group1Len;
+            
+            // 计算掩码
+            const group0Mask = calculateMask(group0Num, 0);
+            const group1Mask = calculateMask(group1Num, 0);
+            
+            document.getElementById('group0Mask').textContent = `6'b${group0Mask.toString(2).padStart(6, '0').replace(/(\d{2})(\d{4})/, '$1_$2')}`;
+            document.getElementById('group1Mask').textContent = `6'b${group1Mask.toString(2).padStart(6, '0').replace(/(\d{2})(\d{4})/, '$1_$2')}`;
+        }
+
+        // 计算 AXI 长度
+        function calculateAxiLen(num, addr4) {
+            if (num <= 1) return 0;
+            if (num === 2) return addr4 ? 1 : 0;
+            if (num === 3) return 1;
+            if (num === 4) return addr4 ? 2 : 1;
+            return 0;
+        }
+
+        // 计算掩码
+        function calculateMask(num, addr4) {
+            const masks = [
+                [0b000001, 0b000010], // 1 plane
+                [0b000011, 0b000110], // 2 planes
+                [0b000111, 0b001110], // 3 planes
+                [0b001111, 0b011110]  // 4 planes
+            ];
+            if (num >= 1 && num <= 4) {
+                return masks[num - 1][addr4];
+            }
+            return 0;
+        }
+
+        // 生成时序图
+        function generateTiming() {
+            const container = document.getElementById('timingDiagram');
+            const signals = [
+                { name: 'clk', pattern: '1010101010101010' },
+                { name: 'start', pattern: '0110000000000000' },
+                { name: 'cur_state', pattern: '0 0 1 1 2 2 2 2 3 3 4 4 4 4 5 5', labels: true },
+                { name: 'lm_wreq', pattern: '0000001111111000' },
+                { name: 'lm_wvld', pattern: '0000001111111000' },
+                { name: 'done', pattern: '0000000000000011' }
+            ];
+            
+            let html = '';
+            signals.forEach(signal => {
+                html += `<div class="timing-row">
+                    <div class="timing-label">${signal.name}</div>
+                    <div class="timing-wave">`;
+                
+                const pattern = signal.pattern.split('');
+                const cycleWidth = 100 / pattern.length;
+                
+                pattern.forEach((val, i) => {
+                    const left = i * cycleWidth;
+                    if (signal.labels) {
+                        html += `<div class="wave-segment wave-high" style="left:${left}%;width:${cycleWidth}%">${val}</div>`;
+                    } else {
+                        if (val === '1') {
+                            html += `<div class="wave-segment wave-high" style="left:${left}%;width:${cycleWidth}%"></div>`;
+                        } else {
+                            html += `<div class="wave-segment wave-low" style="left:${left}%;width:${cycleWidth}%"></div>`;
+                        }
+                    }
+                });
+                
+                html += '</div></div>';
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            generateTiming();
+        });
+    </script>
+</body>
+</html>
