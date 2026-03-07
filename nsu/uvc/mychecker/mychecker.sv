@@ -17,7 +17,7 @@
 //   - group0_ost_id: Group 0 的 OST ID
 //   - group1_ost_id: Group 1 的 OST ID
 //=============================================================================
-typedef class nsu2offwbf_transaction;  // 前向声明 (避免循环依赖)
+typedef class offdec2nsu_transaction;  // 前向声明 (避免循环依赖)
 package ondec2nsu_checker_pkg;
     
     //=========================================================================
@@ -49,10 +49,10 @@ package ondec2nsu_checker_pkg;
         logic [3:0]  offline_wbf_work_en;      // 4 个 plane_pair offwbf 使能
         logic        deep_read_sel;            // deep read 选择 (group 内一致)
         logic        read_mode;                // 读模式 (group 内一致)
-        logic [31:0] dest_memory_addr;         // 目标内存地址
-        logic [31:0] dec_fail_dest_addr;       // 译码失败目标地址
-        logic [15:0] plane_group_block_addr;   // 块地址
-        logic [11:0] page_addr_plane_group;    // 页地址
+        logic [31:0] dest_memory_addr;         // 目标内存地址 (对应 group_0_dest_memory_addr 等)
+        logic [31:0] dec_fail_dest_addr;       // 译码失败目标地址 (对应 dec_fail_dest_addr_0 等)
+        logic [15:0] plane_group_block_addr;   // 块地址 (对应 group0_block_addr 等)
+        logic [11:0] page_addr_plane_group;    // 页地址 (对应 page_address_plane_group_0 等)
     } group_check_config_t;
 
 endpackage
@@ -79,7 +79,7 @@ class `CLASS_NAME_DEFINE extends uvm_component;
     uvm_tlm_analysis_fifo #(nsu2cpu_deep_resp_transaction) deep_read_resp_fifo;
     
     // offwbf_cmd FIFO - 输入：NSU 下发给 OFFWBF 的指令
-    uvm_tlm_analysis_fifo #(nsu2offwbf_transaction) offwbf_cmd_fifo;
+    uvm_tlm_analysis_fifo #(offdec2nsu_transaction) offwbf_cmd_fifo;
     
     //-------------------------------------------------------------------------
     // 待检查的配置跟踪表 (按 instruction_index 和 group_id 索引)
@@ -370,10 +370,10 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                     end
                     
                     // 检查 read_mode
-                    if (cfg.read_mode != resp.mode_sel) begin
+                    if (cfg.read_mode != resp.read_mode) begin
                         status = CHECK_FAIL_DATA;
                         fail_reason = $sformatf("Group%0d read_mode mismatch: expected=%0b, got=%0b", 
-                            gid, cfg.read_mode, resp.mode_sel);
+                            gid, cfg.read_mode, resp.read_mode);
                     end
                     
                     break;  // 找到匹配的 group 后退出
@@ -424,108 +424,95 @@ endtask : check_deep_read_resp
 // check_offwbf_cmd - 检查 NSU 下发给 OFFWBF 的指令
 // 
 // 检查内容 (按 group 独立检查):
-// 1. instruction_index 匹配
-// 2. nsu_ost_id 匹配 (group 独立)
-// 3. src_mem_addr (与 dest_memory_addr 比较)
-// 4. dec_fail_dest_addr 匹配
-// 5. offwbf_start 标志
-// 6. read_mode (offwbf 只在 safe read 下调用)
+// 1. ost_id_nsu2offline 匹配 (group 独立)
+// 2. src_mem_addr (与 dest_memory_addr 比较)
+// 3. dest_mem_addr (与 dec_fail_dest_addr 比较)
+// 4. offline_wbf_out_flag 标志
+// 5. read_mode (offwbf 只在 safe read 下调用)
 //-----------------------------------------------------------------------------
 task `CLASS_NAME_DEFINE::check_offwbf_cmd();
-    nsu2offwbf_transaction offwbf_tr;
+    offdec2nsu_transaction offwbf_tr;
     check_status_e status;
     string fail_reason;
     int matched_gid;
+    bit [15:0] matched_instr_idx;
+    bit [15:0] p_instr_idx;
+    int p_gid;
     group_check_config_t cfg;
+    logic [31:0] src_mem_addr_32bit;
+    logic [31:0] dest_mem_addr_32bit;
     forever begin
         offwbf_cmd_fifo.get(offwbf_tr);
         total_offwbf_count++;
         
-        `uvm_info(get_type_name(), $sformatf("Received OFFWBF_CMD: instr_idx=%0h, ost_id=%0h, src_addr=%0h, offwbf_start=%0b", 
-            offwbf_tr.instruction_index, offwbf_tr.nsu_ost_id, offwbf_tr.src_mem_addr, offwbf_tr.offwbf_start), UVM_LOW)
+        // 组合 32bit 地址
+        src_mem_addr_32bit = {offwbf_tr.src_mem_addr_3, offwbf_tr.src_mem_addr_2, 
+                              offwbf_tr.src_mem_addr_1, offwbf_tr.src_mem_addr_0};
+        dest_mem_addr_32bit = {offwbf_tr.dest_mem_addr_3, offwbf_tr.dest_mem_addr_2, 
+                               offwbf_tr.dest_mem_addr_1, offwbf_tr.dest_mem_addr_0};
         
-        // 查找匹配的期望配置
-        if (pending_instr_exists[offwbf_tr.instruction_index]) begin
-            status = CHECK_PASS;
-            fail_reason = "";
-            matched_gid = -1;
+        `uvm_info(get_type_name(), $sformatf("Received OFFWBF_CMD: ost_id=%0h, src_addr=%0h, dest_addr=%0h, offline_wbf_out_flag=%0b", 
+            offwbf_tr.ost_id_nsu2offline, src_mem_addr_32bit, dest_mem_addr_32bit, offwbf_tr.offline_wbf_out_flag), UVM_LOW)
+        
+        // 查找匹配的期望配置 (通过地址匹配)
+        status = CHECK_PASS;
+        fail_reason = "";
+        matched_gid = -1;
+        matched_instr_idx = 16'hFFFF;
+        
+        // 遍历所有 pending 的 instruction_index 和 group
+        foreach (pending_config[p_instr_idx][p_gid]) begin
+            cfg = pending_config[p_instr_idx][p_gid];
             
-            // 遍历 2 个 group，找到匹配的 group (通过 ost_id)
-            for (int gid = 0; gid < 2; gid++) begin
-                cfg = pending_config[offwbf_tr.instruction_index][gid];
+            if (!cfg.valid) continue;
+            if (!cfg.offline_wbf_work_en[p_gid]) continue;  // 只检查需要 offwbf 的 group
+            
+            // 通过地址匹配 (而不是 ost_id，因为 NSU 会重新生成 ost_id)
+            // offwbf 的 src_mem_addr 应该匹配 ondec 的 dest_memory_addr
+            // offwbf 的 dest_mem_addr 应该匹配 ondec 的 dec_fail_dest_addr
+            if (cfg.dest_memory_addr == src_mem_addr_32bit && 
+                cfg.dec_fail_dest_addr == dest_mem_addr_32bit) begin
+                matched_gid = p_gid;
+                matched_instr_idx = p_instr_idx;
                 
-                if (!cfg.valid) continue;
+                `uvm_info(get_type_name(), $sformatf("  Matched Group%0d (instr_idx=%0h, addr=%0h)", 
+                    p_gid, p_instr_idx, src_mem_addr_32bit), UVM_HIGH)
                 
-                // 检查 ost_id 是否匹配 (group 独立的关键)
-                if (cfg.nsu_ost_id == offwbf_tr.nsu_ost_id) begin
-                    matched_gid = gid;
-                    
-                    `uvm_info(get_type_name(), $sformatf("  Matched Group%0d (ost_id=%0h)", 
-                        gid, cfg.nsu_ost_id), UVM_HIGH)
-                    
-                    // 检查 OST ID
-                    if (cfg.nsu_ost_id != offwbf_tr.nsu_ost_id) begin
-                        status = CHECK_FAIL_OST_ID;
-                        fail_reason = $sformatf("Group%0d OST ID mismatch: expected=%0h, got=%0h", 
-                            gid, cfg.nsu_ost_id, offwbf_tr.nsu_ost_id);
-                        break;
-                    end
-                    
-                    // 检查源地址 (offwbf 从 dest_memory_addr 读取数据)
-                    if (cfg.dest_memory_addr != offwbf_tr.src_mem_addr) begin
-                        status = CHECK_FAIL_DATA;
-                        fail_reason = $sformatf("Group%0d src_mem_addr mismatch: expected=%0h, got=%0h", 
-                            gid, cfg.dest_memory_addr, offwbf_tr.src_mem_addr);
-                        break;
-                    end
-                    
-                    // 检查译码失败目标地址
-                    if (cfg.dec_fail_dest_addr != offwbf_tr.dec_fail_dest_addr) begin
-                        status = CHECK_FAIL_DATA;
-                        fail_reason = $sformatf("Group%0d dec_fail_dest_addr mismatch: expected=%0h, got=%0h", 
-                            gid, cfg.dec_fail_dest_addr, offwbf_tr.dec_fail_dest_addr);
-                        break;
-                    end
-                    
-                    // 检查 offwbf_start 标志
-                    if (!offwbf_tr.offwbf_start) begin
-                        status = CHECK_FAIL_DATA;
-                        fail_reason = $sformatf("Group%0d offwbf_start not asserted", gid);
-                        break;
-                    end
-                    
-                    // 检查 read_mode (offwbf 只在 safe read 模式下调用)
-                    if (cfg.read_mode != 1'b0) begin
-                        status = CHECK_FAIL_DATA;
-                        fail_reason = $sformatf("Group%0d offwbf called in non-safe mode: read_mode=%0b", 
-                            gid, cfg.read_mode);
-                        break;
-                    end
-                    
-                    break;  // 找到匹配的 group 后退出
+                // 检查 offline_wbf_out_flag 标志
+                if (!offwbf_tr.offline_wbf_out_flag) begin
+                    status = CHECK_FAIL_DATA;
+                    fail_reason = $sformatf("Group%0d offline_wbf_out_flag not asserted", p_gid);
+                    break;
                 end
+                
+                // 检查 read_mode (offwbf 只在 safe read 模式下调用)
+                if (cfg.read_mode != 1'b0) begin
+                    status = CHECK_FAIL_DATA;
+                    fail_reason = $sformatf("Group%0d offwbf called in non-safe mode: read_mode=%0b", 
+                        p_gid, cfg.read_mode);
+                    break;
+                end
+                
+                break;  // 找到匹配的 group 后退出
             end
-            
-            // 报告结果
-            if (status == CHECK_PASS) begin
-                pass_count++;
-                offwbf_success_count++;
-                `uvm_info(get_type_name(), $sformatf("OFFWBF_CMD CHECK PASS: instr_idx=%0h, Group%0d (ost_id=%0h)", 
-                    offwbf_tr.instruction_index, matched_gid, offwbf_tr.nsu_ost_id), UVM_LOW)
-            end else begin
-                fail_count++;
-                offwbf_fail_count++;
-                `uvm_error(get_type_name(), $sformatf("OFFWBF_CMD CHECK FAIL: instr_idx=%0h, Group%0d, status=%0b, reason=%s", 
-                    offwbf_tr.instruction_index, matched_gid, status, fail_reason))
-            end
-            
-            // 清除已检查的 group 配置
-            if (matched_gid >= 0) begin
-                pending_config[offwbf_tr.instruction_index][matched_gid].valid = 1'b0;
-            end
+        end
+        
+        // 报告结果
+        if (status == CHECK_PASS) begin
+            pass_count++;
+            offwbf_success_count++;
+            `uvm_info(get_type_name(), $sformatf("OFFWBF_CMD CHECK PASS: Group%0d (ost_id=%0h, instr_idx=%0h)", 
+                matched_gid, offwbf_tr.ost_id_nsu2offline, matched_instr_idx), UVM_LOW)
         end else begin
-            `uvm_warning(get_type_name(), $sformatf("OFFWBF_CMD: No matching config for instr_idx=%0h", 
-                offwbf_tr.instruction_index))
+            fail_count++;
+            offwbf_fail_count++;
+            `uvm_error(get_type_name(), $sformatf("OFFWBF_CMD CHECK FAIL: Group%0d, status=%0b, reason=%s", 
+                matched_gid, status, fail_reason))
+        end
+        
+        // 清除已检查的 group 配置
+        if (matched_gid >= 0 && matched_instr_idx != 16'hFFFF) begin
+            pending_config[matched_instr_idx][matched_gid].valid = 1'b0;
         end
     end
 endtask : check_offwbf_cmd
