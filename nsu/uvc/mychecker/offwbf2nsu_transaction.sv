@@ -8,14 +8,8 @@
 // NSU 会调用 OFFWBF 进行离线 WBF 纠错，此时需要下发 nsu2offwbf_transaction
 //=============================================================================
 
-package nsu2offwbf_transaction_pkg;
-    
-    import uvm_pkg::*;
-    `include "uvm_macros.svh"
 
     class nsu2offwbf_transaction extends uvm_sequence_item;
-        `uvm_object_utils(nsu2offwbf_transaction)
-
         //=========================================================
         // 基本字段 (与 ondec2nsu_transaction 保持一致的字段)
         //=========================================================
@@ -98,6 +92,5 @@ package nsu2offwbf_transaction_pkg;
         
     endclass
 
-endpackage
 
 `endif

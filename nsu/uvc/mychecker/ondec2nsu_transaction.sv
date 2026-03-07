@@ -1,5 +1,10 @@
+`define ONDEC2NSU_CMD_WIDTH 32
+`define ONDEC2NSU_DATA_WIDTH 512
+`define ONDEC2NSU_DATA_LENGTH 4096*8/512
+`define ONDEC2NSU_CMD_LENGTH 11
+`define ONDEC2NSU_REQ_ADDR_WIDTH 8
+
 class ondec2nsu_transaction extends uvm_sequence_item;
-    `uvm_object_utils(ondecc2nsu_transaction)
 
     rand int on_dec_cmd_delay[];
     rand int on_dec_data_delay[];

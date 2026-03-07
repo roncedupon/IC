@@ -19,28 +19,10 @@
 // 9. nsu2cpu_msa_resp_transaction       - 6.4.7 MSA resp que
 // 10. nsu2cpu_resp_transaction          - 通用响应 (用于其他未分类响应)
 //=============================================================================
-
-package nsu_cpu_transactions_pkg;
-
-    import uvm_pkg::*;
-    `include "uvm_macros.svh"
-
-    //=========================================================================
-    // 公共参数定义
-    //=========================================================================
-    
-    parameter DATA_WIDTH = 32;
-    parameter ADDR_WIDTH = 32;
-    parameter PLANE_PAIR_NUM = 8;
-    
-    // Queue 深度
-    parameter IO_WRITE_REQ_QUEUE_DEPTH    = 32;
-    parameter IO_READ_REQ_QUEUE_DEPTH     = 32;
-    parameter IO_WRITE_RESP_QUEUE_DEPTH   = 32;
-    parameter READ_RESP_QUEUE_DEPTH       = 128;
-    parameter DEEP_READ_RESP_QUEUE_DEPTH  = 109;
-    parameter MSA_RESP_QUEUE_DEPTH        = 8;
-    
+`include "uvm_macros.svh"
+`include "uvm_pkg.sv"
+import uvm_pkg::*;
+   
     //=========================================================================
     // 1. nsu2cpu_deep_resp_transaction (6.4.11)
     // Deep read 上报 resp - 处理 IO read error 和 deep read
@@ -905,7 +887,7 @@ package nsu_cpu_transactions_pkg;
             `uvm_field_int(ost_id, UVM_ALL_ON)
             `uvm_field_int(status, UVM_ALL_ON)
             `uvm_field_int(address, UVM_ALL_ON)
-            `uvm_field_enum(resp_type, UVM_ALL_ON)
+
         `uvm_object_utils_end
         
         function new(string name = "nsu2cpu_resp_transaction");
@@ -970,8 +952,6 @@ package nsu_cpu_transactions_pkg;
         endfunction : pack_to_array
         
     endclass : nsu2cpu_resp_transaction
-    
-endpackage : nsu_cpu_transactions_pkg
 
 
 `endif // NSU_CPU_TRANSACTIONS

@@ -5,6 +5,10 @@
 // mychecker_tb.sv - 测试平台 (Group 独立处理版本)
 // Group 0: plane_pair[0:3], ost_id = tr[0].nsu_ost_id
 // Group 1: plane_pair[4:7], ost_id = tr[4].nsu_ost_id
+//
+// nsu2cpu_deep_resp_transaction 字段:
+//   - group0_ost_id: Group 0 的 OST ID
+//   - group1_ost_id: Group 1 的 OST ID
 //=============================================================================
 
 module ondec2nsu_checker_tb;
@@ -122,7 +126,8 @@ module ondec2nsu_checker_tb;
         // 发送匹配的 deep_read_resp (Group 0)
         deep_resp = nsu2cpu_deep_resp_transaction::type_id::create("deep_resp2");
         deep_resp.instruction_index = 16'h0002;
-        deep_resp.nsu_ost_id = 5'h01;  // 匹配 Group 0
+        deep_resp.group0_ost_id = 5'h01;  // 匹配 Group 0
+        deep_resp.group1_ost_id = 5'h02;  // Group 1 的 ost_id
         deep_resp.plane_pair_ondec_flag = 8'b0000_1111;  // PP[0:3] 失败，PP[4:7] 成功
         deep_resp.plane_pair_lba_comp = 8'b0000_0000;
         deep_resp.plane_crc_err = 8'b0000_1111;          // PP[0:3] CRC 成功
@@ -130,8 +135,8 @@ module ondec2nsu_checker_tb;
         deep_resp.mode_sel = 1'b0;
         
         checker.deep_read_resp_fifo.write(deep_resp);
-        $display("Sent DEEP_READ_RESP: instr_idx=%0h, ost_id=%0h (matching Group0)", 
-            deep_resp.instruction_index, deep_resp.nsu_ost_id);
+        $display("Sent DEEP_READ_RESP: instr_idx=%0h, group0_ost_id=%0h (matching Group0)", 
+            deep_resp.instruction_index, deep_resp.group0_ost_id);
         $display("  pp_ondec_flag=%08b (PP[0:3]=1=fail), pp_crc_err=%08b (PP[0:3]=1=success)", 
             deep_resp.plane_pair_ondec_flag, deep_resp.plane_crc_err);
         
@@ -234,7 +239,8 @@ module ondec2nsu_checker_tb;
         // 发送 deep_read_resp (Group 0)
         deep_resp = nsu2cpu_deep_resp_transaction::type_id::create("deep_resp4");
         deep_resp.instruction_index = 16'h0004;
-        deep_resp.nsu_ost_id = 5'h05;  // 匹配 Group 0
+        deep_resp.group0_ost_id = 5'h05;  // 匹配 Group 0
+        deep_resp.group1_ost_id = 5'h06;  // Group 1 的 ost_id
         deep_resp.plane_pair_ondec_flag = 8'b0000_1111;  // PP[0:3] 失败
         deep_resp.plane_pair_lba_comp = 8'b0000_0000;
         deep_resp.plane_crc_err = 8'b0000_1111;          // PP[0:3] CRC 成功
@@ -242,8 +248,8 @@ module ondec2nsu_checker_tb;
         deep_resp.mode_sel = 1'b0;
         
         checker.deep_read_resp_fifo.write(deep_resp);
-        $display("Sent DEEP_READ_RESP: instr_idx=%0h, ost_id=%0h (matching Group0)", 
-            deep_resp.instruction_index, deep_resp.nsu_ost_id);
+        $display("Sent DEEP_READ_RESP: instr_idx=%0h, group0_ost_id=%0h (matching Group0)", 
+            deep_resp.instruction_index, deep_resp.group0_ost_id);
         
         #10;
         

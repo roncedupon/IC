@@ -12,8 +12,12 @@
 // Group 划分:
 //   - Group 0: plane_pair[0:3], ost_id = tr[0].nsu_ost_id
 //   - Group 1: plane_pair[4:7], ost_id = tr[4].nsu_ost_id
+//
+// nsu2cpu_deep_resp_transaction 字段:
+//   - group0_ost_id: Group 0 的 OST ID
+//   - group1_ost_id: Group 1 的 OST ID
 //=============================================================================
-
+typedef class nsu2offwbf_transaction;  // 前向声明 (避免循环依赖)
 package ondec2nsu_checker_pkg;
     
     //=========================================================================
@@ -52,7 +56,6 @@ package ondec2nsu_checker_pkg;
     } group_check_config_t;
 
 endpackage
-class nsu2offwbf_transaction;endclass
 `define CLASS_NAME_DEFINE ondec2nsu_checker
 
 //=============================================================================
@@ -82,7 +85,7 @@ class `CLASS_NAME_DEFINE extends uvm_component;
     // 待检查的配置跟踪表 (按 instruction_index 和 group_id 索引)
     //-------------------------------------------------------------------------
     bit [15:0] pending_instr_idx [$];
-    group_check_config_t pending_config [bit [15:0]][1:0];  // [instr_idx][group_id: 0或1]
+    group_check_config_t pending_config [bit [15:0]][1:0];  // [instr_idx][group_id: 0 或 1]
     
     //-------------------------------------------------------------------------
     // 统计计数器
@@ -288,7 +291,7 @@ endtask : check_ondec_cmd
 // 
 // 检查内容 (按 group 独立检查):
 // 1. instruction_index 匹配
-// 2. nsu_ost_id 匹配 (group 独立)
+// 2. group0_ost_id 或 group1_ost_id 匹配 (group 独立)
 // 3. plane_pair_ondec_flag[7:0] (与 dec_suc 比较)
 // 4. plane_crc_err[7:0] (与 crc_pass 比较)
 // 5. plane_pair_lba_comp[7:0] (LBA 比对)
@@ -300,13 +303,14 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
     string fail_reason;
     int matched_gid;
     int pp_idx;
+    logic [4:0] resp_ost_id;
     group_check_config_t cfg;
     forever begin
         deep_read_resp_fifo.get(resp);
         total_resp_count++;
         
-        `uvm_info(get_type_name(), $sformatf("Received DEEP_READ_RESP: instr_idx=%0h, ost_id=%0h, pp_ondec_flag=%08b, pp_crc_err=%08b", 
-            resp.instruction_index, resp.nsu_ost_id, resp.plane_pair_ondec_flag, resp.plane_crc_err), UVM_LOW)
+        `uvm_info(get_type_name(), $sformatf("Received DEEP_READ_RESP: instr_idx=%0h, pp_ondec_flag=%08b, pp_crc_err=%08b", 
+            resp.instruction_index, resp.plane_pair_ondec_flag, resp.plane_crc_err), UVM_LOW)
         
         // 查找匹配的期望配置
         if (pending_config.exists(resp.instruction_index)) begin
@@ -320,8 +324,15 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                 
                 if (!cfg.valid) continue;
                 
+                // 根据 group_id 获取 resp 中对应的 ost_id
+                if (gid == 0) begin
+                    resp_ost_id = resp.group0_ost_id;
+                end else begin
+                    resp_ost_id = resp.group1_ost_id;
+                end
+                
                 // 检查 ost_id 是否匹配 (group 独立的关键)
-                if (cfg.nsu_ost_id == resp.nsu_ost_id) begin
+                if (cfg.nsu_ost_id == resp_ost_id) begin
                     matched_gid = gid;
                     
                     `uvm_info(get_type_name(), $sformatf("  Matched Group%0d (ost_id=%0h)", 
@@ -374,7 +385,7 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
             // 更新统计 (按 group)
             if (matched_gid >= 0) begin
                 for (int pp = 0; pp < 4; pp++) begin
-                    int pp_idx = matched_gid * 4 + pp;
+                    pp_idx = matched_gid * 4 + pp;
                     if (!resp.plane_pair_ondec_flag[pp_idx]) begin
                         group_decode_success[matched_gid]++;
                     end else begin
@@ -393,7 +404,7 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
             if (status == CHECK_PASS) begin
                 pass_count++;
                 `uvm_info(get_type_name(), $sformatf("DEEP_READ_RESP CHECK PASS: instr_idx=%0h, Group%0d (ost_id=%0h)", 
-                    resp.instruction_index, matched_gid, resp.nsu_ost_id), UVM_LOW)
+                    resp.instruction_index, matched_gid, resp_ost_id), UVM_LOW)
             end else begin
                 fail_count++;
                 `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP CHECK FAIL: instr_idx=%0h, Group%0d, status=%0b, reason=%s", 
