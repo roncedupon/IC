@@ -2,7 +2,9 @@
 `define ONDEC2NSU_CHECKER_TB
 
 //=============================================================================
-// mychecker_tb.sv - 测试平台 (直接判断版本)
+// mychecker_tb.sv - 测试平台 (Group 独立处理版本)
+// Group 0: plane_pair[0:3], ost_id = tr[0].nsu_ost_id
+// Group 1: plane_pair[4:7], ost_id = tr[4].nsu_ost_id
 //=============================================================================
 
 module ondec2nsu_checker_tb;
@@ -54,10 +56,11 @@ module ondec2nsu_checker_tb;
         
         $display("");
         $display("========================================");
-        $display("TEST 1: All plane_pairs decode success");
+        $display("TEST 1: Both groups decode success");
+        $display("        Group0 (PP[0:3]) + Group1 (PP[4:7])");
         $display("========================================");
         
-        // 测试 1: 所有 plane_pair 译码成功 (不需要上报 deep_resp 或 offwbf)
+        // 测试 1: 两个 group 都译码成功 (不需要上报 deep_resp 或 offwbf)
         ondec_cmd = ondec2nsu_group_transaction::type_id::create("ondec_cmd1");
         for (int i = 0; i < 8; i++) begin
             ondec_cmd.tr[i].instruction_index = 16'h0001;
@@ -65,171 +68,197 @@ module ondec2nsu_checker_tb;
             ondec_cmd.tr[i].dec_suc = 1'b1;         // 译码成功
             ondec_cmd.tr[i].crc_pass = 1'b1;        // CRC 成功
             ondec_cmd.tr[i].data_out_en = 1'b1;     // 数据输出使能
-            ondec_cmd.tr[i].offline_wbf_work_en = 1'b0;
-            ondec_cmd.tr[i].deep_read_sel = 1'b0;
-            ondec_cmd.tr[i].read_mode = 1'b0;
-            ondec_cmd.tr[i].nsu_ost_id = 5'h01;
-            ondec_cmd.tr[i].dest_memory_addr = 32'h1000_0000;
         end
+        // Group 0: ost_id=0, Group 1: ost_id=0 (一致)
+        ondec_cmd.tr[0].nsu_ost_id = 5'h00;
+        ondec_cmd.tr[4].nsu_ost_id = 5'h00;
         
         checker.ondec_cmd_fifo.write(ondec_cmd);
-        $display("Sent ONDEC_GROUP: instr_idx=%0h, all 8 plane_pairs decode success (EXPECT: no action)", 
+        $display("Sent ONDEC_GROUP: instr_idx=%0h, all 8 plane_pairs decode success", 
             ondec_cmd.tr[0].instruction_index);
+        $display("  Group0 (PP[0:3]): ost_id=%0h, all decode success → No action", ondec_cmd.tr[0].nsu_ost_id);
+        $display("  Group1 (PP[4:7]): ost_id=%0h, all decode success → No action", ondec_cmd.tr[4].nsu_ost_id);
         
         #20;
         
         $display("");
         $display("========================================");
-        $display("TEST 2: Decode fail + CRC success + no data output");
-        $display("         → Expect DEEP_READ_RESP");
+        $display("TEST 2: Group0 need DEEP_READ_RESP");
+        $display("        Group0: decode_fail+crc_success+no_data");
+        $display("        Group1: decode_success");
         $display("========================================");
         
-        // 测试 2: 译码失败但 CRC 成功，数据不输出 → 需要上报 deep_resp
+        // 测试 2: Group0 需要 deep_resp, Group1 无需动作
         ondec_cmd = ondec2nsu_group_transaction::type_id::create("ondec_cmd2");
-        for (int i = 0; i < 8; i++) begin
+        // Group 0 (PP[0:3]): 译码失败但 CRC 成功，数据不输出 → deep_resp
+        for (int i = 0; i < 4; i++) begin
             ondec_cmd.tr[i].instruction_index = 16'h0002;
             ondec_cmd.tr[i].plane_sel = 1'b1;
             ondec_cmd.tr[i].dec_suc = 1'b0;         // 译码失败
             ondec_cmd.tr[i].crc_pass = 1'b1;        // CRC 成功
             ondec_cmd.tr[i].data_out_en = 1'b0;     // 数据不输出
-            ondec_cmd.tr[i].offline_wbf_work_en = 1'b0;
-            ondec_cmd.tr[i].deep_read_sel = 1'b1;   // deep read 使能
-            ondec_cmd.tr[i].read_mode = 1'b0;       // safe read
-            ondec_cmd.tr[i].nsu_ost_id = 5'h02;
-            ondec_cmd.tr[i].dest_memory_addr = 32'h2000_0000;
-            ondec_cmd.tr[i].dec_fail_dest_addr = 32'h2000_1000;
+            ondec_cmd.tr[i].deep_read_sel = 1'b1;
+            ondec_cmd.tr[i].read_mode = 1'b0;
         end
+        ondec_cmd.tr[0].nsu_ost_id = 5'h01;  // Group 0: ost_id=1
+        
+        // Group 1 (PP[4:7]): 译码成功 → 无需动作
+        for (int i = 4; i < 8; i++) begin
+            ondec_cmd.tr[i].instruction_index = 16'h0002;
+            ondec_cmd.tr[i].plane_sel = 1'b1;
+            ondec_cmd.tr[i].dec_suc = 1'b1;         // 译码成功
+            ondec_cmd.tr[i].crc_pass = 1'b1;
+            ondec_cmd.tr[i].data_out_en = 1'b1;
+        end
+        ondec_cmd.tr[4].nsu_ost_id = 5'h02;  // Group 1: ost_id=2 (独立)
         
         checker.ondec_cmd_fifo.write(ondec_cmd);
-        $display("Sent ONDEC_GROUP: instr_idx=%0h, decode fail + CRC success + no data output (EXPECT: DEEP_READ_RESP)", 
-            ondec_cmd.tr[0].instruction_index);
+        $display("Sent ONDEC_GROUP: instr_idx=%0h", ondec_cmd.tr[0].instruction_index);
+        $display("  Group0 (PP[0:3]): ost_id=%0h, decode_fail+crc_success+no_data → Expect DEEP_READ_RESP", ondec_cmd.tr[0].nsu_ost_id);
+        $display("  Group1 (PP[4:7]): ost_id=%0h, decode_success → No action", ondec_cmd.tr[4].nsu_ost_id);
         
         #10;
         
-        // 发送匹配的 deep_read_resp
+        // 发送匹配的 deep_read_resp (Group 0)
         deep_resp = nsu2cpu_deep_resp_transaction::type_id::create("deep_resp2");
         deep_resp.instruction_index = 16'h0002;
-        deep_resp.nsu_ost_id = 5'h02;
-        deep_resp.plane_pair_ondec_flag = 8'b1111_1111;  // 全部译码失败 (1=失败)
-        deep_resp.plane_pair_lba_comp = 8'b0000_0000;    // LBA 全部匹配
-        deep_resp.plane_crc_err = 8'b1111_1111;          // CRC 全部成功 (1=成功)
+        deep_resp.nsu_ost_id = 5'h01;  // 匹配 Group 0
+        deep_resp.plane_pair_ondec_flag = 8'b0000_1111;  // PP[0:3] 失败，PP[4:7] 成功
+        deep_resp.plane_pair_lba_comp = 8'b0000_0000;
+        deep_resp.plane_crc_err = 8'b0000_1111;          // PP[0:3] CRC 成功
         deep_resp.deep_read_sel = 1'b1;
         deep_resp.mode_sel = 1'b0;
         
         checker.deep_read_resp_fifo.write(deep_resp);
-        $display("Sent DEEP_READ_RESP: instr_idx=%0h, pp_ondec_flag=%08b (all fail), pp_crc_err=%08b (all success) (EXPECT PASS)", 
-            deep_resp.instruction_index, deep_resp.plane_pair_ondec_flag, deep_resp.plane_crc_err);
+        $display("Sent DEEP_READ_RESP: instr_idx=%0h, ost_id=%0h (matching Group0)", 
+            deep_resp.instruction_index, deep_resp.nsu_ost_id);
+        $display("  pp_ondec_flag=%08b (PP[0:3]=1=fail), pp_crc_err=%08b (PP[0:3]=1=success)", 
+            deep_resp.plane_pair_ondec_flag, deep_resp.plane_crc_err);
         
         #20;
         
         $display("");
         $display("========================================");
-        $display("TEST 3: Decode fail + CRC success + data output");
-        $display("         → Expect OFFWBF_CMD");
+        $display("TEST 3: Group1 need OFFWBF_CMD");
+        $display("        Group0: decode_success");
+        $display("        Group1: decode_fail+crc_success+data");
         $display("========================================");
         
-        // 测试 3: 译码失败但 CRC 成功，数据输出 → 需要调用 offwbf
+        // 测试 3: Group1 需要 offwbf, Group0 无需动作
         ondec_cmd = ondec2nsu_group_transaction::type_id::create("ondec_cmd3");
-        for (int i = 0; i < 8; i++) begin
+        // Group 0 (PP[0:3]): 译码成功 → 无需动作
+        for (int i = 0; i < 4; i++) begin
+            ondec_cmd.tr[i].instruction_index = 16'h0003;
+            ondec_cmd.tr[i].plane_sel = 1'b1;
+            ondec_cmd.tr[i].dec_suc = 1'b1;
+            ondec_cmd.tr[i].crc_pass = 1'b1;
+            ondec_cmd.tr[i].data_out_en = 1'b1;
+        end
+        ondec_cmd.tr[0].nsu_ost_id = 5'h03;  // Group 0: ost_id=3
+        
+        // Group 1 (PP[4:7]): 译码失败但 CRC 成功，数据输出 → offwbf
+        for (int i = 4; i < 8; i++) begin
             ondec_cmd.tr[i].instruction_index = 16'h0003;
             ondec_cmd.tr[i].plane_sel = 1'b1;
             ondec_cmd.tr[i].dec_suc = 1'b0;         // 译码失败
             ondec_cmd.tr[i].crc_pass = 1'b1;        // CRC 成功
             ondec_cmd.tr[i].data_out_en = 1'b1;     // 数据输出
-            ondec_cmd.tr[i].offline_wbf_work_en = 1'b1;  // offwbf 使能
-            ondec_cmd.tr[i].deep_read_sel = 1'b0;
+            ondec_cmd.tr[i].offline_wbf_work_en = 1'b1;
             ondec_cmd.tr[i].read_mode = 1'b0;       // safe read
-            ondec_cmd.tr[i].nsu_ost_id = 5'h03;
-            ondec_cmd.tr[i].dest_memory_addr = 32'h3000_0000;
-            ondec_cmd.tr[i].dec_fail_dest_addr = 32'h3000_1000;
         end
+        ondec_cmd.tr[4].nsu_ost_id = 5'h04;  // Group 1: ost_id=4 (独立)
         
         checker.ondec_cmd_fifo.write(ondec_cmd);
-        $display("Sent ONDEC_GROUP: instr_idx=%0h, decode fail + CRC success + data output (EXPECT: OFFWBF_CMD)", 
-            ondec_cmd.tr[0].instruction_index);
+        $display("Sent ONDEC_GROUP: instr_idx=%0h", ondec_cmd.tr[0].instruction_index);
+        $display("  Group0 (PP[0:3]): ost_id=%0h, decode_success → No action", ondec_cmd.tr[0].nsu_ost_id);
+        $display("  Group1 (PP[4:7]): ost_id=%0h, decode_fail+crc_success+data → Expect OFFWBF_CMD", ondec_cmd.tr[4].nsu_ost_id);
         
         #10;
         
-        // 发送匹配的 offwbf_cmd
+        // 发送匹配的 offwbf_cmd (Group 1)
         offwbf_tr = nsu2offwbf_transaction::type_id::create("offwbf_tr3");
         offwbf_tr.instruction_index = 16'h0003;
-        offwbf_tr.nsu_ost_id = 5'h03;
-        offwbf_tr.src_mem_addr = 32'h3000_0000;      // 与 dest_memory_addr 匹配
+        offwbf_tr.nsu_ost_id = 5'h04;  // 匹配 Group 1
+        offwbf_tr.src_mem_addr = 32'h3000_0000;
         offwbf_tr.dec_fail_dest_addr = 32'h3000_1000;
         offwbf_tr.offwbf_start = 1'b1;
         offwbf_tr.read_mode = 1'b0;
         
         checker.offwbf_cmd_fifo.write(offwbf_tr);
-        $display("Sent OFFWBF_CMD: instr_idx=%0h, src_addr=%0h, offwbf_start=1 (EXPECT PASS)", 
-            offwbf_tr.instruction_index, offwbf_tr.src_mem_addr);
+        $display("Sent OFFWBF_CMD: instr_idx=%0h, ost_id=%0h (matching Group1)", 
+            offwbf_tr.instruction_index, offwbf_tr.nsu_ost_id);
+        $display("  src_addr=%0h, offwbf_start=1", offwbf_tr.src_mem_addr);
         
         #20;
         
         $display("");
         $display("========================================");
-        $display("TEST 4: Mixed scenario");
-        $display("         PP[0,2,4,6]: decode fail + no data output → DEEP_READ_RESP");
-        $display("         PP[1,3,5,7]: decode fail + data output → OFFWBF_CMD");
+        $display("TEST 4: Both groups need different actions");
+        $display("        Group0: DEEP_READ_RESP (ost_id=5)");
+        $display("        Group1: OFFWBF_CMD (ost_id=6)");
         $display("========================================");
         
-        // 测试 4: 混合场景
+        // 测试 4: 两个 group 需要不同的响应
         ondec_cmd = ondec2nsu_group_transaction::type_id::create("ondec_cmd4");
-        for (int i = 0; i < 8; i++) begin
+        // Group 0 (PP[0:3]): 译码失败但 CRC 成功，数据不输出 → deep_resp
+        for (int i = 0; i < 4; i++) begin
             ondec_cmd.tr[i].instruction_index = 16'h0004;
             ondec_cmd.tr[i].plane_sel = 1'b1;
-            ondec_cmd.tr[i].dec_suc = 1'b0;         // 全部译码失败
-            ondec_cmd.tr[i].crc_pass = 1'b1;        // 全部 CRC 成功
-            ondec_cmd.tr[i].nsu_ost_id = 5'h04;
-            ondec_cmd.tr[i].dest_memory_addr = 32'h4000_0000;
-            ondec_cmd.tr[i].dec_fail_dest_addr = 32'h4000_1000;
+            ondec_cmd.tr[i].dec_suc = 1'b0;
+            ondec_cmd.tr[i].crc_pass = 1'b1;
+            ondec_cmd.tr[i].data_out_en = 1'b0;
+            ondec_cmd.tr[i].deep_read_sel = 1'b1;
             ondec_cmd.tr[i].read_mode = 1'b0;
-            
-            // 偶数 plane_pair: 数据不输出 → deep_resp
-            if (i inside {[0,2,4,6]}) begin
-                ondec_cmd.tr[i].data_out_en = 1'b0;
-                ondec_cmd.tr[i].offline_wbf_work_en = 1'b0;
-                ondec_cmd.tr[i].deep_read_sel = 1'b1;
-            end
-            // 奇数 plane_pair: 数据输出 → offwbf
-            else begin
-                ondec_cmd.tr[i].data_out_en = 1'b1;
-                ondec_cmd.tr[i].offline_wbf_work_en = 1'b1;
-                ondec_cmd.tr[i].deep_read_sel = 1'b0;
-            end
         end
+        ondec_cmd.tr[0].nsu_ost_id = 5'h05;  // Group 0: ost_id=5
+        
+        // Group 1 (PP[4:7]): 译码失败但 CRC 成功，数据输出 → offwbf
+        for (int i = 4; i < 8; i++) begin
+            ondec_cmd.tr[i].instruction_index = 16'h0004;
+            ondec_cmd.tr[i].plane_sel = 1'b1;
+            ondec_cmd.tr[i].dec_suc = 1'b0;
+            ondec_cmd.tr[i].crc_pass = 1'b1;
+            ondec_cmd.tr[i].data_out_en = 1'b1;
+            ondec_cmd.tr[i].offline_wbf_work_en = 1'b1;
+            ondec_cmd.tr[i].read_mode = 1'b0;
+        end
+        ondec_cmd.tr[4].nsu_ost_id = 5'h06;  // Group 1: ost_id=6 (独立)
         
         checker.ondec_cmd_fifo.write(ondec_cmd);
-        $display("Sent ONDEC_GROUP: instr_idx=%0h, mixed scenario", 
-            ondec_cmd.tr[0].instruction_index);
+        $display("Sent ONDEC_GROUP: instr_idx=%0h", ondec_cmd.tr[0].instruction_index);
+        $display("  Group0 (PP[0:3]): ost_id=%0h → Expect DEEP_READ_RESP", ondec_cmd.tr[0].nsu_ost_id);
+        $display("  Group1 (PP[4:7]): ost_id=%0h → Expect OFFWBF_CMD", ondec_cmd.tr[4].nsu_ost_id);
         
         #10;
         
-        // 发送 deep_read_resp (检查偶数 plane_pair)
+        // 发送 deep_read_resp (Group 0)
         deep_resp = nsu2cpu_deep_resp_transaction::type_id::create("deep_resp4");
         deep_resp.instruction_index = 16'h0004;
-        deep_resp.nsu_ost_id = 5'h04;
-        deep_resp.plane_pair_ondec_flag = 8'b1111_1111;  // 全部失败
+        deep_resp.nsu_ost_id = 5'h05;  // 匹配 Group 0
+        deep_resp.plane_pair_ondec_flag = 8'b0000_1111;  // PP[0:3] 失败
         deep_resp.plane_pair_lba_comp = 8'b0000_0000;
-        deep_resp.plane_crc_err = 8'b1111_1111;
+        deep_resp.plane_crc_err = 8'b0000_1111;          // PP[0:3] CRC 成功
         deep_resp.deep_read_sel = 1'b1;
         deep_resp.mode_sel = 1'b0;
         
         checker.deep_read_resp_fifo.write(deep_resp);
-        $display("Sent DEEP_READ_RESP: instr_idx=%0h (checking PP[0,2,4,6])", deep_resp.instruction_index);
+        $display("Sent DEEP_READ_RESP: instr_idx=%0h, ost_id=%0h (matching Group0)", 
+            deep_resp.instruction_index, deep_resp.nsu_ost_id);
         
         #10;
         
-        // 发送 offwbf_cmd (检查奇数 plane_pair)
+        // 发送 offwbf_cmd (Group 1)
         offwbf_tr = nsu2offwbf_transaction::type_id::create("offwbf_tr4");
         offwbf_tr.instruction_index = 16'h0004;
-        offwbf_tr.nsu_ost_id = 5'h04;
+        offwbf_tr.nsu_ost_id = 5'h06;  // 匹配 Group 1
         offwbf_tr.src_mem_addr = 32'h4000_0000;
         offwbf_tr.dec_fail_dest_addr = 32'h4000_1000;
         offwbf_tr.offwbf_start = 1'b1;
         offwbf_tr.read_mode = 1'b0;
         
         checker.offwbf_cmd_fifo.write(offwbf_tr);
-        $display("Sent OFFWBF_CMD: instr_idx=%0h (checking PP[1,3,5,7])", offwbf_tr.instruction_index);
+        $display("Sent OFFWBF_CMD: instr_idx=%0h, ost_id=%0h (matching Group1)", 
+            offwbf_tr.instruction_index, offwbf_tr.nsu_ost_id);
         
         #20;
     endtask : run_test
@@ -258,13 +287,14 @@ module ondec2nsu_checker_tb;
         $display("========================================");
         
         $display("");
-        $display("Plane Pair Statistics:");
-        for (int pp = 0; pp < 8; pp++) begin
-            $display("  PP[%0d]: decode_success=%0d, decode_fail=%0d, crc_err=%0d, lba_mismatch=%0d",
-                pp, checker.plane_pair_decode_success[pp], 
-                checker.plane_pair_decode_fail[pp],
-                checker.plane_pair_crc_err[pp],
-                checker.plane_pair_lba_mismatch[pp]);
+        $display("Group Statistics (INDEPENDENT):");
+        for (int gid = 0; gid < 2; gid++) begin
+            $display("  Group%0d (PP[%0d:%0d]):", gid, gid*4, gid*4+3);
+            $display("    decode_success=%0d, decode_fail=%0d, crc_err=%0d, lba_mismatch=%0d",
+                checker.group_decode_success[gid], 
+                checker.group_decode_fail[gid],
+                checker.group_crc_err[gid],
+                checker.group_lba_mismatch[gid]);
         end
         
         $display("");

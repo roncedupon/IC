@@ -1,44 +1,55 @@
-# ONDEC2NSU Checker - 直接判断版本
+# ONDEC2NSU Checker - Group 独立处理版本
 
 ## 概述
 
-根据 `ondec2nsu_group_transaction` 的位域直接判断 NSU 的行为，并检查相应的响应。
+根据 `ondec2nsu_group_transaction` 的位域，**按 group 独立判断** NSU 的行为，并检查相应的响应。
 
-**三步检查流程**：
-1. 获取 `ondec2nsu_group_transaction` (8 个 plane_pair)
-2. 根据位域直接判断：译码失败→检查 deep_resp 或 offwbf
-3. 从对应队列中找到匹配的 transaction 进行比较
+**关键特性**：
+- 8 个 plane_pair 分成 **2 个独立的 group**
+- **Group 0**: plane_pair[0:3], ost_id = tr[0].nsu_ost_id
+- **Group 1**: plane_pair[4:7], ost_id = tr[4].nsu_ost_id
+- 每个 group 有 **独立的 ost_id**，需要独立处理和检查
 
-## 判断逻辑
+## Group 划分
+
+```
+ondec2nsu_group_transaction (8 plane_pairs)
+├── Group 0: plane_pair[0:3]
+│   └── ost_id = tr[0].nsu_ost_id (独立)
+└── Group 1: plane_pair[4:7]
+    └── ost_id = tr[4].nsu_ost_id (独立)
+```
+
+**重要约束**：
+- 两个 group 的 `ost_id` 可以不同（独立）
+- 每个 group 独立判断需要什么响应（deep_resp 或 offwbf）
+- 检查时通过 `ost_id` 匹配对应的 group
+
+## 判断逻辑 (按 group 独立)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ ondec2nsu_group_transaction (8 plane_pairs)                     │
-│   foreach plane_pair:                                           │
-│     - plane_sel                                                 │
-│     - dec_suc                                                   │
-│     - crc_pass                                                  │
-│     - data_out_en                                               │
-│     - offline_wbf_work_en                                       │
+│ ondec2nsu_group_transaction (8 plane_pairs = 2 groups)          │
+│   Group 0: PP[0:3], ost_id = tr[0].nsu_ost_id                   │
+│   Group 1: PP[4:7], ost_id = tr[4].nsu_ost_id                   │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ 判断逻辑 (每个 plane_pair 独立)                                   │
+│ 对每个 group 独立判断 (遍历 group 内 4 个 plane_pair)               │
 ├─────────────────────────────────────────────────────────────────┤
-│ dec_suc=1                    → 译码成功，无需上报                │
-│ dec_suc=0 && crc_pass=0      → 译码失败+CRC 失败，无需上报        │
-│ dec_suc=0 && crc_pass=1      → 译码失败+CRC 成功                 │
-│   && data_out_en=0           → 数据不输出 → 上报 DEEP_READ_RESP  │
-│ dec_suc=0 && crc_pass=1      → 译码失败+CRC 成功                 │
-│   && data_out_en=1           → 数据输出 → 调用 OFFWBF            │
+│ 遍历 group 内 4 个 plane_pair:                                    │
+│   if (dec_suc=0 && crc_pass=1 && data_out_en=0)                 │
+│     → 该 group 需要上报 DEEP_READ_RESP                           │
+│   if (dec_suc=0 && crc_pass=1 && data_out_en=1)                 │
+│     → 该 group 需要调用 OFFWBF                                   │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ 检查对应响应                                                     │
-│   - DEEP_READ_RESP: 检查 plane_pair_ondec_flag, plane_crc_err   │
-│   - OFFWBF_CMD: 检查 src_mem_addr, dec_fail_dest_addr           │
+│ 检查对应响应 (通过 ost_id 匹配 group)                              │
+│   - DEEP_READ_RESP: ost_id 匹配 → 检查 plane_pair[4*gid:4*gid+3] │
+│   - OFFWBF_CMD: ost_id 匹配 → 检查地址等字段                      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -48,54 +59,13 @@
 mychecker/
 ├── nsu_cpu_transactions.sv          # Transaction 定义 (依赖)
 ├── ondec2nsu_transaction.sv         # ondec2nsu_group_transaction 定义
-├── offwbf2nsu_transation.sv         # nsu2offwbf_transaction 定义 (新增)
-├── mychecker.sv                     # Checker 主文件 (重写)
-├── mychecker_tb.sv                  # 测试平台 (更新)
+├── offwbf2nsu_transation.sv         # nsu2offwbf_transaction 定义
+├── mychecker.sv                     # Checker 主文件 (Group 独立处理)
+├── mychecker_tb.sv                  # 测试平台 (Group 独立测试)
 └── README.md                        # 本文档
 ```
 
-## 关键位域说明
-
-### ondec2nsu_transaction 关键字段
-
-| 字段 | 位宽 | 说明 |
-|------|------|------|
-| `plane_sel` | 1 | plane 选择 (1=选中) |
-| `dec_suc` | 1 | 译码成功 (1=成功) |
-| `crc_pass` | 1 | CRC 通过 (1=通过) |
-| `data_out_en` | 1 | 数据输出使能 (1=使能) |
-| `offline_wbf_work_en` | 1 | offwbf 使能 (1=使能) |
-| `deep_read_sel` | 1 | deep read 选择 (1=使能) |
-| `read_mode` | 1 | 读模式 (0=safe, 1=fast) |
-| `instruction_index` | 16 | 指令索引 (用于匹配) |
-| `nsu_ost_id` | 5 | OST ID |
-| `dest_memory_addr` | 32 | 目标内存地址 |
-| `dec_fail_dest_addr` | 32 | 译码失败目标地址 |
-
-### nsu2cpu_deep_resp_transaction 关键字段
-
-| 字段 | 位宽 | 说明 |
-|------|------|------|
-| `instruction_index` | 16 | 指令索引 |
-| `nsu_ost_id` | 5 | OST ID |
-| `plane_pair_ondec_flag[7:0]` | 8 | plane_pair 译码标志 (0=成功，1=失败) |
-| `plane_pair_lba_comp[7:0]` | 8 | LBA 比对 (0=匹配，1=不匹配) |
-| `plane_crc_err[7:0]` | 8 | CRC 错误 (0=失败，1=成功) |
-| `deep_read_sel` | 1 | deep read 选择 |
-| `mode_sel` | 1 | 模式选择 (0=safe, 1=fast) |
-
-### nsu2offwbf_transaction 关键字段
-
-| 字段 | 位宽 | 说明 |
-|------|------|------|
-| `instruction_index` | 16 | 指令索引 |
-| `nsu_ost_id` | 5 | OST ID |
-| `src_mem_addr` | 32 | 源内存地址 (从 dest_memory_addr 来) |
-| `dec_fail_dest_addr` | 32 | 译码失败目标地址 |
-| `offwbf_start` | 1 | offwbf 启动标志 |
-| `read_mode` | 1 | 读模式 (offwbf 只在 safe read 下调用) |
-
-## 检查流程详解
+## 三步检查流程
 
 ### 第一步：获取 ondec2nsu_group_transaction
 
@@ -106,41 +76,47 @@ task check_ondec_cmd();
     forever begin
         ondec_cmd_fifo.get(group_tr);
         
-        // 遍历 8 个 plane_pair
-        for (int pp = 0; pp < 8; pp++) begin
-            // 提取关键字段
-            pp_cfg.plane_sel = group_tr.tr[pp].plane_sel;
-            pp_cfg.dec_suc = group_tr.tr[pp].dec_suc;
-            pp_cfg.crc_pass = group_tr.tr[pp].crc_pass;
-            pp_cfg.data_out_en = group_tr.tr[pp].data_out_en;
+        // 按 group 处理 (Group 0: PP[0:3], Group 1: PP[4:7])
+        for (int gid = 0; gid < 2; gid++) begin
+            int pp_base = gid * 4;
+            
+            // 提取 group 配置
+            grp_cfg.nsu_ost_id = group_tr.tr[pp_base].nsu_ost_id;
+            for (int pp = 0; pp < 4; pp++) begin
+                grp_cfg.dec_suc[pp] = group_tr.tr[pp_base + pp].dec_suc;
+                grp_cfg.crc_pass[pp] = group_tr.tr[pp_base + pp].crc_pass;
+                grp_cfg.data_out_en[pp] = group_tr.tr[pp_base + pp].data_out_en;
+            end
             
             // 注册期望配置
-            pending_config[instruction_index][pp] = pp_cfg;
+            pending_config[instruction_index][gid] = grp_cfg;
         end
     end
 endtask
 ```
 
-### 第二步：判断逻辑 (每个 plane_pair 独立)
+### 第二步：按 group 判断
 
 ```systemverilog
-// 判断逻辑
-if (pp_cfg.dec_suc) begin
-    // 译码成功：不需要上报
-    `uvm_info(..., "Decode success, no action needed", UVM_HIGH)
-end else if (!pp_cfg.crc_pass) begin
-    // 译码失败且 CRC 失败：不需要上报
-    `uvm_info(..., "Decode fail + CRC fail, no action needed", UVM_HIGH)
-end else if (!pp_cfg.data_out_en) begin
-    // 译码失败但 CRC 成功，数据不输出 → 上报 deep_resp
-    `uvm_info(..., "Expect DEEP_READ_RESP", UVM_LOW)
-end else begin
-    // 译码失败但 CRC 成功，数据输出 → 调用 offwbf
-    `uvm_info(..., "Expect OFFWBF_CMD", UVM_LOW)
+// 对每个 group 独立判断
+for (int gid = 0; gid < 2; gid++) begin
+    logic group_need_deep_resp = 1'b0;
+    logic group_need_offwbf = 1'b0;
+    
+    // 遍历 group 内 4 个 plane_pair
+    for (int pp = 0; pp < 4; pp++) begin
+        if (!grp_cfg.dec_suc[pp] && grp_cfg.crc_pass[pp]) begin
+            if (!grp_cfg.data_out_en[pp]) begin
+                group_need_deep_resp = 1'b1;  // 该 group 需要 deep_resp
+            end else begin
+                group_need_offwbf = 1'b1;     // 该 group 需要 offwbf
+            end
+        end
+    end
 end
 ```
 
-### 第三步：检查 deep_read_resp
+### 第三步：检查响应 (通过 ost_id 匹配 group)
 
 ```systemverilog
 task check_deep_read_resp();
@@ -149,27 +125,22 @@ task check_deep_read_resp();
     forever begin
         deep_read_resp_fifo.get(resp);
         
-        // 查找匹配的期望配置
-        if (pending_config.exists(resp.instruction_index)) begin
-            for (int pp = 0; pp < 8; pp++) begin
-                cfg = pending_config[resp.instruction_index][pp];
+        // 遍历 2 个 group，通过 ost_id 匹配
+        for (int gid = 0; gid < 2; gid++) begin
+            cfg = pending_config[resp.instruction_index][gid];
+            
+            if (cfg.nsu_ost_id == resp.nsu_ost_id) begin
+                // 找到匹配的 group
+                matched_gid = gid;
                 
-                // 只检查期望上报 deep_resp 的 plane_pair
-                if (!cfg.dec_suc && cfg.crc_pass && !cfg.data_out_en) begin
-                    // 检查译码状态
-                    if (cfg.dec_suc != !resp.plane_pair_ondec_flag[pp]) begin
+                // 检查该 group 的 4 个 plane_pair
+                for (int pp = 0; pp < 4; pp++) begin
+                    int pp_idx = gid * 4 + pp;  // 全局 plane_pair 索引
+                    
+                    // 检查译码状态、CRC 状态等
+                    if (cfg.dec_suc[pp] != !resp.plane_pair_ondec_flag[pp_idx]) begin
                         status = CHECK_FAIL_DECODE;
                     end
-                    
-                    // 检查 CRC 状态
-                    if (cfg.crc_pass != resp.plane_crc_err[pp]) begin
-                        status = CHECK_FAIL_CRC;
-                    end
-                    
-                    // 检查 OST ID
-                    if (cfg.nsu_ost_id != resp.nsu_ost_id) begin
-                        status = CHECK_FAIL_OST_ID;
-                    end
                 end
             end
         end
@@ -177,80 +148,120 @@ task check_deep_read_resp();
 endtask
 ```
 
-### 第四步：检查 offwbf_cmd
+## 关键数据结构
+
+### group_check_config_t
 
 ```systemverilog
-task check_offwbf_cmd();
-    nsu2offwbf_transaction offwbf_tr;
-    
-    forever begin
-        offwbf_cmd_fifo.get(offwbf_tr);
-        
-        // 查找匹配的期望配置
-        if (pending_config.exists(offwbf_tr.instruction_index)) begin
-            for (int pp = 0; pp < 8; pp++) begin
-                cfg = pending_config[offwbf_tr.instruction_index][pp];
-                
-                // 只检查期望调用 offwbf 的 plane_pair
-                if (!cfg.dec_suc && cfg.crc_pass && cfg.data_out_en) begin
-                    // 检查 OST ID
-                    if (cfg.nsu_ost_id != offwbf_tr.nsu_ost_id) begin
-                        status = CHECK_FAIL_OST_ID;
-                    end
-                    
-                    // 检查源地址
-                    if (cfg.dest_memory_addr != offwbf_tr.src_mem_addr) begin
-                        status = CHECK_FAIL_DATA;
-                    end
-                    
-                    // 检查 offwbf_start
-                    if (!offwbf_tr.offwbf_start) begin
-                        status = CHECK_FAIL_DATA;
-                    end
-                end
-            end
-        end
-    end
-endtask
+typedef struct packed {
+    logic        valid;
+    logic [15:0] instruction_index;
+    logic [4:0]  nsu_ost_id;               // Group 独立的 OST ID
+    logic [3:0]  plane_sel;                // 4 个 plane_pair 选择
+    logic [3:0]  dec_suc;                  // 4 个 plane_pair 译码成功
+    logic [3:0]  crc_pass;                 // 4 个 plane_pair CRC 通过
+    logic [3:0]  data_out_en;              // 4 个 plane_pair 数据输出使能
+    logic [3:0]  offline_wbf_work_en;      // 4 个 plane_pair offwbf 使能
+    logic        deep_read_sel;            // deep read 选择 (group 内一致)
+    logic        read_mode;                // 读模式 (group 内一致)
+    logic [31:0] dest_memory_addr;
+    logic [31:0] dec_fail_dest_addr;
+} group_check_config_t;
 ```
+
+### pending_config 索引
+
+```systemverilog
+group_check_config_t pending_config [bit [15:0]][1:0];  // [instr_idx][group_id]
+```
+
+- `pending_config[instr_idx][0]`: Group 0 (PP[0:3]) 的配置
+- `pending_config[instr_idx][1]`: Group 1 (PP[4:7]) 的配置
 
 ## 测试用例
 
-### TEST 1: 所有 plane_pair 译码成功
+### TEST 1: 两个 group 都译码成功
 
 ```
-ONDEC_GROUP:  instr_idx=0x0001, 8 plane_pairs (dec_suc=1, crc_pass=1)
-判断结果：    无需上报 deep_resp 或 offwbf
-期望行为：    无
+ONDEC_GROUP:  instr_idx=0x0001
+  Group0 (PP[0:3]): ost_id=0, all decode_success → No action
+  Group1 (PP[4:7]): ost_id=0, all decode_success → No action
+期望行为：    无需上报 deep_resp 或 offwbf
 ```
 
-### TEST 2: 译码失败 + CRC 成功 + 数据不输出
+### TEST 2: Group0 需要 deep_resp
 
 ```
-ONDEC_GROUP:  instr_idx=0x0002, 8 plane_pairs (dec_suc=0, crc_pass=1, data_out_en=0)
-判断结果：    需要上报 DEEP_READ_RESP
-期望响应：    plane_pair_ondec_flag=0xFF (全部失败)
-             plane_crc_err=0xFF (全部成功)
+ONDEC_GROUP:  instr_idx=0x0002
+  Group0 (PP[0:3]): ost_id=1, decode_fail+crc_success+no_data → DEEP_READ_RESP
+  Group1 (PP[4:7]): ost_id=2, decode_success → No action
+期望响应：    DEEP_READ_RESP (ost_id=1, pp_ondec_flag[3:0]=1111)
 检查结果：    PASS ✓
 ```
 
-### TEST 3: 译码失败 + CRC 成功 + 数据输出
+### TEST 3: Group1 需要 offwbf
 
 ```
-ONDEC_GROUP:  instr_idx=0x0003, 8 plane_pairs (dec_suc=0, crc_pass=1, data_out_en=1)
-判断结果：    需要调用 OFFWBF
-期望响应：    src_mem_addr = dest_memory_addr
-             offwbf_start = 1
+ONDEC_GROUP:  instr_idx=0x0003
+  Group0 (PP[0:3]): ost_id=3, decode_success → No action
+  Group1 (PP[4:7]): ost_id=4, decode_fail+crc_success+data → OFFWBF_CMD
+期望响应：    OFFWBF_CMD (ost_id=4, src_addr=dest_memory_addr)
 检查结果：    PASS ✓
 ```
 
-### TEST 4: 混合场景
+### TEST 4: 两个 group 需要不同的响应
 
 ```
 ONDEC_GROUP:  instr_idx=0x0004
-             PP[0,2,4,6]: dec_suc=0, crc_pass=1, data_out_en=0 → DEEP_READ_RESP
-             PP[1,3,5,7]: dec_suc=0, crc_pass=1, data_out_en=1 → OFFWBF_CMD
+  Group0 (PP[0:3]): ost_id=5 → DEEP_READ_RESP
+  Group1 (PP[4:7]): ost_id=6 → OFFWBF_CMD
+期望响应：    DEEP_READ_RESP (ost_id=5) + OFFWBF_CMD (ost_id=6)
 检查结果：    PASS ✓ (两者都通过)
+```
+
+## Group 独立处理的关键点
+
+### 1. ost_id 独立
+
+```systemverilog
+// Group 0 和 Group 1 可以有独立的 ost_id
+ondec_cmd.tr[0].nsu_ost_id = 5'h01;  // Group 0: ost_id=1
+ondec_cmd.tr[4].nsu_ost_id = 5'h02;  // Group 1: ost_id=2 (独立)
+```
+
+### 2. 判断逻辑独立
+
+```systemverilog
+// 每个 group 独立判断需要什么响应
+for (int gid = 0; gid < 2; gid++) begin
+    // Group 0 和 Group 1 的判断互不影响
+    if (group_need_deep_resp) begin
+        // 该 group 需要 deep_resp
+    end
+    if (group_need_offwbf) begin
+        // 该 group 需要 offwbf
+    end
+end
+```
+
+### 3. 检查时通过 ost_id 匹配
+
+```systemverilog
+// 通过 ost_id 找到匹配的 group
+for (int gid = 0; gid < 2; gid++) begin
+    if (cfg.nsu_ost_id == resp.nsu_ost_id) begin
+        matched_gid = gid;  // 找到匹配的 group
+        // 检查该 group 的 plane_pair
+    end
+end
+```
+
+### 4. 统计独立
+
+```systemverilog
+int unsigned group_decode_success [1:0];  // Group 0 和 Group 1 独立统计
+int unsigned group_decode_fail [1:0];
+int unsigned group_crc_err [1:0];
 ```
 
 ## 检查状态码
@@ -262,28 +273,20 @@ ONDEC_GROUP:  instr_idx=0x0004
 | `CHECK_FAIL_CRC` | 3'b110 | CRC 状态不匹配 |
 | `CHECK_FAIL_OST_ID` | 3'b010 | OST ID 不匹配 |
 | `CHECK_FAIL_DATA` | 3'b001 | 数据不匹配 (地址、标志等) |
-| `CHECK_FAIL_INSTR_IDX` | 3'b011 | instruction_index 不匹配 |
-| `CHECK_FAIL_LBA` | 3'b101 | LBA 比对错误 |
-| `CHECK_INVALID_RESP` | 3'b111 | 无效的响应 |
 
 ## 使用方法
 
-### 1. 编译顺序
+### 编译顺序
 
 ```systemverilog
-// 1. 先编译依赖
 `include "nsu_cpu_transactions.sv"
 `include "ondec2nsu_transaction.sv"
 `include "offwbf2nsu_transation.sv"
-
-// 2. 再编译 checker
 `include "mychecker.sv"
-
-// 3. 编译测试平台
 `include "mychecker_tb.sv"
 ```
 
-### 2. 实例化 Checker
+### 实例化
 
 ```systemverilog
 import nsu_cpu_transactions_pkg::*;
@@ -303,7 +306,7 @@ initial begin
 end
 ```
 
-### 3. 连接 FIFO
+### 连接 FIFO
 
 ```systemverilog
 // ondec_cmd FIFO - 输入 (ondec2nsu_group_transaction)
@@ -316,55 +319,20 @@ dut.deep_read_resp_port.connect(checker.deep_read_resp_fifo.analysis_export);
 dut.offwbf_cmd_port.connect(checker.offwbf_cmd_fifo.analysis_export);
 ```
 
-### 4. 发送测试数据
-
-```systemverilog
-// 1. 发送 ondec2nsu_group_transaction
-ondec2nsu_group_transaction ondec_cmd;
-ondec_cmd = ondec2nsu_group_transaction::type_id::create("ondec_cmd");
-for (int i = 0; i < 8; i++) begin
-    ondec_cmd.tr[i].instruction_index = 16'h0001;
-    ondec_cmd.tr[i].plane_sel = 1'b1;
-    ondec_cmd.tr[i].dec_suc = 1'b0;     // 译码失败
-    ondec_cmd.tr[i].crc_pass = 1'b1;    // CRC 成功
-    ondec_cmd.tr[i].data_out_en = 1'b0; // 数据不输出
-end
-
-checker.ondec_cmd_fifo.write(ondec_cmd);
-
-// 2a. 发送 deep_read_resp (如果 data_out_en=0)
-nsu2cpu_deep_resp_transaction resp;
-resp = nsu2cpu_deep_resp_transaction::type_id::create("resp");
-resp.instruction_index = 16'h0001;
-resp.plane_pair_ondec_flag = 8'b1111_1111;  // 全部失败
-resp.plane_crc_err = 8'b1111_1111;          // 全部成功
-
-checker.deep_read_resp_fifo.write(resp);
-
-// 2b. 发送 offwbf_cmd (如果 data_out_en=1)
-nsu2offwbf_transaction offwbf_tr;
-offwbf_tr = nsu2offwbf_transaction::type_id::create("offwbf_tr");
-offwbf_tr.instruction_index = 16'h0001;
-offwbf_tr.src_mem_addr = 32'h1000_0000;
-offwbf_tr.offwbf_start = 1'b1;
-
-checker.offwbf_cmd_fifo.write(offwbf_tr);
-```
-
 ## 关键特性
 
-1. **直接判断**: 移除 `expected_resp_config_t`，直接根据 `ondec2nsu_group_transaction` 的位域判断
-2. **8 个 plane_pair 独立**: 每个 plane_pair 独立判断和检查
+1. **Group 独立处理**: 8 个 plane_pair 分成 2 个 group，每个 group 独立判断和检查
+2. **ost_id 匹配**: 通过 ost_id 匹配对应的 group，支持两个 group 有不同的 ost_id
 3. **三路检查**: deep_read_resp 和 offwbf_cmd 并行检查
-4. **智能匹配**: 根据 `dec_suc`, `crc_pass`, `data_out_en` 自动判断期望的响应类型
-5. **详细错误报告**: 指出具体哪个 plane_pair 不匹配
+4. **智能判断**: 根据 group 内 plane_pair 的状态自动判断期望的响应类型
+5. **独立统计**: Group 0 和 Group 1 的统计独立
 
 ## 下一步开发
 
 1. **添加更多检查项**:
    - LBA 比对检查
    - meta_buffer_id 检查
-   - descramble_en 和 descramble_seed 检查
+   - plane_group_block_addr 和 page_addr_plane_group 检查
 
 2. **完善错误处理**:
    - 超时处理 (resp 未到达)
