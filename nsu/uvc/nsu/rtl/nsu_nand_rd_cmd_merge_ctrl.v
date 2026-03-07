@@ -442,6 +442,7 @@ reg                             online_fast_deep_resp_wren;
 reg                             online_safe_resp_wren;
 reg                             online_safe_deep_resp_wren;
 reg                             off_wbf_resp_wren;
+reg                             off_wbf_deep_resp_wren;
 reg                             read_resp_wren;
 wire                            online_wr_dat_done;
 wire                            wr_dat_done;
@@ -481,7 +482,6 @@ reg                             cpu_io_rd_flag;
 reg                             off_wbf_io_read_flag;
 wire                            tsu_io_read_data_flag;
 reg                             io_read_send_en;
-reg                             off_wbf_deep_resp_wren;
 wire                            deep_resp_wren;
 wire                            state_done;
 wire                            msa_resp_sram_wren;
@@ -650,9 +650,6 @@ always@(*)begin
                 nxt_state = ONLIE_STATE;
             else if(grant == 5'b0_0010)
                 nxt_state = RX_WBF_STATE;
-            // 继续 FSM 状态机
-            else if(grant == 5'b0_0010)
-                nxt_state = RX_WBF_STATE;
             else if(grant == 5'b0_0100)
                 nxt_state = MSA_STATE;
             else if((grant == 5'b0_1000) | (grant == 5'b1_0000))
@@ -702,8 +699,8 @@ always@(*)begin
                 nxt_state = IDLE_STATE;
             else
                 nxt_state = DONE_STATE;
-    default:nxt_state = IDLE_STATE;
-endcase
+        default:nxt_state = IDLE_STATE;
+    endcase
 end
 
 // 例化指令解码器
