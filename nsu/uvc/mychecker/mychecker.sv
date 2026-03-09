@@ -76,7 +76,7 @@ class `CLASS_NAME_DEFINE extends uvm_component;
     uvm_tlm_analysis_fifo #(ondec2nsu_transaction) ondec_fifo [8];
     
     // ondec_cmd FIFO - 输出：打包后的 ondec2nsu_group_transaction (8 个 plane_pair = 2 个 group)
-    uvm_tlm_analysis_fifo #(ondec2nsu_group_transaction) ondec_cmd_fifo;
+    uvm_tlm_analysis_fifo #(ondec2nsu_group_transaction) ondec_group_cmd_fifo;
     
     // deep_read_resp FIFO - 输入：NSU 上报给 CPU 的 deep read 响应
     uvm_tlm_analysis_fifo #(nsu2cpu_deep_resp_transaction) deep_read_resp_fifo;
@@ -133,7 +133,7 @@ class `CLASS_NAME_DEFINE extends uvm_component;
             ondec_fifo[i] = new($sformatf("ondec_fifo[%0d]", i), this);
         end
         
-        ondec_cmd_fifo = new("ondec_cmd_fifo", this);
+        ondec_group_cmd_fifo = new("ondec_group_cmd_fifo", this);
         deep_read_resp_fifo = new("deep_read_resp_fifo", this);
         offwbf_cmd_fifo = new("offwbf_cmd_fifo", this);
     endfunction : build_phase
@@ -196,7 +196,7 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
         // =========================================================
         // 第一步：获取 ondec2nsu_group_transaction
         // =========================================================
-        ondec_cmd_fifo.get(group_tr);
+        ondec_group_cmd_fifo.get(group_tr);
         total_cmd_count++;
         
         `uvm_info(get_type_name(), $sformatf("Received ONDEC_GROUP: instr_idx=%0h", 
@@ -533,12 +533,12 @@ endtask : check_offwbf_cmd
 // 功能:
 //   1. 持续监控 8 个 ondec_fifo 队列
 //   2. 根据 instruction_index 将相同 instruction_index 的 8 个 transaction 打包
-//   3. 打包成 ondec2nsu_group_transaction 后送入 ondec_cmd_fifo
+//   3. 打包成 ondec2nsu_group_transaction 后送入 ondec_group_cmd_fifo
 //
 // 打包策略:
 //   - 等待 8 个队列中都有 transaction
 //   - 检查 8 个 transaction 的 instruction_index 是否相同
-//   - 如果相同，打包成 group_transaction 并发送到 ondec_cmd_fifo
+//   - 如果相同，打包成 group_transaction 并发送到 ondec_group_cmd_fifo
 //   - 如果不同，报错并丢弃
 //=============================================================================
 task `CLASS_NAME_DEFINE::pack_ondec_transactions();
@@ -609,12 +609,12 @@ task `CLASS_NAME_DEFINE::pack_ondec_transactions();
             ref_instr_idx), UVM_MEDIUM)
         
         // =========================================================
-        // 第四步：发送到 ondec_cmd_fifo
+        // 第四步：发送到 ondec_group_cmd_fifo
         // =========================================================
-        ondec_cmd_fifo.write(group_tr);
+        ondec_group_cmd_fifo.write(group_tr);
         
         `uvm_info(get_type_name(), $sformatf(
-            "Sent group transaction to ondec_cmd_fifo (instr_idx=%0h)", 
+            "Sent group transaction to ondec_group_cmd_fifo (instr_idx=%0h)", 
             ref_instr_idx), UVM_HIGH)
     end
 endtask : pack_ondec_transactions
