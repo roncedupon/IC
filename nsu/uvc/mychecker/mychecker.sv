@@ -169,6 +169,56 @@ class `CLASS_NAME_DEFINE extends uvm_component;
         `uvm_info(get_type_name(), $sformatf("Group1: decode_success=%0d, decode_fail=%0d, crc_err=%0d", 
             group_decode_success[1], group_decode_fail[1], group_crc_err[1]), UVM_LOW)
     endfunction : report_phase
+
+    //-------------------------------------------------------------------------
+    // final_phase - 检查所有FIFO队列是否为空
+    //-------------------------------------------------------------------------
+    virtual function void final_phase(uvm_phase phase);
+        int unsigned fifo_size;
+        bit has_unprocessed;
+
+        has_unprocessed = 1'b0;
+
+        // 检查8个ondec_fifo队列
+        for (int i = 0; i < 8; i++) begin
+            fifo_size = ondec_fifo[i].used();
+            if (fifo_size > 0) begin
+                `uvm_error(get_type_name(), $sformatf("FINAL_CHECK: ondec_fifo[%0d] is not empty, has %0d unprocessed transactions", 
+                    i, fifo_size))
+                has_unprocessed = 1'b1;
+            end
+        end
+
+        // 检查ondec_group_cmd_fifo队列
+        fifo_size = ondec_group_cmd_fifo.used();
+        if (fifo_size > 0) begin
+            `uvm_error(get_type_name(), $sformatf("FINAL_CHECK: ondec_group_cmd_fifo is not empty, has %0d unprocessed transactions", 
+                fifo_size))
+            has_unprocessed = 1'b1;
+        end
+
+        // 检查deep_read_resp_fifo队列
+        fifo_size = deep_read_resp_fifo.used();
+        if (fifo_size > 0) begin
+            `uvm_error(get_type_name(), $sformatf("FINAL_CHECK: deep_read_resp_fifo is not empty, has %0d unprocessed transactions", 
+                fifo_size))
+            has_unprocessed = 1'b1;
+        end
+
+        // 检查offwbf_cmd_fifo队列
+        fifo_size = offwbf_cmd_fifo.used();
+        if (fifo_size > 0) begin
+            `uvm_error(get_type_name(), $sformatf("FINAL_CHECK: offwbf_cmd_fifo is not empty, has %0d unprocessed transactions", 
+                fifo_size))
+            has_unprocessed = 1'b1;
+        end
+
+        if (!has_unprocessed) begin
+            `uvm_info(get_type_name(), "FINAL_CHECK: All FIFOs are empty, no unprocessed transactions", UVM_LOW)
+        end else begin
+            `uvm_error(get_type_name(), "FINAL_CHECK FAILED: Some FIFOs contain unprocessed transactions!")
+        end
+    endfunction : final_phase
     
 endclass : ondec2nsu_checker
 
