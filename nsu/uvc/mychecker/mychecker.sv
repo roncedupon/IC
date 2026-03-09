@@ -72,7 +72,10 @@ class `CLASS_NAME_DEFINE extends uvm_component;
     //-------------------------------------------------------------------------
     // FIFO 定义
     //-------------------------------------------------------------------------
-    // ondec_cmd FIFO - 输入：ondec2nsu_group_transaction (8 个 plane_pair = 2 个 group)
+    // 8 个 plane_pair 的 ondec2nsu_transaction 输入队列
+    uvm_tlm_analysis_fifo #(ondec2nsu_transaction) ondec_fifo [8];
+    
+    // ondec_cmd FIFO - 输出：打包后的 ondec2nsu_group_transaction (8 个 plane_pair = 2 个 group)
     uvm_tlm_analysis_fifo #(ondec2nsu_group_transaction) ondec_cmd_fifo;
     
     // deep_read_resp FIFO - 输入：NSU 上报给 CPU 的 deep read 响应
@@ -107,6 +110,7 @@ class `CLASS_NAME_DEFINE extends uvm_component;
     //-------------------------------------------------------------------------
     // Task 声明 (class 内声明)
     //-------------------------------------------------------------------------
+    extern virtual task pack_ondec_transactions();  // 新增：从 8 个队列打包 transaction
     extern virtual task check_ondec_cmd();      // 第一步：获取 ondec_cmd，按 group 判断
     extern virtual task check_deep_read_resp(); // 第二步：检查 deep read resp
     extern virtual task check_offwbf_cmd();     // 第三步：检查 offwbf 指令
@@ -124,6 +128,11 @@ class `CLASS_NAME_DEFINE extends uvm_component;
     virtual function void build_phase(uvm_phase phase);
         super.build_phase(phase);
         
+        // 初始化 8 个 plane_pair 的 FIFO
+        for (int i = 0; i < 8; i++) begin
+            ondec_fifo[i] = new($sformatf("ondec_fifo[%0d]", i), this);
+        end
+        
         ondec_cmd_fifo = new("ondec_cmd_fifo", this);
         deep_read_resp_fifo = new("deep_read_resp_fifo", this);
         offwbf_cmd_fifo = new("offwbf_cmd_fifo", this);
@@ -136,6 +145,7 @@ class `CLASS_NAME_DEFINE extends uvm_component;
         `uvm_info(get_type_name(), "ondec2nsu_checker started (GROUP-BASED processing)", UVM_MEDIUM)
         
         fork
+            pack_ondec_transactions();  // 新增：从 8 个队列打包 transaction
             check_ondec_cmd();      // 第一步：获取 ondec_cmd，按 group 判断
             check_deep_read_resp(); // 第二步：检查 deep read resp
             check_offwbf_cmd();     // 第三步：检查 offwbf 指令
@@ -516,5 +526,97 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
         end
     end
 endtask : check_offwbf_cmd
+
+//=============================================================================
+// pack_ondec_transactions - 从 8 个 plane_pair 队列打包 transaction
+// 
+// 功能:
+//   1. 持续监控 8 个 ondec_fifo 队列
+//   2. 根据 instruction_index 将相同 instruction_index 的 8 个 transaction 打包
+//   3. 打包成 ondec2nsu_group_transaction 后送入 ondec_cmd_fifo
+//
+// 打包策略:
+//   - 等待 8 个队列中都有 transaction
+//   - 检查 8 个 transaction 的 instruction_index 是否相同
+//   - 如果相同，打包成 group_transaction 并发送到 ondec_cmd_fifo
+//   - 如果不同，报错并丢弃
+//=============================================================================
+task `CLASS_NAME_DEFINE::pack_ondec_transactions();
+    ondec2nsu_transaction ondec_tr [7:0];
+    ondec2nsu_group_transaction group_tr;
+    logic [15:0] ref_instr_idx;
+    logic all_valid;
+    int timeout_cnt;
+    
+    `uvm_info(get_type_name(), "pack_ondec_transactions task started", UVM_MEDIUM)
+    
+    forever begin
+        // =========================================================
+        // 第一步：等待 8 个队列都有 transaction
+        // =========================================================
+        `uvm_info(get_type_name(), "Waiting for 8 plane_pair transactions...", UVM_HIGH)
+        
+        // 并行从 8 个队列获取 transaction
+        fork
+            begin ondec_fifo[0].get(ondec_tr[0]); end
+            begin ondec_fifo[1].get(ondec_tr[1]); end
+            begin ondec_fifo[2].get(ondec_tr[2]); end
+            begin ondec_fifo[3].get(ondec_tr[3]); end
+            begin ondec_fifo[4].get(ondec_tr[4]); end
+            begin ondec_fifo[5].get(ondec_tr[5]); end
+            begin ondec_fifo[6].get(ondec_tr[6]); end
+            begin ondec_fifo[7].get(ondec_tr[7]); end
+        join
+        
+        `uvm_info(get_type_name(), "Received 8 plane_pair transactions", UVM_HIGH)
+        
+        // =========================================================
+        // 第二步：检查 instruction_index 是否一致
+        // =========================================================
+        ref_instr_idx = ondec_tr[0].instruction_index;
+        all_valid = 1'b1;
+        
+        for (int i = 1; i < 8; i++) begin
+            if (ondec_tr[i].instruction_index != ref_instr_idx) begin
+                `uvm_error(get_type_name(), $sformatf(
+                    "instruction_index mismatch: PP[0]=%0h, PP[%0d]=%0h", 
+                    ref_instr_idx, i, ondec_tr[i].instruction_index))
+                all_valid = 1'b0;
+            end
+        end
+        
+        if (!all_valid) begin
+            `uvm_error(get_type_name(), "Discarding mismatched transactions")
+            continue;  // 丢弃不匹配的 transaction，继续下一轮
+        end
+        
+        `uvm_info(get_type_name(), $sformatf(
+            "All 8 plane_pairs have matching instruction_index=%0h", 
+            ref_instr_idx), UVM_MEDIUM)
+        
+        // =========================================================
+        // 第三步：打包成 ondec2nsu_group_transaction
+        // =========================================================
+        group_tr = ondec2nsu_group_transaction::type_id::create(
+            $sformatf("group_tr_%0h", ref_instr_idx));
+        
+        for (int i = 0; i < 8; i++) begin
+            group_tr.tr[i] = ondec_tr[i];
+        end
+        
+        `uvm_info(get_type_name(), $sformatf(
+            "Packed 8 transactions into group (instr_idx=%0h)", 
+            ref_instr_idx), UVM_MEDIUM)
+        
+        // =========================================================
+        // 第四步：发送到 ondec_cmd_fifo
+        // =========================================================
+        ondec_cmd_fifo.write(group_tr);
+        
+        `uvm_info(get_type_name(), $sformatf(
+            "Sent group transaction to ondec_cmd_fifo (instr_idx=%0h)", 
+            ref_instr_idx), UVM_HIGH)
+    end
+endtask : pack_ondec_transactions
 
 `endif

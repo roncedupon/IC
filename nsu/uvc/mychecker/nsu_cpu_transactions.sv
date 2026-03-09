@@ -370,7 +370,7 @@ endclass
 class nsu2cpu_resp_transaction extends uvm_sequence_item;
   rand bit [7:0] error_plane_pair_sel;
   rand bit [7:0] nand_index;
-  rand bit [7:0] instruction_index;
+  rand bit [15:0] instruction_index;
   rand bit [31:0] nsu2cpu_resp[];
 
   function new(string name="nsu2cpu_resp_transaction");
