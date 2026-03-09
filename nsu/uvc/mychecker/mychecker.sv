@@ -142,7 +142,7 @@ class `CLASS_NAME_DEFINE extends uvm_component;
     // run_phase
     //-------------------------------------------------------------------------
     virtual task run_phase(uvm_phase phase);
-        `uvm_info(get_type_name(), "ondec2nsu_checker started (GROUP-BASED processing)", UVM_MEDIUM)
+        `uvm_info(get_type_name(), "ondec2nsu_checker started (GROUP-BASED processing)", UVM_LOW)
         
         fork
             pack_ondec_transactions();  // 新增：从 8 个队列打包 transaction
@@ -200,7 +200,7 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
         total_cmd_count++;
         
         `uvm_info(get_type_name(), $sformatf("Received ONDEC_GROUP: instr_idx=%0h", 
-            group_tr.tr[0].instruction_index), UVM_MEDIUM)
+            group_tr.tr[0].instruction_index), UVM_LOW)
         
         // =========================================================
         // 第二步：按 group 处理 (Group 0: PP[0:3], Group 1: PP[4:7])
@@ -209,7 +209,7 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
             pp_base = gid * 4;  // Group 0: pp_base=0, Group 1: pp_base=4
             
             `uvm_info(get_type_name(), $sformatf("  Processing Group%0d (PP[%0d:%0d])", 
-                gid, pp_base, pp_base+3), UVM_MEDIUM)
+                gid, pp_base, pp_base+3), UVM_LOW)
             
             // 初始化 group 配置
             grp_cfg.valid = 1'b1;
@@ -238,7 +238,7 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
             end
             
             `uvm_info(get_type_name(), $sformatf("    Group%0d: ost_id=%0h, plane_sel=%04b, dec_suc=%04b, crc_pass=%04b, data_out_en=%04b", 
-                gid, grp_cfg.nsu_ost_id, grp_cfg.plane_sel, grp_cfg.dec_suc, grp_cfg.crc_pass, grp_cfg.data_out_en), UVM_HIGH)
+                gid, grp_cfg.nsu_ost_id, grp_cfg.plane_sel, grp_cfg.dec_suc, grp_cfg.crc_pass, grp_cfg.data_out_en), UVM_LOW)
             
             // =========================================================
             // 第三步：判断 group 需要什么响应
@@ -277,7 +277,7 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
             end
             if (!group_need_deep_resp && !group_need_offwbf) begin
                 `uvm_info(get_type_name(), $sformatf("  Group%0d: No action needed (all decode success or crc_fail)", 
-                    gid), UVM_HIGH)
+                    gid), UVM_LOW)
             end
             
             // =========================================================
@@ -290,7 +290,7 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
         pending_instr_exists[group_tr.tr[0].instruction_index] = 1'b1;
         
         `uvm_info(get_type_name(), $sformatf("Registered config for instr_idx=%0h (2 groups, waiting for resp/offwbf)", 
-            group_tr.tr[0].instruction_index), UVM_MEDIUM)
+            group_tr.tr[0].instruction_index), UVM_LOW)
     end
 endtask : check_ondec_cmd
 
@@ -344,7 +344,7 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                     matched_gid = gid;
                     
                     `uvm_info(get_type_name(), $sformatf("  Matched Group%0d (ost_id=%0h)", 
-                        gid, cfg.nsu_ost_id), UVM_HIGH)
+                        gid, cfg.nsu_ost_id), UVM_LOW)
                     
                     // 遍历 group 内 4 个 plane_pair 进行检查
                     for (int pp = 0; pp < 4; pp++) begin
@@ -486,7 +486,7 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
                 matched_instr_idx = p_instr_idx;
                 
                 `uvm_info(get_type_name(), $sformatf("  Matched Group%0d (instr_idx=%0h, addr=%0h)", 
-                    p_gid, p_instr_idx, src_mem_addr_32bit), UVM_HIGH)
+                    p_gid, p_instr_idx, src_mem_addr_32bit), UVM_LOW)
                 
                 // 检查 offline_wbf_out_flag 标志
                 if (!offwbf_tr.offline_wbf_out_flag) begin
@@ -548,13 +548,13 @@ task `CLASS_NAME_DEFINE::pack_ondec_transactions();
     logic all_valid;
     int timeout_cnt;
     
-    `uvm_info(get_type_name(), "pack_ondec_transactions task started", UVM_MEDIUM)
+    `uvm_info(get_type_name(), "pack_ondec_transactions task started", UVM_LOW)
     
     forever begin
         // =========================================================
         // 第一步：等待 8 个队列都有 transaction
         // =========================================================
-        `uvm_info(get_type_name(), "Waiting for 8 plane_pair transactions...", UVM_HIGH)
+        `uvm_info(get_type_name(), "Waiting for 8 plane_pair transactions...", UVM_LOW)
         
         // 并行从 8 个队列获取 transaction
         fork
@@ -568,7 +568,7 @@ task `CLASS_NAME_DEFINE::pack_ondec_transactions();
             begin ondec_fifo[7].get(ondec_tr[7]); end
         join
         
-        `uvm_info(get_type_name(), "Received 8 plane_pair transactions", UVM_HIGH)
+        `uvm_info(get_type_name(), "Received 8 plane_pair transactions", UVM_LOW)
         
         // =========================================================
         // 第二步：检查 instruction_index 是否一致
@@ -592,7 +592,7 @@ task `CLASS_NAME_DEFINE::pack_ondec_transactions();
         
         `uvm_info(get_type_name(), $sformatf(
             "All 8 plane_pairs have matching instruction_index=%0h", 
-            ref_instr_idx), UVM_MEDIUM)
+            ref_instr_idx), UVM_LOW)
         
         // =========================================================
         // 第三步：打包成 ondec2nsu_group_transaction
@@ -606,7 +606,7 @@ task `CLASS_NAME_DEFINE::pack_ondec_transactions();
         
         `uvm_info(get_type_name(), $sformatf(
             "Packed 8 transactions into group (instr_idx=%0h)", 
-            ref_instr_idx), UVM_MEDIUM)
+            ref_instr_idx), UVM_LOW)
         
         // =========================================================
         // 第四步：发送到 ondec_group_cmd_fifo
@@ -615,7 +615,7 @@ task `CLASS_NAME_DEFINE::pack_ondec_transactions();
         
         `uvm_info(get_type_name(), $sformatf(
             "Sent group transaction to ondec_group_cmd_fifo (instr_idx=%0h)", 
-            ref_instr_idx), UVM_HIGH)
+            ref_instr_idx), UVM_LOW)
     end
 endtask : pack_ondec_transactions
 
