@@ -38,7 +38,7 @@ package ondec2nsu_checker_pkg;
     // Group 检查配置 (每个 group 独立)
     // Group 0: plane_pair[0:3], Group 1: plane_pair[4:7]
     //=========================================================================
-    typedef struct packed {
+    typedef struct  {
         logic        valid;
         logic [15:0] instruction_index;
         logic [4:0]  nsu_ost_id;               // Group 独立的 OST ID
@@ -47,6 +47,11 @@ package ondec2nsu_checker_pkg;
         logic [3:0]  crc_pass;                 // 4 个 plane_pair CRC 通过
         logic [3:0]  data_out_en;              // 4 个 plane_pair 数据输出使能
         logic [3:0]  offline_wbf_work_en;      // 4 个 plane_pair offwbf 使能
+        logic [3:0]  flip_threshold_sel;       // 4 个 plane_pair flip_threshold_sel
+        logic [3:0]  syn_weight_over_threshold; // 4 个 plane_pair syn_weight_over_threshold
+        logic [3:0]  descramble_en;            // 4 个 plane_pair descramble_en
+        logic [15:0] descramble_seed [4];     // 4 个 plane_pair descramble_seed
+        logic [3:0]  write_pos_jdg;            // 4 个 plane_pair write_pos_jdg
         logic        deep_read_sel;            // deep read 选择 (group 内一致)
         logic        read_mode;                // 读模式 (group 内一致)
         logic [31:0] dest_memory_addr;         // 目标内存地址 (对应 group_0_dest_memory_addr 等)
@@ -228,6 +233,10 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
             grp_cfg.crc_pass = '0;
             grp_cfg.data_out_en = '0;
             grp_cfg.offline_wbf_work_en = '0;
+            grp_cfg.flip_threshold_sel = '0;
+            grp_cfg.syn_weight_over_threshold = '0;
+            grp_cfg.descramble_en = '0;
+            grp_cfg.write_pos_jdg = '0;
             
             for (int pp = 0; pp < 4; pp++) begin
                 grp_cfg.plane_sel[pp] = group_tr.tr[pp_base + pp].plane_sel;
@@ -235,6 +244,11 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
                 grp_cfg.crc_pass[pp] = group_tr.tr[pp_base + pp].crc_pass;
                 grp_cfg.data_out_en[pp] = group_tr.tr[pp_base + pp].data_out_en;
                 grp_cfg.offline_wbf_work_en[pp] = group_tr.tr[pp_base + pp].offline_wbf_work_en;
+                grp_cfg.flip_threshold_sel[pp] = group_tr.tr[pp_base + pp].flip_threshold_sel;
+                grp_cfg.syn_weight_over_threshold[pp] = group_tr.tr[pp_base + pp].syn_weight_over_threshold;
+                grp_cfg.descramble_en[pp] = group_tr.tr[pp_base + pp].descramble_en;
+                grp_cfg.descramble_seed[pp] = group_tr.tr[pp_base + pp].descramble_seed;
+                grp_cfg.write_pos_jdg[pp] = group_tr.tr[pp_base + pp].write_pos_jdg;
             end
             
             `uvm_info(get_type_name(), $sformatf("    Group%0d: ost_id=%0h, plane_sel=%04b, dec_suc=%04b, crc_pass=%04b, data_out_en=%04b", 
@@ -260,6 +274,7 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
                     end else begin
                         // 数据输出 → 需要调用 offwbf
                         group_need_offwbf = 1'b1;
+                        grp_cfg.offline_wbf_work_en[pp] = 1'b1;  // 为每个需要offwbf的plane_pair设置标志
                         `uvm_info(get_type_name(), $sformatf("    PP[%0d]: decode_fail+crc_success+data → Group%0d need OFFWBF_CMD", 
                             pp_base+pp, gid), UVM_LOW)
                     end
@@ -430,27 +445,36 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
     end
 endtask : check_deep_read_resp
 
-//-----------------------------------------------------------------------------
-// check_offwbf_cmd - 检查 NSU 下发给 OFFWBF 的指令
+//-----------------------------------------------------------------------------// check_offwbf_cmd - 检查 NSU 下发给 OFFWBF 的指令
 // 
-// 检查内容 (按 group 独立检查):
-// 1. ost_id_nsu2offline 匹配 (group 独立)
-// 2. src_mem_addr (与 dest_memory_addr 比较)
-// 3. dest_mem_addr (与 dec_fail_dest_addr 比较)
-// 4. offline_wbf_out_flag 标志
-// 5. read_mode (offwbf 只在 safe read 下调用)
+// 检查内容 (按 plane 独立检查):
+// 1. plane_num 匹配 (对应 ondec 中的 plane)
+// 2. dest_sel 匹配 (与 ondec 写位位置判断对应)
+// 3. flip_threshold_sel 匹配 (与 ondec.flip_threshold_sel 对应)
+// 4. over_threshold 匹配 (与 ondec.syn_weight_over_threshold 对应)
+// 5. descramble_en 匹配 (与 ondec.descramble_en 对应)
+// 6. descramble_seed 匹配 (与 ondec.descramble_seed 对应)
+// 7. src_mem_addr 匹配 (与 ondec.dest_memory_addr 对应)
+// 8. dest_mem_addr 匹配 (与 ondec.dec_fail_dest_addr 对应)
+// 9. offline_wbf_out_flag 标志
+// 10. read_mode (offwbf 只在 safe read 下调用)
 //-----------------------------------------------------------------------------
 task `CLASS_NAME_DEFINE::check_offwbf_cmd();
     offdec2nsu_transaction offwbf_tr;
     check_status_e status;
     string fail_reason;
     int matched_gid;
+    int matched_pp;
     bit [15:0] matched_instr_idx;
     bit [15:0] p_instr_idx;
     int p_gid;
+    int p_pp;
     group_check_config_t cfg;
     logic [31:0] src_mem_addr_32bit;
     logic [31:0] dest_mem_addr_32bit;
+    logic [15:0] descramble_seed;
+    logic has_pending_offwbf;
+    
     forever begin
         offwbf_cmd_fifo.get(offwbf_tr);
         total_offwbf_count++;
@@ -461,13 +485,17 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
         dest_mem_addr_32bit = {offwbf_tr.dest_mem_addr_3, offwbf_tr.dest_mem_addr_2, 
                                offwbf_tr.dest_mem_addr_1, offwbf_tr.dest_mem_addr_0};
         
-        `uvm_info(get_type_name(), $sformatf("Received OFFWBF_CMD: ost_id=%0h, src_addr=%0h, dest_addr=%0h, offline_wbf_out_flag=%0b", 
-            offwbf_tr.ost_id_nsu2offline, src_mem_addr_32bit, dest_mem_addr_32bit, offwbf_tr.offline_wbf_out_flag), UVM_LOW)
+        // 组合 16bit descramble_seed
+        descramble_seed = {offwbf_tr.descramble_seed_1, offwbf_tr.descramble_seed_0};
         
-        // 查找匹配的期望配置 (通过地址匹配)
+        `uvm_info(get_type_name(), $sformatf("Received OFFWBF_CMD: plane_num=%0d, ost_id=%0h, src_addr=%0h, dest_addr=%0h, offline_wbf_out_flag=%0b", 
+            offwbf_tr.plane_num, offwbf_tr.ost_id_nsu2offline, src_mem_addr_32bit, dest_mem_addr_32bit, offwbf_tr.offline_wbf_out_flag), UVM_LOW)
+        
+        // 查找匹配的期望配置 (通过 plane_num 和地址匹配)
         status = CHECK_PASS;
         fail_reason = "";
         matched_gid = -1;
+        matched_pp = -1;
         matched_instr_idx = 16'hFFFF;
         
         // 遍历所有 pending 的 instruction_index 和 group
@@ -475,54 +503,125 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
             cfg = pending_config[p_instr_idx][p_gid];
             
             if (!cfg.valid) continue;
-            if (!cfg.offline_wbf_work_en[p_gid]) continue;  // 只检查需要 offwbf 的 group
             
-            // 通过地址匹配 (而不是 ost_id，因为 NSU 会重新生成 ost_id)
-            // offwbf 的 src_mem_addr 应该匹配 ondec 的 dest_memory_addr
-            // offwbf 的 dest_mem_addr 应该匹配 ondec 的 dec_fail_dest_addr
-            if (cfg.dest_memory_addr == src_mem_addr_32bit && 
-                cfg.dec_fail_dest_addr == dest_mem_addr_32bit) begin
-                matched_gid = p_gid;
-                matched_instr_idx = p_instr_idx;
+            // 遍历group内的4个plane_pair，查找需要offwbf的plane_pair
+            for (p_pp = 0; p_pp < 4; p_pp++) begin
+                // 计算全局plane索引
+                int global_plane = p_gid * 4 + p_pp;                
+                if (!cfg.plane_sel[p_pp]) continue;  // 跳过未选择的plane_pair
+                if (!cfg.offline_wbf_work_en[p_pp]) continue;  // 跳过不需要offwbf的plane_pair
                 
-                `uvm_info(get_type_name(), $sformatf("  Matched Group%0d (instr_idx=%0h, addr=%0h)", 
-                    p_gid, p_instr_idx, src_mem_addr_32bit), UVM_LOW)
+
                 
-                // 检查 offline_wbf_out_flag 标志
-                if (!offwbf_tr.offline_wbf_out_flag) begin
-                    status = CHECK_FAIL_DATA;
-                    fail_reason = $sformatf("Group%0d offline_wbf_out_flag not asserted", p_gid);
+                // 通过plane_num和地址匹配
+                if (offwbf_tr.plane_num == global_plane && 
+                    cfg.dest_memory_addr == src_mem_addr_32bit && 
+                    cfg.dec_fail_dest_addr == dest_mem_addr_32bit) begin
+                    matched_gid = p_gid;
+                    matched_pp = p_pp;
+                    matched_instr_idx = p_instr_idx;
+                    
+                    `uvm_info(get_type_name(), $sformatf("  Matched Group%0d PP[%0d] (global_plane=%0d, instr_idx=%0h, addr=%0h)", 
+                        p_gid, p_pp, global_plane, p_instr_idx, src_mem_addr_32bit), UVM_LOW)
+                    
+                    // 检查offline_wbf_out_flag标志
+                    if (!offwbf_tr.offline_wbf_out_flag) begin
+                        status = CHECK_FAIL_DATA;
+                        fail_reason = $sformatf("Group%0d PP[%0d] offline_wbf_out_flag not asserted", p_gid, p_pp);
+                        break;
+                    end
+                    
+                    // 检查dest_sel (与ondec.write_pos_jdg对应)
+                    if (offwbf_tr.dest_sel != cfg.write_pos_jdg[p_pp]) begin
+                        status = CHECK_FAIL_DATA;
+                        fail_reason = $sformatf("Group%0d PP[%0d] dest_sel mismatch: expected=%0b, got=%0b", 
+                            p_gid, p_pp, cfg.write_pos_jdg[p_pp], offwbf_tr.dest_sel);
+                        break;
+                    end
+                    
+                    // 检查flip_threshold_sel
+                    if (offwbf_tr.flip_threshold_sel != cfg.flip_threshold_sel[p_pp]) begin
+                        status = CHECK_FAIL_DATA;
+                        fail_reason = $sformatf("Group%0d PP[%0d] flip_threshold_sel mismatch: expected=%0b, got=%0b", 
+                            p_gid, p_pp, cfg.flip_threshold_sel[p_pp], offwbf_tr.flip_threshold_sel);
+                        break;
+                    end
+                    
+                    // 检查over_threshold (与ondec.syn_weight_over_threshold对应)
+                    if (offwbf_tr.over_threshold != cfg.syn_weight_over_threshold[p_pp]) begin
+                        status = CHECK_FAIL_DATA;
+                        fail_reason = $sformatf("Group%0d PP[%0d] over_threshold mismatch: expected=%0b, got=%0b", 
+                            p_gid, p_pp, cfg.syn_weight_over_threshold[p_pp], offwbf_tr.over_threshold);
+                        break;
+                    end
+                    
+                    // 检查descramble_en
+                    if (offwbf_tr.descramble_en != cfg.descramble_en[p_pp]) begin
+                        status = CHECK_FAIL_DATA;
+                        fail_reason = $sformatf("Group%0d PP[%0d] descramble_en mismatch: expected=%0b, got=%0b", 
+                            p_gid, p_pp, cfg.descramble_en[p_pp], offwbf_tr.descramble_en);
+                        break;
+                    end
+                    
+                    // 检查descramble_seed
+                    if (descramble_seed != cfg.descramble_seed[p_pp]) begin
+                        status = CHECK_FAIL_DATA;
+                        fail_reason = $sformatf("Group%0d PP[%0d] descramble_seed mismatch: expected=%0h, got=%0h", 
+                            p_gid, p_pp, cfg.descramble_seed[p_pp], descramble_seed);
+                        break;
+                    end
+                    
+                    // 检查read_mode (offwbf只在safe read模式下调用)
+                    if (cfg.read_mode != 1'b0) begin
+                        status = CHECK_FAIL_DATA;
+                        fail_reason = $sformatf("Group%0d PP[%0d] offwbf called in non-safe mode: read_mode=%0b", 
+                            p_gid, p_pp, cfg.read_mode);
+                        break;
+                    end
+                    
+                    // 找到匹配后退出
                     break;
                 end
-                
-                // 检查 read_mode (offwbf 只在 safe read 模式下调用)
-                if (cfg.read_mode != 1'b0) begin
-                    status = CHECK_FAIL_DATA;
-                    fail_reason = $sformatf("Group%0d offwbf called in non-safe mode: read_mode=%0b", 
-                        p_gid, cfg.read_mode);
-                    break;
-                end
-                
-                break;  // 找到匹配的 group 后退出
             end
+            
+            if (matched_gid >= 0) break;  // 找到匹配后退出
         end
         
         // 报告结果
         if (status == CHECK_PASS) begin
             pass_count++;
             offwbf_success_count++;
-            `uvm_info(get_type_name(), $sformatf("OFFWBF_CMD CHECK PASS: Group%0d (ost_id=%0h, instr_idx=%0h)", 
-                matched_gid, offwbf_tr.ost_id_nsu2offline, matched_instr_idx), UVM_LOW)
+            `uvm_info(get_type_name(), $sformatf("OFFWBF_CMD CHECK PASS: Group%0d PP[%0d] (plane_num=%0d, ost_id=%0h, instr_idx=%0h)", 
+                matched_gid, matched_pp, offwbf_tr.plane_num, offwbf_tr.ost_id_nsu2offline, matched_instr_idx), UVM_LOW)
         end else begin
             fail_count++;
             offwbf_fail_count++;
-            `uvm_error(get_type_name(), $sformatf("OFFWBF_CMD CHECK FAIL: Group%0d, status=%0b, reason=%s", 
-                matched_gid, status, fail_reason))
+            `uvm_error(get_type_name(), $sformatf("OFFWBF_CMD CHECK FAIL: Group%0d PP[%0d], status=%0b, reason=%s", 
+                matched_gid, matched_pp, status, fail_reason))
         end
         
-        // 清除已检查的 group 配置
+        // 清除已处理的plane_pair的offline_wbf_work_en标志
         if (matched_gid >= 0 && matched_instr_idx != 16'hFFFF) begin
-            pending_config[matched_instr_idx][matched_gid].valid = 1'b0;
+            // 找到并清除对应的plane_pair的offline_wbf_work_en标志
+            pending_config[matched_instr_idx][matched_gid].offline_wbf_work_en[matched_pp] = 1'b0;
+            `uvm_info(get_type_name(), $sformatf("  Cleared offline_wbf_work_en for Group%0d PP[%0d]", 
+                matched_gid, matched_pp), UVM_LOW)
+            
+            // 检查该group是否还有未处理的offwbf请求
+            has_pending_offwbf = 1'b0;
+            for (p_pp = 0; p_pp < 4; p_pp++) begin
+                if (pending_config[matched_instr_idx][matched_gid].offline_wbf_work_en[p_pp]) begin
+                    has_pending_offwbf = 1'b1;
+                    break;
+                end
+            end
+            
+            // 如果没有未处理的offwbf请求，才清除整个group的valid标志
+            if (!has_pending_offwbf) begin
+                pending_config[matched_instr_idx][matched_gid].valid = 1'b0;
+                `uvm_info(get_type_name(), $sformatf("  Group%0d has no more pending offwbf requests, clearing valid flag", 
+                    matched_gid), UVM_LOW)
+            end
         end
     end
 endtask : check_offwbf_cmd
