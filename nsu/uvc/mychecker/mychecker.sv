@@ -526,27 +526,13 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
         // 组合 16bit descramble_seed
         descramble_seed = {offwbf_tr.descramble_seed_1, offwbf_tr.descramble_seed_0};
         
-        `uvm_info(get_type_name(), $sformatf(
-            "\n========== Received OFFWBF_CMD #%0d ==========\n" +
-            "  plane_num:             %0d\n" +
-            "  ost_id_nsu2offline:    %0h\n" +
-            "  src_mem_addr (32bit):  %0h\n" +
-            "  dest_mem_addr (32bit): %0h\n" +
-            "  descramble_seed:       %0h\n" +
-            "  offline_wbf_out_flag:  %0b\n" +
-            "=============================================\n", 
-            total_offwbf_count,
-            offwbf_tr.plane_num, offwbf_tr.ost_id_nsu2offline,
-            src_mem_addr_32bit, dest_mem_addr_32bit, 
-            descramble_seed, offwbf_tr.offline_wbf_out_flag), UVM_LOW)
+        `uvm_info(get_type_name(), $sformatf( "\n========== Received OFFWBF_CMD #%0d ==========\n plane_num: %0d\n ost_id_nsu2offline: %0h\n src_mem_addr (32bit): %0h\n dest_mem_addr (32bit): %0h\n descramble_seed: %0h\n offline_wbf_out_flag: %0b\n=============================================\n", total_offwbf_count, offwbf_tr.plane_num, offwbf_tr.ost_id_nsu2offline, src_mem_addr_32bit, dest_mem_addr_32bit, descramble_seed, offwbf_tr.offline_wbf_out_flag), UVM_LOW)
         
         // =========================================================
         // 第二步：根据 descramble_seed 在 pending_config 中查找匹配的 ondec_group_cmd
         // 实现严格的匹配逻辑，确保 descramble_seed 值完全一致
         // =========================================================
-        `uvm_info(get_type_name(), $sformatf(
-            "  Searching for matching ondec_group_cmd with descramble_seed=%0h...", 
-            descramble_seed), UVM_LOW)
+        `uvm_info(get_type_name(), $sformatf("  Searching for matching ondec_group_cmd with descramble_seed=%0h...", descramble_seed), UVM_LOW)
         
         status = CHECK_PASS;
         fail_reason = "";
@@ -565,53 +551,34 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
             // 遍历所有 8 个 plane_pair，查找 descramble_seed 匹配的 plane_pair
             for (pp = 0; pp < 8; pp++) begin
                 if (!cfg.tr[pp].plane_sel) begin
-                    `uvm_info(get_type_name(), $sformatf(
-                        "  Skipping instr_idx=%0h, PP[%0d]: plane_sel=0 (not selected)", 
-                        p_instr_idx, pp), UVM_LOW)
+                    `uvm_info(get_type_name(), $sformatf("  Skipping instr_idx=%0h, PP[%0d]: plane_sel=0 (not selected)", p_instr_idx, pp), UVM_LOW)
                     continue;  // 跳过未选择的 plane_pair
                 end
-                
+
                 if (!cfg.tr[pp].offline_wbf_work_en) begin
-                    `uvm_info(get_type_name(), $sformatf(
-                        "  Skipping instr_idx=%0h, PP[%0d]: offline_wbf_work_en=0 (no offwbf needed)", 
-                        p_instr_idx, pp), UVM_LOW)
+                    `uvm_info(get_type_name(), $sformatf("  Skipping instr_idx=%0h, PP[%0d]: offline_wbf_work_en=0 (no offwbf needed)", p_instr_idx, pp), UVM_LOW)
                     continue;  // 跳过不需要 offwbf 的 plane_pair
                 end
-                
+
                 // 检查 descramble_en (必须使能才能进行 descramble_seed 匹配)
                 if (!cfg.tr[pp].descramble_en) begin
-                    `uvm_info(get_type_name(), $sformatf(
-                        "  Skipping instr_idx=%0h, PP[%0d]: descramble_en=0 (descramble disabled)", 
-                        p_instr_idx, pp), UVM_LOW)
+                    `uvm_info(get_type_name(), $sformatf("  Skipping instr_idx=%0h, PP[%0d]: descramble_en=0 (descramble disabled)", p_instr_idx, pp), UVM_LOW)
                     continue;
                 end
                 
                 // 严格匹配 descramble_seed
                 if (descramble_seed == cfg.tr[pp].descramble_seed) begin
-                    `uvm_info(get_type_name(), $sformatf(
-                        "  >>> MATCH FOUND: instr_idx=%0h, PP[%0d] (global_plane=%0d)\n" +
-                        "      descramble_seed: %0h (matched)\n" +
-                        "      plane_num:       %0d (offwbf) vs %0d (ondec)\n" +
-                        "      src_addr:        %0h (offwbf) vs %0h (ondec)\n" +
-                        "      dest_addr:       %0h (offwbf) vs %0h (ondec)", 
-                        p_instr_idx, pp % 4, pp,
-                        descramble_seed,
-                        offwbf_tr.plane_num, pp,
-                        src_mem_addr_32bit, cfg.tr[pp].dest_memory_addr,
-                        dest_mem_addr_32bit, cfg.tr[pp].dec_fail_dest_addr), UVM_LOW)
+                    `uvm_info(get_type_name(), $sformatf("  >>> MATCH FOUND: instr_idx=%0h, PP[%0d] (global_plane=%0d)\n      descramble_seed: %0h (matched)\n      plane_num:       %0d (offwbf) vs %0d (ondec)\n      src_addr:        %0h (offwbf) vs %0h (ondec)\n      dest_addr:       %0h (offwbf) vs %0h (ondec)", p_instr_idx, pp % 4, pp, descramble_seed, offwbf_tr.plane_num, pp, src_mem_addr_32bit, cfg.tr[pp].dec_fail_dest_addr, dest_mem_addr_32bit, cfg.tr[pp].dest_memory_addr), UVM_LOW)
                     
                     // 记录匹配项
                     match_count++;
                     matched_instr_indices.push_back(p_instr_idx);
                     matched_pp_list.push_back(pp);
                     matched_cfg_idx.push_back(pp);
-                    
-                    `uvm_info(get_type_name(), $sformatf(
-                        "  Total matches so far: %0d", match_count), UVM_LOW)
+
+                    `uvm_info(get_type_name(), $sformatf("  Total matches so far: %0d", match_count), UVM_LOW)
                 end else begin
-                    `uvm_info(get_type_name(), $sformatf(
-                        "  No match: instr_idx=%0h, PP[%0d], descramble_seed=%0h (expected %0h)", 
-                        p_instr_idx, pp, cfg.tr[pp].descramble_seed, descramble_seed), UVM_LOW)
+                    `uvm_info(get_type_name(), $sformatf("  No match: instr_idx=%0h, PP[%0d], descramble_seed=%0h (expected %0h)", p_instr_idx, pp, cfg.tr[pp].descramble_seed, descramble_seed), UVM_LOW)
                 end
             end
         end
@@ -620,33 +587,19 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
         // 第三步：检查匹配结果，处理多匹配情况
         // =========================================================
         if (match_count == 0) begin
-            `uvm_error(get_type_name(), $sformatf(
-                "OFFWBF_CMD: No matching ondec_group_cmd found for descramble_seed=%0h", 
-                descramble_seed))
+            `uvm_error(get_type_name(), $sformatf("OFFWBF_CMD: No matching ondec_group_cmd found for descramble_seed=%0h", descramble_seed))
             status = CHECK_INVALID_RESP;
             fail_reason = $sformatf("No matching config found for descramble_seed=%0h", descramble_seed);
         end else if (match_count > 1) begin
             // 检测到多个匹配，发出 UVM 警告
-            `uvm_warning(get_type_name(), $sformatf(
-                "\n========== MULTIPLE MATCH WARNING ==========\n" +
-                "  Multiple offwbf_cmd objects match the same descramble_seed!\n" +
-                "  descramble_seed: %0h\n" +
-                "  Match count: %0d\n" +
-                "  Matched instructions:", 
-                descramble_seed, match_count))
+            `uvm_warning(get_type_name(), $sformatf("\n========== MULTIPLE MATCH WARNING ==========\n  Multiple offwbf_cmd objects match the same descramble_seed!\n  descramble_seed: %0h\n  Match count: %0d\n  Matched instructions:", descramble_seed, match_count))
             
             // 记录所有匹配的指令信息
             for (i = 0; i < match_count; i++) begin
-                `uvm_warning(get_type_name(), $sformatf(
-                    "    Match #%0d: instr_idx=%0h, PP[%0d] (global_plane=%0d)", 
-                    i+1, matched_instr_indices[i], matched_pp_list[i] % 4, matched_pp_list[i]))
+                `uvm_warning(get_type_name(), $sformatf("    Match #%0d: instr_idx=%0h, PP[%0d] (global_plane=%0d)", i+1, matched_instr_indices[i], matched_pp_list[i] % 4, matched_pp_list[i]))
             end
-            
-            `uvm_warning(get_type_name(), $sformatf(
-                "  Current system does NOT support multiple matching offwbf_cmd cases.\n" +
-                "  Will process ONLY the FIRST match (instr_idx=%0h, PP[%0d]).\n" +
-                "=========================================\n", 
-                matched_instr_indices[0], matched_pp_list[0] % 4))
+
+            `uvm_warning(get_type_name(), $sformatf("  Current system does NOT support multiple matching offwbf_cmd cases.\n  Will process ONLY the FIRST match (instr_idx=%0h, PP[%0d]).\n=========================================\n", matched_instr_indices[0], matched_pp_list[0] % 4))
             
             // 使用第一个匹配项进行处理
             matched_instr_idx = matched_instr_indices[0];
@@ -660,9 +613,7 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
             matched_gid = matched_pp / 4;
             matched_pp = matched_pp % 4;
             
-            `uvm_info(get_type_name(), $sformatf(
-                "  Unique match found: instr_idx=%0h, Group%0d PP[%0d] (global_plane=%0d)", 
-                matched_instr_idx, matched_gid, matched_pp, matched_gid*4+matched_pp), UVM_LOW)
+            `uvm_info(get_type_name(), $sformatf("  Unique match found: instr_idx=%0h, Group%0d PP[%0d] (global_plane=%0d)", matched_instr_idx, matched_gid, matched_pp, matched_gid*4+matched_pp), UVM_LOW)
         end
         
         // =========================================================
@@ -672,29 +623,8 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
             int global_pp = matched_gid * 4 + matched_pp;
             cfg = pending_config[matched_instr_idx];
 
-            
-            `uvm_info(get_type_name(), $sformatf(
-                "\n  [Starting Comprehensive Check]\n" +
-                "  Matched Config:\n" +
-                "    instruction_index: %0h\n" +
-                "    Group: %0d, PP: %0d (Global PP: %0d)\n" +
-                "    OST ID: %0h\n" +
-                "    plane_sel: %0b\n" +
-                "    offline_wbf_work_en: %0b\n" +
-                "    descramble_en: %0b\n" +
-                "    descramble_seed: %0h\n" +
-                "    read_mode: %0b\n" +
-                "    dest_memory_addr: %0h\n" +
-                "    dec_fail_dest_addr: %0h", 
-                matched_instr_idx, matched_gid, matched_pp, global_pp,
-                cfg.tr[global_pp].nsu_ost_id,
-                cfg.tr[global_pp].plane_sel,
-                cfg.tr[global_pp].offline_wbf_work_en,
-                cfg.tr[global_pp].descramble_en,
-                cfg.tr[global_pp].descramble_seed,
-                cfg.tr[global_pp].read_mode,
-                cfg.tr[global_pp].dest_memory_addr,
-                cfg.tr[global_pp].dec_fail_dest_addr), UVM_LOW)
+
+            `uvm_info(get_type_name(), $sformatf("\n  [Starting Comprehensive Check]\n  Matched Config(ondec):\n    instruction_index: %0h\n    Group: %0d, PP: %0d (Global PP: %0d)\n    OST ID: %0h\n    plane_sel: %0b\n    offline_wbf_work_en: %0b\n    descramble_en: %0b\n    descramble_seed: %0h\n    read_mode: %0b\n    dest_memory_addr: %0h\n    dec_fail_dest_addr: %0h", matched_instr_idx, matched_gid, matched_pp, global_pp, cfg.tr[global_pp].nsu_ost_id, cfg.tr[global_pp].plane_sel, cfg.tr[global_pp].offline_wbf_work_en, cfg.tr[global_pp].descramble_en, cfg.tr[global_pp].descramble_seed, cfg.tr[global_pp].read_mode, cfg.tr[global_pp].dest_memory_addr, cfg.tr[global_pp].dec_fail_dest_addr), UVM_LOW)
             
             // 4.1 检查 offline_wbf_out_flag 标志
             if (!offwbf_tr.offline_wbf_out_flag) begin
@@ -786,12 +716,12 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
             if (status != CHECK_PASS) begin
                 // 已有错误，跳过后续检查
             end else begin
-                // 4.8 检查 src_mem_addr (与 ondec.dest_memory_addr 对应)
-                if (cfg.tr[global_pp].dest_memory_addr != src_mem_addr_32bit) begin
+                // 4.8 检查 src_mem_addr (与 ondec.dec_fail_dest_addr 对应)
+                if (cfg.tr[global_pp].dec_fail_dest_addr != src_mem_addr_32bit) begin
                     status = CHECK_FAIL_DATA;
                     fail_reason = $sformatf(
                         "Group%0d PP[%0d] src_mem_addr mismatch: expected=%0h, got=%0h", 
-                        matched_gid, matched_pp, cfg.tr[global_pp].dest_memory_addr, src_mem_addr_32bit);
+                        matched_gid, matched_pp, cfg.tr[global_pp].dec_fail_dest_addr, src_mem_addr_32bit);
                     `uvm_error(get_type_name(), fail_reason)
                 end
             end
@@ -799,13 +729,30 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
             if (status != CHECK_PASS) begin
                 // 已有错误，跳过后续检查
             end else begin
-                // 4.9 检查 dest_mem_addr (与 ondec.dec_fail_dest_addr 对应)
-                if (cfg.tr[global_pp].dec_fail_dest_addr != dest_mem_addr_32bit) begin
-                    status = CHECK_FAIL_DATA;
-                    fail_reason = $sformatf(
-                        "Group%0d PP[%0d] dest_mem_addr mismatch: expected=%0h, got=%0h", 
-                        matched_gid, matched_pp, cfg.tr[global_pp].dec_fail_dest_addr, dest_mem_addr_32bit);
-                    `uvm_error(get_type_name(), fail_reason)
+                // 4.9 检查 dest_memory_addr (与 ondec.dest_memory_addr 对应)
+                if(cfg.tr[global_pp].write_pos_jdg==1)begin//background read
+                    if (cfg.tr[global_pp].dest_memory_addr != dest_mem_addr_32bit) begin
+                        status = CHECK_FAIL_DATA;
+                        fail_reason = $sformatf(
+                            "Group%0d PP[%0d] dest_memory_addr mismatch: expected=%0h, got=%0h", 
+                            matched_gid, matched_pp, cfg.tr[global_pp].dest_memory_addr, dest_mem_addr_32bit);
+                        `uvm_error(get_type_name(), fail_reason)
+                    end
+                end
+                else begin//io-read,calculated by nsu-->io_offline_wbf_addr + {out_id,12'd0};
+                    // io_offline_wbf_addr + {out_id,12'd0}
+                    logic [31:0] exp_io_addr;
+                    logic [31:0] offwbf_base_addr='ha00;//TODO get it from global cfg---reg_write("nsu0", `NSU_REG_BASE + 'ha0, 'ha00);//offwbf success ,data output addr
+                    exp_io_addr = offwbf_base_addr + {offwbf_tr.ost_id_nsu2offline, 12'd0};
+                    if (dest_mem_addr_32bit != exp_io_addr) begin
+                        status = CHECK_FAIL_DATA;
+                        fail_reason = $sformatf(
+                            "Group%0d PP[%0d] dest_mem_addr mismatch in IO-read: expected=%0h (io_offline_wbf_addr=%0h + ost_id=%0h), got=%0h",
+                            matched_gid, matched_pp, exp_io_addr,
+                            offwbf_base_addr, offwbf_tr.ost_id_nsu2offline,
+                            dest_mem_addr_32bit);
+                        `uvm_error(get_type_name(), fail_reason)
+                    end
                 end
             end
             
@@ -829,30 +776,11 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
         if (status == CHECK_PASS) begin
             pass_count++;
             offwbf_success_count++;
-            `uvm_info(get_type_name(), $sformatf(
-                "\n========== OFFWBF_CMD CHECK PASS ==========\n" +
-                "  Group: %0d, PP: %0d (Global PP: %0d)\n" +
-                "  plane_num: %0d\n" +
-                "  OST ID: %0h\n" +
-                "  InstrIdx: %0h\n" +
-                "  descramble_seed: %0h\n" +
-                "  This is OFFWBF success #%0d\n" +
-                "===========================================\n", 
-                matched_gid, matched_pp, matched_gid*4+matched_pp,
-                offwbf_tr.plane_num, offwbf_tr.ost_id_nsu2offline, 
-                matched_instr_idx, descramble_seed,
-                offwbf_success_count), UVM_LOW)
+            `uvm_info(get_type_name(), $sformatf("\n========== OFFWBF_CMD CHECK PASS ==========\n  Group: %0d, PP: %0d (Global PP: %0d)\n  plane_num: %0d\n  OST ID: %0h\n  InstrIdx: %0h\n  descramble_seed: %0h\n  This is OFFWBF success #%0d\n===========================================\n", matched_gid, matched_pp, matched_gid*4+matched_pp, offwbf_tr.plane_num, offwbf_tr.ost_id_nsu2offline, matched_instr_idx, descramble_seed, offwbf_success_count), UVM_LOW)
         end else begin
             fail_count++;
             offwbf_fail_count++;
-            `uvm_error(get_type_name(), $sformatf(
-                "\n========== OFFWBF_CMD CHECK FAIL ==========\n" +
-                "  Group: %0d, PP: %0d\n" +
-                "  Status: %0b\n" +
-                "  Reason: %s\n" +
-                "  Total FAIL count: %0d\n" +
-                "============================================\n", 
-                matched_gid, matched_pp, status, fail_reason, fail_count))
+            `uvm_error(get_type_name(), $sformatf("\n========== OFFWBF_CMD CHECK FAIL ==========\n  Group: %0d, PP: %0d\n  Status: %0b\n  Reason: %s\n  Total FAIL count: %0d\n============================================\n", matched_gid, matched_pp, status, fail_reason, fail_count))
         end
         
         // =========================================================
@@ -863,9 +791,7 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
             
             // 清除对应的 plane_pair 的 offline_wbf_work_en 标志
             pending_config[matched_instr_idx].tr[global_pp].offline_wbf_work_en = 1'b0;
-            `uvm_info(get_type_name(), $sformatf(
-                "  Cleared offline_wbf_work_en for Group%0d PP[%0d] (global PP%0d)", 
-                matched_gid, matched_pp, global_pp), UVM_LOW)
+            `uvm_info(get_type_name(), $sformatf("  Cleared offline_wbf_work_en for Group%0d PP[%0d] (global PP%0d)", matched_gid, matched_pp, global_pp), UVM_LOW)
             
             // 检查该 instruction_index 是否还有未处理的 offwbf 请求
             has_pending_offwbf = 1'b0;
@@ -880,13 +806,9 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
             // 如果没有未处理的 offwbf 请求，清除整个 instruction_index
             if (!has_pending_offwbf) begin
                 pending_instr_exists[matched_instr_idx] = 1'b0;
-                `uvm_info(get_type_name(), $sformatf(
-                    "  No more pending offwbf for instr_idx=%0h, clearing config", 
-                    matched_instr_idx), UVM_LOW)
+                `uvm_info(get_type_name(), $sformatf("  No more pending offwbf for instr_idx=%0h, clearing config", matched_instr_idx), UVM_LOW)
             end else begin
-                `uvm_info(get_type_name(), $sformatf(
-                    "  Still has pending offwbf requests for instr_idx=%0h", 
-                    matched_instr_idx), UVM_LOW)
+                `uvm_info(get_type_name(), $sformatf("  Still has pending offwbf requests for instr_idx=%0h", matched_instr_idx), UVM_LOW)
             end
         end
     end
