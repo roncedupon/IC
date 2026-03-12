@@ -90,7 +90,9 @@ class `CLASS_NAME_DEFINE extends uvm_component;
     //-------------------------------------------------------------------------
     // Pending config tracking table (indexed by instruction_index)
     //-------------------------------------------------------------------------
-    logic pending_instr_exists [bit [15:0]];  // Associative array: Mark if instruction_index exists
+    logic pending_instr_exists [bit [15:0]];  // Associative array: Mark if instruction_index exists (deprecated, kept for compatibility)
+    logic pending_deep_resp [bit [15:0]];     // Mark if deep read response is expected
+    logic pending_offwbf [bit [15:0]];        // Mark if offwbf command is expected
     ondec2nsu_group_transaction pending_config [bit [15:0]];  // [instr_idx] → Full group transaction
     
     //-------------------------------------------------------------------------
@@ -273,21 +275,33 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
             for (int pp = 0; pp < 4; pp++) begin
                 if (!group_tr.tr[pp_base + pp].plane_sel) continue;  // Skip unselected plane_pair
                 
+
+                //wbf failed
                 if (!group_tr.tr[pp_base + pp].dec_suc && group_tr.tr[pp_base + pp].crc_pass) begin
-                    // Decode fail but CRC success
+                    // 1.no enough addr,so data not outpu,and report deep_resp 
                     if (!group_tr.tr[pp_base + pp].data_out_en) begin
                         // No data output → Need deep_resp report
                         group_need_deep_resp = 1'b1;
                         `uvm_info(get_type_name(), $sformatf("    PP[%0d]: decode_fail+crc_success+no_data → Group%0d need DEEP_READ_RESP", 
                             pp_base+pp, gid), UVM_LOW)
                     end else begin
-                        // Data output → Need offwbf call
+                    //2. addr enough, Data output → Need offwbf call
                         group_need_offwbf = 1'b1;
                         group_tr.tr[pp_base + pp].offline_wbf_work_en = 1'b1;  // Set flag for offwbf-needed plane_pair
                         `uvm_info(get_type_name(), $sformatf("    PP[%0d]: decode_fail+crc_success+data → Group%0d need OFFWBF_CMD", 
                             pp_base+pp, gid), UVM_LOW)
                     end
                 end
+
+                //crc failed
+                if(!group_tr.tr[pp_base + pp].crc_pass)begin
+                    group_need_deep_resp = 1'b1;
+                end
+
+                //deep_read_sel
+                if(!group_tr.tr[pp_base + pp].deep_read_sel)begin
+                    group_need_deep_resp = 1'b1;
+                end                
             end
             
             // Record judgment results
@@ -305,12 +319,28 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
             end
         end
         
-        // Record pending instruction index (mark existence via associative array) and save full group transaction
-        pending_instr_exists[group_tr.tr[0].instruction_index] = 1'b1;
+        // Record pending instruction index and save full group transaction
+        // Set flags based on what responses are expected
         pending_config[group_tr.tr[0].instruction_index] = group_tr;
         
-        `uvm_info(get_type_name(), $sformatf("Registered config for instr_idx=%0h (8 plane_pairs, waiting for resp/offwbf)", 
-            group_tr.tr[0].instruction_index), UVM_LOW)
+        // Set independent flags for deep_resp and offwbf
+        // Note: Both can be set simultaneously for the same instruction_index
+        if (pending_deep_resp.exists(group_tr.tr[0].instruction_index)) begin
+            if (group_need_deep_resp) pending_deep_resp[group_tr.tr[0].instruction_index] = 1'b1;
+        end else begin
+            pending_deep_resp[group_tr.tr[0].instruction_index] = group_need_deep_resp;
+        end
+        
+        if (pending_offwbf.exists(group_tr.tr[0].instruction_index)) begin
+            if (group_need_offwbf) pending_offwbf[group_tr.tr[0].instruction_index] = 1'b1;
+        end else begin
+            pending_offwbf[group_tr.tr[0].instruction_index] = group_need_offwbf;
+        end
+        
+        `uvm_info(get_type_name(), $sformatf("Registered config for instr_idx=%0h (deep_resp=%0b, offwbf=%0b)", 
+            group_tr.tr[0].instruction_index, 
+            pending_deep_resp[group_tr.tr[0].instruction_index],
+            pending_offwbf[group_tr.tr[0].instruction_index]), UVM_LOW)
     end
 endtask : check_ondec_cmd
 
@@ -346,8 +376,8 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
         `uvm_info(get_type_name(), $sformatf("Received DEEP_READ_RESP: instr_idx=%0h, pp_dec_result=%08b, pp_crc_result=%08b, pp_lba_comp=%08b", 
             resp.instruction_index, resp.plane_pair_dec_result, resp.plane_pair_crc_result, resp.plane_pair_lba_comp), UVM_LOW)
         
-
-        if (pending_instr_exists[resp.instruction_index]) begin        // Find matched expected config
+        // Check if deep read response is expected for this instruction_index
+        if (pending_deep_resp[resp.instruction_index]) begin
             status = CHECK_PASS;
             fail_reason = "";
             matched_gid = -1;
@@ -486,8 +516,16 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
             // Note: Group-specific checks and reporting are done inside the loop above
             // Each group is checked independently
             
-            // Clear checked config
-            pending_instr_exists[resp.instruction_index] = 1'b0;
+            // Clear deep_resp flag (offwbf flag is managed independently by check_offwbf_cmd)
+            pending_deep_resp[resp.instruction_index] = 1'b0;
+            
+            // Check if both deep_resp and offwbf are cleared, then clear config
+            if (!pending_deep_resp[resp.instruction_index] && !pending_offwbf[resp.instruction_index]) begin
+                pending_instr_exists[resp.instruction_index] = 1'b0;
+                pending_config.delete(resp.instruction_index);
+                `uvm_info(get_type_name(), $sformatf("All responses processed for instr_idx=%0h, clearing config", 
+                    resp.instruction_index), UVM_LOW)
+            end
         end else begin
             `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP: No matching config for instr_idx=%0h", 
                 resp.instruction_index))
@@ -831,12 +869,19 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
                 end
             end
             
-            // Clear entire instruction_index if no pending offwbf requests
+            // Clear offwbf flag if no pending offwbf requests
             if (!has_pending_offwbf) begin
-                pending_instr_exists[matched_instr_idx] = 1'b0;
-                `uvm_info(get_type_name(), $sformatf("  No more pending offwbf for instr_idx=%0h, clearing config", matched_instr_idx), UVM_LOW)
+                pending_offwbf[matched_instr_idx] = 1'b0;
+                `uvm_info(get_type_name(), $sformatf("  No more pending offwbf for instr_idx=%0h", matched_instr_idx), UVM_LOW)
             end else begin
                 `uvm_info(get_type_name(), $sformatf("  Still has pending offwbf requests for instr_idx=%0h", matched_instr_idx), UVM_LOW)
+            end
+            
+            // Check if both deep_resp and offwbf are cleared, then clear config
+            if (!pending_deep_resp[matched_instr_idx] && !pending_offwbf[matched_instr_idx]) begin
+                pending_instr_exists[matched_instr_idx] = 1'b0;
+                pending_config.delete(matched_instr_idx);
+                `uvm_info(get_type_name(), $sformatf("All responses processed for instr_idx=%0h, clearing config", matched_instr_idx), UVM_LOW)
             end
         end
     end
