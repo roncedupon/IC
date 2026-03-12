@@ -397,298 +397,224 @@ class nsu2cpu_resp_transaction extends uvm_sequence_item;
   `uvm_object_utils_end
 endclass
 
-// ------------------------------
-// nsu2cpu_deep_resp_transaction
-// ------------------------------
 class nsu2cpu_deep_resp_transaction extends uvm_sequence_item;
-  rand bit [31:0] nsu2cpu_deep_resp[];
-  rand bit [7:0]  plane_pair_en;
-  rand bit [7:0]  nand_index;
-  rand bit [15:0] instruction_index;
-  rand bit [7:0]  plane_crc_err;
-  rand bit [7:0]  plane_pair_err_flag_comp;
-  rand bit [7:0]  plane_pair_lba_comp;
-  rand bit [7:0]  plane_pair_ondec_flag;
-  rand bit        deep_read_sel;
-  rand bit        read_mode;
-  rand bit [1:0]  rsv0;
-  rand bit [11:0] page_address_plane_group_1;
-  rand bit [3:0]  rsv1;
-  rand bit [11:0] page_address_plane_group_0;
-  rand bit [15:0] group1_block_addr;
-  rand bit [15:0] group0_block_addr;
-  rand bit [31:0] group0_meta_addr;
-  rand bit [31:0] group1_meta_addr;
-  rand bit [31:0] group_0_dest_memory_addr;
-  rand bit [31:0] group_1_dest_memory_addr;
-  rand bit [31:0] dec_fail_dest_addr_0;
-  rand bit [31:0] dec_fail_dest_addr_1;
-  rand bit [31:0] dec_fail_dest_addr_2;
-  rand bit [31:0] dec_fail_dest_addr_3;
-  rand bit [31:0] dec_fail_dest_addr_4;
-  rand bit [31:0] dec_fail_dest_addr_5;
-  rand bit [31:0] dec_fail_dest_addr_6;
-  rand bit [31:0] dec_fail_dest_addr_7;
-  rand bit [4:0]  group1_ost_id;
-  rand bit [12:0] plane_pair1_alter_bit;
-  rand bit        plane3_empty;
-  rand bit        plane2_empty;
-  rand bit [4:0]  group0_ost_id;
-  rand bit [8:0]  plane_pair0_alter_bit;
-  rand bit        plane1_empty;
-  rand bit        plane0_empty;
-  rand bit [15:0] plane1_01bit;
-  rand bit [15:0] plane0_01bit;
-  rand bit [15:0] plane3_01bit;
-  rand bit [15:0] plane2_01bit;
-  rand bit [4:0]  rsv2;
-  rand bit [8:0]  plane_pair3_alter_bit;
-  rand bit        plane7_empty;
-  rand bit        plane6_empty;
-  rand bit [4:0]  rsv3;
-  rand bit [8:0]  plane_pair2_alter_bit;
-  rand bit        plane5_empty;
-  rand bit        plane4_empty;
-  rand bit [15:0] plane5_01bit;
-  rand bit [15:0] plane4_01bit;
-  rand bit [15:0] plane7_01bit;
-  rand bit [15:0] plane6_01bit;
-  rand bit [4:0]  rsv4;
-  rand bit [8:0]  plane_pair5_alter_bit;
-  rand bit        plane11_empty;
-  rand bit        plane10_empty;
-  rand bit [4:0]  rsv5;
-  rand bit [8:0]  plane_pair4_alter_bit;
-  rand bit        plane9_empty;
-  rand bit        plane8_empty;
-  rand bit [15:0] plane9_01bit;
-  rand bit [15:0] plane8_01bit;
-  rand bit [15:0] plane11_01bit;
-  rand bit [15:0] plane10_01bit;
-  rand bit [4:0]  rsv6;
-  rand bit [8:0]  plane_pair7_alter_bit;
-  rand bit        plane15_empty;
-  rand bit        plane14_empty;
-  rand bit [4:0]  rsv7;
-  rand bit [8:0]  plane_pair6_alter_bit;
-  rand bit        plane13_empty;
-  rand bit        plane12_empty;
-  rand bit [15:0] plane13_01bit;
-  rand bit [15:0] plane12_01bit;
-  rand bit [15:0] plane15_01bit;
-  rand bit [15:0] plane14_01bit;
+  `uvm_object_utils(nsu2cpu_deep_resp_transaction)
 
-  function new(string name="nsu2cpu_deep_resp_transaction");
+  // --------------------------
+  // Index 0 fields
+  // --------------------------
+  logic [7:0]  plane_pair_en;
+  logic        req_type;
+  logic [6:0]  request_id;
+  logic [15:0] instruction_index;
+
+  // --------------------------
+  // Index 1 fields
+  // --------------------------
+  logic [7:0]  error_injection_plane_pair_bitmap;
+  logic [7:0]  plane_pair_dec_result;
+  logic [7:0]  group1_block_addr;
+  logic [7:0]  group0_block_addr;
+
+  // --------------------------
+  // Index 2 fields
+  // --------------------------
+  logic [3:0]  rsv_idx2;
+  logic [4:0]  group0_nsu_ost_id;
+  logic [22:0] group0_meta_index_LBA;
+
+  // --------------------------
+  // Index 3 fields
+  // --------------------------
+  logic [3:0]  rsv_idx3;
+  logic [4:0]  group1_nsu_ost_id;
+  logic [22:0] group1_meta_index_LBA;
+
+  // --------------------------
+  // Index 4 fields
+  // --------------------------
+  logic [1:0]  meta_mode;
+  logic        deep_read_data_discard;
+  logic        rsv_idx4_28;
+  logic        off_wbf_err_output_en;
+  logic        safe_fast_read;
+  logic        deep_read_sel;
+  logic        rsv_idx4_24;
+  logic [11:0] group1_page_addr;
+  logic [11:0] group0_page_addr;
+
+  // --------------------------
+  // Index 5 fields
+  // --------------------------
+  logic [7:0]  plane_pair_lba_comp;
+  logic [7:0]  plane_pair_error_flag_comp;
+  logic [7:0]  plane_pair_crc_result;
+  logic [7:0]  plane_pair_ecc_result;
+
+  // --------------------------
+  // Index 6 fields
+  // --------------------------
+  logic [15:0] rsv_idx6;
+  logic [15:0] plane_empty;
+
+  // --------------------------
+  // Index 7 fields
+  // --------------------------
+  logic [4:0]  rsv_idx7;
+  logic [8:0]  plane_pair2_alter_bit_buf_id_for_msa;
+  logic [8:0]  plane_pair1_alter_bit_buf_id_for_msa;
+  logic [8:0]  plane_pair0_alter_bit_buf_id_for_msa;
+
+  // --------------------------
+  // Index 8 fields
+  // --------------------------
+  logic [4:0]  rsv_idx8;
+  logic [8:0]  plane_pair5_alter_bit_buf_id_for_msa;
+  logic [8:0]  plane_pair4_alter_bit_buf_id_for_msa;
+  logic [8:0]  plane_pair3_alter_bit_buf_id_for_msa;
+
+  // --------------------------
+  // Index 9 fields
+  // --------------------------
+  logic [13:0] rsv_idx9;
+  logic [8:0]  plane_pair7_alter_bit_buf_id_for_msa;
+  logic [8:0]  plane_pair6_alter_bit_buf_id_for_msa;
+
+  // --------------------------
+  // Index 10 fields
+  // --------------------------
+  logic [15:0] plane_pair1_0_1_bit_cnt;
+  logic [15:0] plane_pair0_0_1_bit_cnt;
+
+  // --------------------------
+  // Index 11 fields
+  // --------------------------
+  logic [15:0] plane_pair3_0_1_bit_cnt;
+  logic [15:0] plane_pair2_0_1_bit_cnt;
+
+  // --------------------------
+  // Index 12 fields
+  // --------------------------
+  logic [15:0] plane_pair5_0_1_bit_cnt;
+  logic [15:0] plane_pair4_0_1_bit_cnt;
+
+  // --------------------------
+  // Index 13 fields
+  // --------------------------
+  logic [15:0] plane_pair7_0_1_bit_cnt;
+  logic [15:0] plane_pair6_0_1_bit_cnt;
+  logic [15:0] plane_pair5_0_1_bit_cnt_dup; // 避免重名
+
+  function new(string name = "nsu2cpu_deep_resp_transactionaction");
     super.new(name);
-    nsu2cpu_deep_resp=new[28];
   endfunction
 
-  function void fields_assignment();
-    // Index 0
-    plane_pair_en      = nsu2cpu_deep_resp[0][31:24];
-    nand_index          = nsu2cpu_deep_resp[0][23:16];
-    instruction_index   = nsu2cpu_deep_resp[0][15:0];
 
-    // Index 1
-    plane_crc_err       = nsu2cpu_deep_resp[1][31:24];
-    plane_pair_err_flag_comp = nsu2cpu_deep_resp[1][23:16];
-    plane_pair_lba_comp = nsu2cpu_deep_resp[1][15:8];
-    plane_pair_ondec_flag = nsu2cpu_deep_resp[1][7:0];
+function void fields_assignment();
+  // --------------------------
+  // Index 0 assignment
+  // --------------------------
+  trans.plane_pair_en    = nsu2cpu_deep_resp[0][31:24];
+  trans.req_type         = nsu2cpu_deep_resp[0][23];
+  trans.request_id       = nsu2cpu_deep_resp[0][22:16];
+  trans.instruction_index = nsu2cpu_deep_resp[0][15:0];
 
-    // Index 2
-    deep_read_sel       = nsu2cpu_deep_resp[2][31];
-    read_mode           = nsu2cpu_deep_resp[2][30];
-    rsv0                = nsu2cpu_deep_resp[2][29:28];
-    page_address_plane_group_1 = nsu2cpu_deep_resp[2][27:16];
-    rsv1                = nsu2cpu_deep_resp[2][15:12];
-    page_address_plane_group_0 = nsu2cpu_deep_resp[2][11:0];
+  // --------------------------
+  // Index 1 assignment
+  // --------------------------
+  trans.error_injection_plane_pair_bitmap = nsu2cpu_deep_resp[1][31:24];
+  trans.plane_pair_dec_result             = nsu2cpu_deep_resp[1][23:16];
+  trans.group1_block_addr                 = nsu2cpu_deep_resp[1][15:8];
+  trans.group0_block_addr                 = nsu2cpu_deep_resp[1][7:0];
 
-    // Index 3
-    group1_block_addr   = nsu2cpu_deep_resp[3][31:16];
-    group0_block_addr   = nsu2cpu_deep_resp[3][15:0];
+  // --------------------------
+  // Index 2 assignment
+  // --------------------------
+  trans.rsv_idx2              = nsu2cpu_deep_resp[2][31:28];
+  trans.group0_nsu_ost_id      = nsu2cpu_deep_resp[2][27:23];
+  trans.group0_meta_index_LBA  = nsu2cpu_deep_resp[2][22:0];
 
-    // Index 4-7
-    group0_meta_addr    = nsu2cpu_deep_resp[4];
-    group1_meta_addr    = nsu2cpu_deep_resp[5];
-    group_0_dest_memory_addr = nsu2cpu_deep_resp[6];
-    group_1_dest_memory_addr = nsu2cpu_deep_resp[7];
+  // --------------------------
+  // Index 3 assignment
+  // --------------------------
+  trans.rsv_idx3              = nsu2cpu_deep_resp[3][31:28];
+  trans.group1_nsu_ost_id      = nsu2cpu_deep_resp[3][27:23];
+  trans.group1_meta_index_LBA  = nsu2cpu_deep_resp[3][22:0];
 
-    // Index 8-15
-    dec_fail_dest_addr_0 = nsu2cpu_deep_resp[8];
-    dec_fail_dest_addr_1 = nsu2cpu_deep_resp[9];
-    dec_fail_dest_addr_2 = nsu2cpu_deep_resp[10];
-    dec_fail_dest_addr_3 = nsu2cpu_deep_resp[11];
-    dec_fail_dest_addr_4 = nsu2cpu_deep_resp[12];
-    dec_fail_dest_addr_5 = nsu2cpu_deep_resp[13];
-    dec_fail_dest_addr_6 = nsu2cpu_deep_resp[14];
-    dec_fail_dest_addr_7 = nsu2cpu_deep_resp[15];
+  // --------------------------
+  // Index 4 assignment
+  // --------------------------
+  trans.meta_mode              = nsu2cpu_deep_resp[4][31:30];
+  trans.deep_read_data_discard = nsu2cpu_deep_resp[4][29];
+  trans.rsv_idx4_28            = nsu2cpu_deep_resp[4][28];
+  trans.off_wbf_err_output_en  = nsu2cpu_deep_resp[4][27];
+  trans.safe_fast_read         = nsu2cpu_deep_resp[4][26];
+  trans.deep_read_sel          = nsu2cpu_deep_resp[4][25];
+  trans.rsv_idx4_24            = nsu2cpu_deep_resp[4][24];
+  trans.group1_page_addr       = nsu2cpu_deep_resp[4][23:12];
+  trans.group0_page_addr       = nsu2cpu_deep_resp[4][11:0];
 
-    // Index 16
-    group1_ost_id       = nsu2cpu_deep_resp[16][31:27];
-    plane_pair1_alter_bit = nsu2cpu_deep_resp[16][26:18];
-    plane3_empty        = nsu2cpu_deep_resp[16][17];
-    plane2_empty        = nsu2cpu_deep_resp[16][16];
-    group0_ost_id       = nsu2cpu_deep_resp[16][15:11];
-    plane_pair0_alter_bit = nsu2cpu_deep_resp[16][10:2];
-    plane1_empty        = nsu2cpu_deep_resp[16][1];
-    plane0_empty        = nsu2cpu_deep_resp[16][0];
+  // --------------------------
+  // Index 5 assignment
+  // --------------------------
+  trans.plane_pair_lba_comp        = nsu2cpu_deep_resp[5][31:24];
+  trans.plane_pair_error_flag_comp = nsu2cpu_deep_resp[5][23:16];
+  trans.plane_pair_crc_result      = nsu2cpu_deep_resp[5][15:8];
+  trans.plane_pair_ecc_result      = nsu2cpu_deep_resp[5][7:0];
 
-    // Index 17-18
-    plane1_01bit        = nsu2cpu_deep_resp[17][31:16];
-    plane0_01bit        = nsu2cpu_deep_resp[17][15:0];
-    plane3_01bit        = nsu2cpu_deep_resp[18][31:16];
-    plane2_01bit        = nsu2cpu_deep_resp[18][15:0];
+  // --------------------------
+  // Index 6 assignment
+  // --------------------------
+  trans.rsv_idx6    = nsu2cpu_deep_resp[6][31:16];
+  trans.plane_empty = nsu2cpu_deep_resp[6][15:0];
 
-    // Index 19
-    rsv2                = nsu2cpu_deep_resp[19][31:27];
-    plane_pair3_alter_bit = nsu2cpu_deep_resp[19][26:18];
-    plane7_empty        = nsu2cpu_deep_resp[19][17];
-    plane6_empty        = nsu2cpu_deep_resp[19][16];
-    rsv3                = nsu2cpu_deep_resp[19][15:11];
-    plane_pair2_alter_bit = nsu2cpu_deep_resp[19][10:2];
-    plane5_empty        = nsu2cpu_deep_resp[19][1];
-    plane4_empty        = nsu2cpu_deep_resp[19][0];
+  // --------------------------
+  // Index 7 assignment
+  // --------------------------
+  trans.rsv_idx7                             = nsu2cpu_deep_resp[7][31:27];
+  trans.plane_pair2_alter_bit_buf_id_for_msa = nsu2cpu_deep_resp[7][26:18];
+  trans.plane_pair1_alter_bit_buf_id_for_msa = nsu2cpu_deep_resp[7][17:9];
+  trans.plane_pair0_alter_bit_buf_id_for_msa = nsu2cpu_deep_resp[7][8:0];
 
-    // Index 20-21
-    plane5_01bit        = nsu2cpu_deep_resp[20][31:16];
-    plane4_01bit        = nsu2cpu_deep_resp[20][15:0];
-    plane7_01bit        = nsu2cpu_deep_resp[21][31:16];
-    plane6_01bit        = nsu2cpu_deep_resp[21][15:0];
+  // --------------------------
+  // Index 8 assignment
+  // --------------------------
+  trans.rsv_idx8                             = nsu2cpu_deep_resp[8][31:27];
+  trans.plane_pair5_alter_bit_buf_id_for_msa = nsu2cpu_deep_resp[8][26:18];
+  trans.plane_pair4_alter_bit_buf_id_for_msa = nsu2cpu_deep_resp[8][17:9];
+  trans.plane_pair3_alter_bit_buf_id_for_msa = nsu2cpu_deep_resp[8][8:0];
 
-    // Index 22
-    rsv4                = nsu2cpu_deep_resp[22][31:27];
-    plane_pair5_alter_bit = nsu2cpu_deep_resp[22][26:18];
-    plane11_empty       = nsu2cpu_deep_resp[22][17];
-    plane10_empty       = nsu2cpu_deep_resp[22][16];
-    rsv5                = nsu2cpu_deep_resp[22][15:11];
-    plane_pair4_alter_bit = nsu2cpu_deep_resp[22][10:2];
-    plane9_empty        = nsu2cpu_deep_resp[22][1];
-    plane8_empty        = nsu2cpu_deep_resp[22][0];
+  // --------------------------
+  // Index 9 assignment
+  // --------------------------
+  trans.rsv_idx9                             = nsu2cpu_deep_resp[9][31:18];
+  trans.plane_pair7_alter_bit_buf_id_for_msa = nsu2cpu_deep_resp[9][17:9];
+  trans.plane_pair6_alter_bit_buf_id_for_msa = nsu2cpu_deep_resp[9][8:0];
 
-    // Index 23-24
-    plane9_01bit        = nsu2cpu_deep_resp[23][31:16];
-    plane8_01bit        = nsu2cpu_deep_resp[23][15:0];
-    plane11_01bit       = nsu2cpu_deep_resp[24][31:16];
-    plane10_01bit       = nsu2cpu_deep_resp[24][15:0];
+  // --------------------------
+  // Index 10 assignment
+  // --------------------------
+  trans.plane_pair1_0_1_bit_cnt = nsu2cpu_deep_resp[10][31:16];
+  trans.plane_pair0_0_1_bit_cnt = nsu2cpu_deep_resp[10][15:0];
 
-    // Index 25
-    rsv6                = nsu2cpu_deep_resp[25][31:27];
-    plane_pair7_alter_bit = nsu2cpu_deep_resp[25][26:18];
-    plane15_empty       = nsu2cpu_deep_resp[25][17];
-    plane14_empty       = nsu2cpu_deep_resp[25][16];
-    rsv7                = nsu2cpu_deep_resp[25][15:11];
-    plane_pair6_alter_bit = nsu2cpu_deep_resp[25][10:2];
-    plane13_empty       = nsu2cpu_deep_resp[25][1];
-    plane12_empty       = nsu2cpu_deep_resp[25][0];
+  // --------------------------
+  // Index 11 assignment
+  // --------------------------
+  trans.plane_pair3_0_1_bit_cnt = nsu2cpu_deep_resp[11][31:16];
+  trans.plane_pair2_0_1_bit_cnt = nsu2cpu_deep_resp[11][15:0];
 
-    // Index 26-27
-    plane13_01bit       = nsu2cpu_deep_resp[26][31:16];
-    plane12_01bit       = nsu2cpu_deep_resp[26][15:0];
-    plane15_01bit       = nsu2cpu_deep_resp[27][31:16];
-    plane14_01bit       = nsu2cpu_deep_resp[27][15:0];
+  // --------------------------
+  // Index 12 assignment
+  // --------------------------
+  trans.plane_pair5_0_1_bit_cnt = nsu2cpu_deep_resp[12][31:16];
+  trans.plane_pair4_0_1_bit_cnt = nsu2cpu_deep_resp[12][15:0];
 
-    `uvm_info("FIELDS_EXTRACTION", "All variables extracted successfully!", UVM_LOW);
-  endfunction
-
-  function void array_assignment();
-    nsu2cpu_deep_resp = new[28];
-
-    nsu2cpu_deep_resp[0] = {
-      plane_pair_en[7:0],
-      nand_index[7:0],
-      instruction_index[15:0]
-    };
-
-    nsu2cpu_deep_resp[1] = {
-      plane_crc_err[7:0],
-      plane_pair_err_flag_comp[7:0],
-      plane_pair_lba_comp[7:0],
-      plane_pair_ondec_flag[7:0]
-    };
-
-    nsu2cpu_deep_resp[2] = {
-      deep_read_sel,
-      read_mode,
-      rsv0[1:0],
-      page_address_plane_group_1[11:0],
-      rsv1[3:0],
-      page_address_plane_group_0[11:0]
-    };
-
-    nsu2cpu_deep_resp[3] = {
-      group1_block_addr[15:0],
-      group0_block_addr[15:0]
-    };
-
-    nsu2cpu_deep_resp[4]  = group0_meta_addr;
-    nsu2cpu_deep_resp[5]  = group1_meta_addr;
-    nsu2cpu_deep_resp[6]  = group_0_dest_memory_addr;
-    nsu2cpu_deep_resp[7]  = group_1_dest_memory_addr;
-
-    nsu2cpu_deep_resp[8]  = dec_fail_dest_addr_0;
-    nsu2cpu_deep_resp[9]  = dec_fail_dest_addr_1;
-    nsu2cpu_deep_resp[10] = dec_fail_dest_addr_2;
-    nsu2cpu_deep_resp[11] = dec_fail_dest_addr_3;
-    nsu2cpu_deep_resp[12] = dec_fail_dest_addr_4;
-    nsu2cpu_deep_resp[13] = dec_fail_dest_addr_5;
-    nsu2cpu_deep_resp[14] = dec_fail_dest_addr_6;
-    nsu2cpu_deep_resp[15] = dec_fail_dest_addr_7;
-
-    nsu2cpu_deep_resp[16] = {
-      group1_ost_id[4:0],
-      plane_pair1_alter_bit[8:0],
-      plane3_empty,
-      plane2_empty,
-      group0_ost_id[4:0],
-      plane_pair0_alter_bit[8:0],
-      plane1_empty,
-      plane0_empty
-    };
-
-    nsu2cpu_deep_resp[17] = {plane1_01bit[15:0], plane0_01bit[15:0]};
-    nsu2cpu_deep_resp[18] = {plane3_01bit[15:0], plane2_01bit[15:0]};
-
-    nsu2cpu_deep_resp[19] = {
-      rsv2[4:0],
-      plane_pair3_alter_bit[8:0],
-      plane7_empty,
-      plane6_empty,
-      rsv3[4:0],
-      plane_pair2_alter_bit[8:0],
-      plane5_empty,
-      plane4_empty
-    };
-
-    nsu2cpu_deep_resp[20] = {plane5_01bit[15:0], plane4_01bit[15:0]};
-    nsu2cpu_deep_resp[21] = {plane7_01bit[15:0], plane6_01bit[15:0]};
-
-    nsu2cpu_deep_resp[22] = {
-      rsv4[4:0],
-      plane_pair5_alter_bit[8:0],
-      plane11_empty,
-      plane10_empty,
-      rsv5[4:0],
-      plane_pair4_alter_bit[8:0],
-      plane9_empty,
-      plane8_empty
-    };
-
-    nsu2cpu_deep_resp[23] = {plane9_01bit[15:0], plane8_01bit[15:0]};
-    nsu2cpu_deep_resp[24] = {plane11_01bit[15:0], plane10_01bit[15:0]};
-
-    nsu2cpu_deep_resp[25] = {
-      rsv6[4:0],
-      plane_pair7_alter_bit[8:0],
-      plane15_empty,
-      plane14_empty,
-      rsv7[4:0],
-      plane_pair6_alter_bit[8:0],
-      plane13_empty,
-      plane12_empty
-    };
-
-    nsu2cpu_deep_resp[26] = {plane13_01bit[15:0], plane12_01bit[15:0]};
-    nsu2cpu_deep_resp[27] = {plane15_01bit[15:0], plane14_01bit[15:0]};
-  endfunction
+  // --------------------------
+  // Index 13 assignment
+  // --------------------------
+  trans.plane_pair7_0_1_bit_cnt   = nsu2cpu_deep_resp[13][31:16];
+  trans.plane_pair6_0_1_bit_cnt   = nsu2cpu_deep_resp[13][15:0];
+  trans.plane_pair5_0_1_bit_cnt_dup = nsu2cpu_deep_resp[13][15:0]; // 表中重复项
+endfunction
 
 endclass
