@@ -346,8 +346,8 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
         `uvm_info(get_type_name(), $sformatf("Received DEEP_READ_RESP: instr_idx=%0h, pp_dec_result=%08b, pp_crc_result=%08b, pp_lba_comp=%08b", 
             resp.instruction_index, resp.plane_pair_dec_result, resp.plane_pair_crc_result, resp.plane_pair_lba_comp), UVM_LOW)
         
-        // Find matching expected config
-        if (pending_instr_exists[resp.instruction_index]) begin
+
+        if (pending_instr_exists[resp.instruction_index]) begin        // Find matched expected config
             status = CHECK_PASS;
             fail_reason = "";
             matched_gid = -1;
@@ -366,17 +366,18 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                 
                 // Check ost_id match (key for group independence)
                 if (cfg.tr[pp_base].nsu_ost_id == resp_ost_id) begin
-                    matched_gid = gid;
+                    matched_gid = gid;//if group_ost_id not matched,error will be reported
                     
                     `uvm_info(get_type_name(), $sformatf("  Matched Group%0d (ost_id=%0h)", 
                         gid, cfg.tr[pp_base].nsu_ost_id), UVM_LOW)
                     
                     // Iterate 4 plane_pairs in group for checks
+                    // Only check plane_pairs expected to report deep_resp 
+                        //crc failed
                     for (int pp = 0; pp < 4; pp++) begin
                         if (!cfg.tr[pp_base + pp].plane_sel) continue;  // Skip unselected plane_pair
                         
-                        // Only check plane_pairs expected to report deep_resp (dec_suc=0 && crc_pass=1)
-                        if (!cfg.tr[pp_base + pp].dec_suc && cfg.tr[pp_base + pp].crc_pass) begin
+                        if (!cfg.tr[pp_base + pp].crc_pass) begin //if crc failed,deep resp will be report
                             pp_idx = gid * 4 + pp;  // Global plane_pair index
                             
                             // Check decode status (plane_pair_dec_result: 1=success, 0=fail)
@@ -466,6 +467,21 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
             end
             
             // Update statistics (per group)
+            // Check if matching Group is found (OST ID match)
+            if (matched_gid < 0) begin
+                `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP: OST ID mismatch for instr_idx=%0h. Expected group0_ost_id=%0h or group1_ost_id=%0h, but got resp.group0_ost_id=%0h, resp.group1_ost_id=%0h", 
+                    resp.instruction_index, 
+                    pending_config[resp.instruction_index].tr[0].nsu_ost_id,
+                    pending_config[resp.instruction_index].tr[4].nsu_ost_id,
+                    resp.group0_ost_id,
+                    resp.group1_ost_id))
+                fail_count++;
+                // Clear checked config to avoid duplicate processing
+                pending_instr_exists[resp.instruction_index] = 1'b0;
+                return;  // Skip remaining checks
+            end
+            
+            // OST ID match successful, update statistics
             if (matched_gid >= 0) begin
                 for (int pp = 0; pp < 4; pp++) begin
                     pp_idx = matched_gid * 4 + pp;
@@ -502,7 +518,7 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                 pending_instr_exists[resp.instruction_index] = 1'b0;
             end
         end else begin
-            `uvm_warning(get_type_name(), $sformatf("DEEP_READ_RESP: No matching config for instr_idx=%0h", 
+            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP: No matching config for instr_idx=%0h", 
                 resp.instruction_index))
         end
     end
