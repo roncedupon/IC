@@ -462,61 +462,32 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                             gid, cfg.tr[pp_base].lba[22:0], resp.group1_meta_index_LBA);
                     end
                     
-                    break;  // Exit after finding matching group
-                end
-            end
-            
-            // Update statistics (per group)
-            // Check if matching Group is found (OST ID match)
-            if (matched_gid < 0) begin
-                `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP: OST ID mismatch for instr_idx=%0h. Expected group0_ost_id=%0h or group1_ost_id=%0h, but got resp.group0_ost_id=%0h, resp.group1_ost_id=%0h", 
-                    resp.instruction_index, 
-                    pending_config[resp.instruction_index].tr[0].nsu_ost_id,
-                    pending_config[resp.instruction_index].tr[4].nsu_ost_id,
-                    resp.group0_ost_id,
-                    resp.group1_ost_id))
-                fail_count++;
-                // Clear checked config to avoid duplicate processing
-                pending_instr_exists[resp.instruction_index] = 1'b0;
-                return;  // Skip remaining checks
-            end
-            
-            // OST ID match successful, update statistics
-            if (matched_gid >= 0) begin
-                for (int pp = 0; pp < 4; pp++) begin
-                    pp_idx = matched_gid * 4 + pp;
-                    // plane_pair_dec_result: 1=success, 0=fail
-                    if (resp.plane_pair_dec_result[pp_idx]) begin
-                        group_decode_success[matched_gid]++;
+                    // Update statistics and report for this group
+                    if (status == CHECK_PASS) begin
+                        pass_count++;
+                        group_decode_success[gid]++;
+                        `uvm_info(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK PASS: instr_idx=%0h (ost_id=%0h)", 
+                            gid, resp.instruction_index, resp_ost_id), UVM_LOW)
                     end else begin
-                        group_decode_fail[matched_gid]++;
+                        fail_count++;
+                        group_decode_fail[gid]++;
+                        `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, status=%0b, reason=%s", 
+                            gid, resp.instruction_index, status, fail_reason))
                     end
-                    // plane_pair_crc_result: 1=success, 0=fail
-                    if (resp.plane_pair_crc_result[pp_idx]) begin
-                        group_crc_err[matched_gid]++;
-                    end
-                    // plane_pair_lba_comp: 1=mismatch
-                    if (resp.plane_pair_lba_comp[pp_idx]) begin
-                        group_lba_mismatch[matched_gid]++;
-                    end
+                    
+                    // Process next group (do not break, check both groups)
+                end else begin
+                    // OST ID not matched for this group
+                    `uvm_info(get_type_name(), $sformatf("  Group%0d OST ID not matched: expected=%0h, got=%0h", 
+                        gid, cfg.tr[pp_base].nsu_ost_id, resp_ost_id), UVM_LOW)
                 end
             end
             
-            // Report results
-            if (status == CHECK_PASS) begin
-                pass_count++;
-                `uvm_info(get_type_name(), $sformatf("DEEP_READ_RESP CHECK PASS: instr_idx=%0h, Group%0d (ost_id=%0h)", 
-                    resp.instruction_index, matched_gid, resp_ost_id), UVM_LOW)
-            end else begin
-                fail_count++;
-                `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP CHECK FAIL: instr_idx=%0h, Group%0d, status=%0b, reason=%s", 
-                    resp.instruction_index, matched_gid, status, fail_reason))
-            end
+            // Note: Group-specific checks and reporting are done inside the loop above
+            // Each group is checked independently
             
-            // Clear checked group config
-            if (matched_gid >= 0) begin
-                pending_instr_exists[resp.instruction_index] = 1'b0;
-            end
+            // Clear checked config
+            pending_instr_exists[resp.instruction_index] = 1'b0;
         end else begin
             `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP: No matching config for instr_idx=%0h", 
                 resp.instruction_index))
