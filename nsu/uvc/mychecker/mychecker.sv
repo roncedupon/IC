@@ -113,6 +113,21 @@ class `CLASS_NAME_DEFINE extends uvm_component;
     int unsigned offwbf_fail_count = 0;
     
     //-------------------------------------------------------------------------
+    // OFFWBF address management (simulates DUT's priority encoder behavior)
+    //-------------------------------------------------------------------------
+    bit [15:0] offwbf_addr_status;  // 16 address spaces (0-15), 0=free, 1=occupied
+    bit [3:0] offwbf_ost_id_to_addr [bit [4:0]];  // Map from ost_id to allocated address
+    logic [31:0] offwbf_base_addr;  // Base address for OFFWBF IO space
+    
+    // OFFWBF address management methods
+    extern function void init_offwbf_addr_manager();
+    extern function bit [3:0] allocate_offwbf_addr(bit [4:0] ost_id);
+    extern function void free_offwbf_addr(bit [4:0] ost_id);
+    extern function bit [3:0] get_allocated_offwbf_addr(bit [4:0] ost_id);
+    extern function bit is_offwbf_addr_occupied(bit [3:0] addr);
+    extern function void print_offwbf_addr_status();
+    
+    //-------------------------------------------------------------------------
     // Task declarations (inside class)
     //-------------------------------------------------------------------------
     extern virtual task pack_ondec_transactions();  // New: Pack transactions from 8 queues
@@ -141,6 +156,9 @@ class `CLASS_NAME_DEFINE extends uvm_component;
         ondec_group_cmd_fifo = new("ondec_group_cmd_fifo", this);
         deep_read_resp_fifo = new("deep_read_resp_fifo", this);
         offwbf_cmd_fifo = new("offwbf_cmd_fifo", this);
+        
+        // Initialize OFFWBF address manager
+        init_offwbf_addr_manager();
     endfunction : build_phase
     
     //-------------------------------------------------------------------------
@@ -805,17 +823,23 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
                         `uvm_error(get_type_name(), fail_reason)
                     end
                 end
-                else begin//io-read,calculated by nsu-->io_offline_wbf_addr + {out_id,12'd0};
-                    // io_offline_wbf_addr + {out_id,12'd0}
+                else begin//io-read,calculated by nsu-->io_offline_wbf_addr + {allocated_addr,12'd0};
+                    // io_offline_wbf_addr + {allocated_addr,12'd0}
                     logic [31:0] exp_io_addr;
-                    logic [31:0] offwbf_base_addr='ha00;//TODO get it from global cfg---reg_write("nsu0", `NSU_REG_BASE + 'ha0, 'ha00);//offwbf success ,data output addr
-                    exp_io_addr = offwbf_base_addr + {offwbf_tr.ost_id_nsu2offline, 12'd0};
+                    bit [3:0] allocated_addr;
+                    
+                    // Allocate address using the address manager (simulates DUT's priority encoder)
+                    allocated_addr = allocate_offwbf_addr(offwbf_tr.ost_id_nsu2offline);
+                    
+                    // Calculate expected IO address
+                    exp_io_addr = offwbf_base_addr + {allocated_addr, 12'd0};
+                    
                     if (dest_mem_addr_32bit != exp_io_addr) begin
                         status = CHECK_FAIL_DATA;
                         fail_reason = $sformatf(
-                            "Group%0d PP[%0d] dest_mem_addr mismatch in IO-read: expected=%0h (io_offline_wbf_addr=%0h + ost_id=%0h), got=%0h",
+                            "Group%0d PP[%0d] dest_mem_addr mismatch in IO-read: expected=%0h (io_offline_wbf_addr=%0h + allocated_addr=%0d), got=%0h",
                             matched_gid, matched_pp, exp_io_addr,
-                            offwbf_base_addr, offwbf_tr.ost_id_nsu2offline,
+                            offwbf_base_addr, allocated_addr,
                             dest_mem_addr_32bit);
                         `uvm_error(get_type_name(), fail_reason)
                     end
@@ -848,6 +872,12 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
             offwbf_fail_count++;
             `uvm_error(get_type_name(), $sformatf("\n========== OFFWBF_CMD CHECK FAIL ==========\n  Group: %0d, PP: %0d\n  Status: %0b\n  Reason: %s\n  Total FAIL count: %0d\n============================================\n", matched_gid, matched_pp, status, fail_reason, fail_count))
         end
+        
+        // =========================================================
+        // Step 5.5: Free OFFWBF address (simulates DUT's address release)
+        // =========================================================
+        // Free the allocated address for this ost_id
+        free_offwbf_addr(offwbf_tr.ost_id_nsu2offline);
         
         // =========================================================
         // Step 6: Clear offline_wbf_work_en flag for processed plane_pair
@@ -978,5 +1008,123 @@ task `CLASS_NAME_DEFINE::pack_ondec_transactions();
             ref_instr_idx), UVM_LOW)
     end
 endtask : pack_ondec_transactions
+
+//-----------------------------------------------------------------------------  
+// OFFWBF Address Management Functions
+//-----------------------------------------------------------------------------  
+
+function void `CLASS_NAME_DEFINE::init_offwbf_addr_manager();
+    // Initialize address status (all free)
+    offwbf_addr_status = 16'b0;
+    // Clear address mapping
+    offwbf_ost_id_to_addr.delete();
+    // Set base address (TODO: make configurable)
+    offwbf_base_addr = 32'hA00;
+    `uvm_info(get_type_name(), $sformatf("Initialized OFFWBF address manager: base_addr=%0h, all 16 addresses free", offwbf_base_addr), UVM_LOW)
+endfunction
+
+function bit [3:0] `CLASS_NAME_DEFINE::allocate_offwbf_addr(bit [4:0] ost_id);
+    bit [3:0] addr;
+    
+    // Check if address is already allocated for this ost_id
+    if (offwbf_ost_id_to_addr.exists(ost_id)) begin
+        addr = offwbf_ost_id_to_addr[ost_id];
+        `uvm_info(get_type_name(), $sformatf("Address %0d already allocated for ost_id=%0d, reusing", addr, ost_id), UVM_LOW)
+        return addr;
+    end
+    
+    // Find first free address (priority encoder behavior)
+    for (int i = 0; i < 16; i++) begin
+        if (offwbf_addr_status[i] == 1'b0) begin
+            addr = i;
+            // Mark address as occupied
+            offwbf_addr_status[addr] = 1'b1;
+            // Record mapping
+            offwbf_ost_id_to_addr[ost_id] = addr;
+            `uvm_info(get_type_name(), $sformatf("Allocated OFFWBF address %0d for ost_id=%0d (status=0b%016b)", 
+                addr, ost_id, offwbf_addr_status), UVM_LOW)
+            return addr;
+        end
+    end
+    
+    // No free address available
+    `uvm_error(get_type_name(), $sformatf("No free OFFWBF addresses available for ost_id=%0d", ost_id))
+    return 4'hF; // Return invalid address
+endfunction
+
+function void `CLASS_NAME_DEFINE::free_offwbf_addr(bit [4:0] ost_id);
+    if (offwbf_ost_id_to_addr.exists(ost_id)) begin
+        bit [3:0] addr = offwbf_ost_id_to_addr[ost_id];
+        // Mark address as free
+        offwbf_addr_status[addr] = 1'b0;
+        // Remove mapping
+        offwbf_ost_id_to_addr.delete(ost_id);
+        `uvm_info(get_type_name(), $sformatf("Freed OFFWBF address %0d for ost_id=%0d (status=0b%016b)", 
+            addr, ost_id, offwbf_addr_status), UVM_LOW)
+    end else begin
+        `uvm_warning(get_type_name(), $sformatf("No OFFWBF address allocated for ost_id=%0d", ost_id))
+    end
+endfunction
+
+function bit [3:0] `CLASS_NAME_DEFINE::get_allocated_offwbf_addr(bit [4:0] ost_id);
+    if (offwbf_ost_id_to_addr.exists(ost_id)) begin
+        return offwbf_ost_id_to_addr[ost_id];
+    end
+    `uvm_warning(get_type_name(), $sformatf("No OFFWBF address allocated for ost_id=%0d", ost_id))
+    return 4'hF; // Return invalid address
+endfunction
+
+function bit `CLASS_NAME_DEFINE::is_offwbf_addr_occupied(bit [3:0] addr);
+    if (addr < 16) begin
+        return offwbf_addr_status[addr];
+    end
+    return 1'b1; // Invalid address considered occupied
+endfunction
+
+function void `CLASS_NAME_DEFINE::print_offwbf_addr_status();
+    string status_str;
+    for (int i = 0; i < 16; i++) begin
+        status_str = {status_str, (offwbf_addr_status[i] ? "1" : "0")};
+        if ((i + 1) % 4 == 0 && i < 15) begin
+            status_str = {status_str, " " };
+        end
+    end
+    `uvm_info(get_type_name(), $sformatf("OFFWBF address status: 0b%s", status_str), UVM_LOW)
+endfunction
+
+// Test function for address allocation logic (can be called during simulation)
+function void `CLASS_NAME_DEFINE::test_offwbf_addr_manager();
+    bit [3:0] addr;
+    
+    `uvm_info(get_type_name(), "=== Testing OFFWBF Address Manager ===", UVM_LOW)
+    
+    // Test 1: Allocate addresses in order
+    `uvm_info(get_type_name(), "Test 1: Allocating addresses in order", UVM_LOW)
+    addr = allocate_offwbf_addr(5'd0); // Should get 0
+    addr = allocate_offwbf_addr(5'd1); // Should get 1
+    addr = allocate_offwbf_addr(5'd2); // Should get 2
+    print_offwbf_addr_status();
+    
+    // Test 2: Reuse address after release
+    `uvm_info(get_type_name(), "Test 2: Reusing address after release", UVM_LOW)
+    free_offwbf_addr(5'd0); // Free address 0
+    print_offwbf_addr_status();
+    addr = allocate_offwbf_addr(5'd3); // Should get 0 (reuse)
+    print_offwbf_addr_status();
+    
+    // Test 3: Multiple allocations for same ost_id
+    `uvm_info(get_type_name(), "Test 3: Multiple allocations for same ost_id", UVM_LOW)
+    addr = allocate_offwbf_addr(5'd1); // Should reuse existing address 1
+    print_offwbf_addr_status();
+    
+    // Test 4: Free all addresses
+    `uvm_info(get_type_name(), "Test 4: Freeing all addresses", UVM_LOW)
+    free_offwbf_addr(5'd1);
+    free_offwbf_addr(5'd2);
+    free_offwbf_addr(5'd3);
+    print_offwbf_addr_status();
+    
+    `uvm_info(get_type_name(), "=== OFFWBF Address Manager Test Complete ===", UVM_LOW)
+endfunction
 
 `endif
