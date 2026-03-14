@@ -30,7 +30,7 @@ task nsu_read_base_sequence::TSU_RDATA_RECEIVER(int LOOP_NUM=2);
             `uvm_info(get_full_name(),$sformatf("Loop[%0d] waiting for tsu reading start ",i),UVM_LOW)
             env.tsu2nsu_agt[0].tsu_nsu_rcmd_que.get(rcmd_tr);
             TOTAL_LEN_4K_NUM = rcmd_tr.rcmd_vld_num*4;
-            while(TOTAL_LEN_4K_NUM !=0)begin
+            while(TOTAL_LEN_4K_NUM >0)begin
                 env.nsu2tsu_agt[0].nsu_tsu_rdata_que.get(rdata_tr);
                 if(rdata_tr.rdata_vld)begin
                     `uvm_info(get_full_name(),$sformatf("4k num: [currently: %0d]--[total: %0d]",rcmd_tr.rcmd_vld_num*4-TOTAL_LEN_4K_NUM,rcmd_tr.rcmd_vld_num*4),UVM_LOW)
@@ -48,3 +48,21 @@ task nsu_read_base_sequence::TSU_RDATA_RECEIVER(int LOOP_NUM=2);
     `uvm_info(get_full_name(),$sformatf("tsu read done"),UVM_LOW)
     exit_flag=1;
 endtask
+
+function void tsu2nsu_read_checker::delete_queue_items(ref tsu2nsu_transaction src_que[$], const ref tsu2nsu_transaction del_que[$]);
+  int del_cnt = 0;
+  int idx_que[$];
+  if(src_que.size() == 0 || del_que.size() == 0) return;
+
+    foreach(del_que[i]) begin
+        if(del_que[i] == null) `uvm_fatal("null object","item in del que is null");
+        idx_que = src_que.find_index with(item == del_que[i]);
+        if(idx_que.size()>0) begin 
+          foreach(idx_que[idx])begin
+            src_que.delete(idx); 
+            del_cnt++; 
+          end
+        end
+    end
+    `uvm_info("DELETE", $sformatf("Deleted 0x%0x matched queue items", del_cnt), UVM_LOW);
+endfunction                
