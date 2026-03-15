@@ -205,6 +205,13 @@ class nsu2cpu_rcmd_transaction extends uvm_sequence_item;
     `uvm_field_int(ost_id,UVM_ALL_ON)
     `uvm_field_int(mask,UVM_ALL_ON)
     `uvm_field_int(rcmd_vld_num,UVM_ALL_ON)
+    `uvm_field_int(core_id,UVM_ALL_ON)
+    `uvm_field_int(cmd_merge_mode,UVM_ALL_ON)
+    `uvm_field_int(group0_ost_id,UVM_ALL_ON)
+    `uvm_field_int(group1_ost_id,UVM_ALL_ON)
+    `uvm_field_int(group0_nsu_addr,UVM_ALL_ON)
+    `uvm_field_int(group1_nsu_addr,UVM_ALL_ON)
+    `uvm_field_array_int(nsu_cmd_arr,UVM_ALL_ON)
   `uvm_object_utils_end
 endclass
 
@@ -231,6 +238,7 @@ class cpu2nsu_write_addr_transaction extends uvm_sequence_item;
     `uvm_field_int(ost_id, UVM_ALL_ON)
     `uvm_field_int(transaction_index, UVM_ALL_ON)
     `uvm_field_int(write_addr, UVM_ALL_ON)
+    `uvm_field_array_int(cmd_arr, UVM_ALL_ON)
   `uvm_object_utils_end
 endclass
 
@@ -394,12 +402,12 @@ class nsu2cpu_resp_transaction extends uvm_sequence_item;
     `uvm_field_int(error_plane_pair_sel, UVM_ALL_ON)
     `uvm_field_int(nand_index, UVM_ALL_ON)
     `uvm_field_int(instruction_index, UVM_ALL_ON)
+    `uvm_field_array_int(nsu2cpu_resp, UVM_ALL_ON)
   `uvm_object_utils_end
 endclass
 
 class nsu2cpu_deep_resp_transaction extends uvm_sequence_item;
-  `uvm_object_utils(nsu2cpu_deep_resp_transaction)
-  logic [31:0]nsu2cpu_deep_resp[];
+  rand logic [31:0]nsu2cpu_deep_resp[];
   // --------------------------
   // Index 0 fields
   // --------------------------
@@ -504,6 +512,59 @@ class nsu2cpu_deep_resp_transaction extends uvm_sequence_item;
   logic [15:0] plane_pair7_0_1_bit_cnt;
   logic [15:0] plane_pair6_0_1_bit_cnt;
   logic [15:0] plane_pair5_0_1_bit_cnt_dup; // 避免重名
+
+  `uvm_object_utils_begin(nsu2cpu_deep_resp_transaction)
+    `uvm_field_array_int(nsu2cpu_deep_resp, UVM_ALL_ON)
+    `uvm_field_int(plane_pair_en, UVM_ALL_ON)
+    `uvm_field_int(req_type, UVM_ALL_ON)
+    `uvm_field_int(request_id, UVM_ALL_ON)
+    `uvm_field_int(instruction_index, UVM_ALL_ON)
+    `uvm_field_int(error_injection_plane_pair_bitmap, UVM_ALL_ON)
+    `uvm_field_int(plane_pair_dec_result, UVM_ALL_ON)
+    `uvm_field_int(group1_block_addr, UVM_ALL_ON)
+    `uvm_field_int(group0_block_addr, UVM_ALL_ON)
+    `uvm_field_int(rsv_idx2, UVM_ALL_ON)
+    `uvm_field_int(group0_ost_id, UVM_ALL_ON)
+    `uvm_field_int(group0_meta_index_LBA, UVM_ALL_ON)
+    `uvm_field_int(rsv_idx3, UVM_ALL_ON)
+    `uvm_field_int(group1_ost_id, UVM_ALL_ON)
+    `uvm_field_int(group1_meta_index_LBA, UVM_ALL_ON)
+    `uvm_field_int(meta_mode, UVM_ALL_ON)
+    `uvm_field_int(deep_read_data_discard, UVM_ALL_ON)
+    `uvm_field_int(rsv_idx4_28, UVM_ALL_ON)
+    `uvm_field_int(off_wbf_err_output_en, UVM_ALL_ON)
+    `uvm_field_int(safe_fast_read, UVM_ALL_ON)
+    `uvm_field_int(deep_read_sel, UVM_ALL_ON)
+    `uvm_field_int(rsv_idx4_24, UVM_ALL_ON)
+    `uvm_field_int(group1_page_addr, UVM_ALL_ON)
+    `uvm_field_int(group0_page_addr, UVM_ALL_ON)
+    `uvm_field_int(plane_pair_lba_comp, UVM_ALL_ON)
+    `uvm_field_int(plane_pair_error_flag_comp, UVM_ALL_ON)
+    `uvm_field_int(plane_pair_crc_result, UVM_ALL_ON)
+    `uvm_field_int(plane_pair_ecc_result, UVM_ALL_ON)
+    `uvm_field_int(rsv_idx6, UVM_ALL_ON)
+    `uvm_field_int(plane_empty, UVM_ALL_ON)
+    `uvm_field_int(rsv_idx7, UVM_ALL_ON)
+    `uvm_field_int(plane_pair2_alter_bit_buf_id_for_msa, UVM_ALL_ON)
+    `uvm_field_int(plane_pair1_alter_bit_buf_id_for_msa, UVM_ALL_ON)
+    `uvm_field_int(plane_pair0_alter_bit_buf_id_for_msa, UVM_ALL_ON)
+    `uvm_field_int(rsv_idx8, UVM_ALL_ON)
+    `uvm_field_int(plane_pair5_alter_bit_buf_id_for_msa, UVM_ALL_ON)
+    `uvm_field_int(plane_pair4_alter_bit_buf_id_for_msa, UVM_ALL_ON)
+    `uvm_field_int(plane_pair3_alter_bit_buf_id_for_msa, UVM_ALL_ON)
+    `uvm_field_int(rsv_idx9, UVM_ALL_ON)
+    `uvm_field_int(plane_pair7_alter_bit_buf_id_for_msa, UVM_ALL_ON)
+    `uvm_field_int(plane_pair6_alter_bit_buf_id_for_msa, UVM_ALL_ON)
+    `uvm_field_int(plane_pair1_0_1_bit_cnt, UVM_ALL_ON)
+    `uvm_field_int(plane_pair0_0_1_bit_cnt, UVM_ALL_ON)
+    `uvm_field_int(plane_pair3_0_1_bit_cnt, UVM_ALL_ON)
+    `uvm_field_int(plane_pair2_0_1_bit_cnt, UVM_ALL_ON)
+    `uvm_field_int(plane_pair5_0_1_bit_cnt, UVM_ALL_ON)
+    `uvm_field_int(plane_pair4_0_1_bit_cnt, UVM_ALL_ON)
+    `uvm_field_int(plane_pair7_0_1_bit_cnt, UVM_ALL_ON)
+    `uvm_field_int(plane_pair6_0_1_bit_cnt, UVM_ALL_ON)
+    `uvm_field_int(plane_pair5_0_1_bit_cnt_dup, UVM_ALL_ON)
+  `uvm_object_utils_end
 
   function new(string name = "nsu2cpu_deep_resp_transactionaction");
     super.new(name);
