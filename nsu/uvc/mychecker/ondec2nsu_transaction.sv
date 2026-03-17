@@ -468,4 +468,93 @@ class ondec2nsu_group_transaction extends uvm_sequence_item;
         }
     }
 
+    // Print function for group transaction with bit field differentiation
+    function void print();
+        `uvm_info(get_name(), $sformatf("=== ondec2nsu_group_transaction: %s ===", get_name()), UVM_MEDIUM);
+        
+        // Print common fields from first transaction (since they should be consistent)
+        `uvm_info(get_name(), $sformatf("Common fields:"), UVM_MEDIUM);
+        `uvm_info(get_name(), $sformatf("  discard_read_data: %b (bit 29)", tr[0].discard_read_data), UVM_MEDIUM);
+        `uvm_info(get_name(), $sformatf("  nand_index: 0x%0h (bits 23:16)", tr[0].nand_index), UVM_MEDIUM);
+        `uvm_info(get_name(), $sformatf("  instruction_index: 0x%0h (bits 15:0)", tr[0].instruction_index), UVM_MEDIUM);
+        `uvm_info(get_name(), $sformatf("  deep_read_status_sel: %b (bit 23)", tr[0].deep_read_status_sel), UVM_MEDIUM);
+        `uvm_info(get_name(), $sformatf("  program_verify_read: %b (bit 21)", tr[0].program_verify_read), UVM_MEDIUM);
+        `uvm_info(get_name(), $sformatf("  read_mode: %b (bit 20)", tr[0].read_mode), UVM_MEDIUM);
+        `uvm_info(get_name(), $sformatf("  response_sel_que: %b (bits 19:18)", tr[0].response_sel_que), UVM_MEDIUM);
+        `uvm_info(get_name(), $sformatf("  meta_mode: %b (bits 17:16)", tr[0].meta_mode), UVM_MEDIUM);
+        `uvm_info(get_name(), $sformatf("  deep_read_sel: %b (bit 15)", tr[0].deep_read_sel), UVM_MEDIUM);
+        `uvm_info(get_name(), $sformatf("  descramble_en: %b (bit 0)", tr[0].descramble_en), UVM_MEDIUM);
+        `uvm_info(get_name(), $sformatf("  write_pos_jdg: %b (bit 14)", tr[0].write_pos_jdg), UVM_MEDIUM);
+        
+        // Print individual transaction fields with bit field information
+        for (int i = 0; i < 8; i++) {
+            `uvm_info(get_name(), $sformatf("\nTransaction[%0d]:", i), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("  nsu_ost_id: %d (bits 28:24)", tr[i].nsu_ost_id), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("  plane_sel: %b (bit 12)", tr[i].plane_sel), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("  dec_suc: %b (bit 11)", tr[i].dec_suc), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("  crc_pass: %b (bit 22)", tr[i].crc_pass), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("  error_flag: %b (bit 13)", tr[i].error_flag), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("  data_out_en: %b (bit 20)", tr[i].data_out_en), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("  offline_wbf_work_en: %b (bit 19)", tr[i].offline_wbf_work_en), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("  decode_correct_bit_num: %d (bits 10:2)", tr[i].decode_correct_bit_num), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("  plane0_empty: %b (bit 0)", tr[i].plane0_empty), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("  plane1_empty: %b (bit 1)", tr[i].plane1_empty), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("  plane0_bit_cnt: %d (bits 15:0)", tr[i].plane0_bit_cnt), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("  plane1_bit_cnt: %d (bits 31:16)", tr[i].plane1_bit_cnt), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("  plane_group_block_addr: 0x%0h (bits 31:16)", tr[i].plane_group_block_addr), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("  page_addr_plane_group: 0x%0h (bits 11:0)", tr[i].page_addr_plane_group), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("  meta_buffer_id: 0x%0h", tr[i].meta_buffer_id), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("  dest_memory_addr: 0x%0h", tr[i].dest_memory_addr), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("  dec_fail_dest_addr: 0x%0h", tr[i].dec_fail_dest_addr), UVM_MEDIUM);
+            
+            // Print command fields with bit positions
+            `uvm_info(get_name(), $sformatf("  Command fields breakdown:"), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("    index0: 0x%08h", tr[i].on_dec_cmd[0]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bits 31:30: %b (rsv0_31_30)", tr[i].on_dec_cmd[0][31:30]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bit 29: %b (discard_read_data)", tr[i].on_dec_cmd[0][29]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bits 28:24: %b (rsv0_28_24)", tr[i].on_dec_cmd[0][28:24]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bits 23:16: %b (nand_index)", tr[i].on_dec_cmd[0][23:16]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bits 15:0: %b (instruction_index)", tr[i].on_dec_cmd[0][15:0]), UVM_MEDIUM);
+            
+            `uvm_info(get_name(), $sformatf("    index1: 0x%08h", tr[i].on_dec_cmd[1]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bit 31: %b (rsv1_31)", tr[i].on_dec_cmd[1][31]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bit 30: %b (off_wbf_err_output_en)", tr[i].on_dec_cmd[1][30]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bit 29: %b (deep_read_data_discard)", tr[i].on_dec_cmd[1][29]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bits 28:24: %b (nsu_ost_id)", tr[i].on_dec_cmd[1][28:24]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bit 23: %b (deep_read_status_sel)", tr[i].on_dec_cmd[1][23]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bit 22: %b (crc_pass)", tr[i].on_dec_cmd[1][22]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bit 21: %b (program_verify_read)", tr[i].on_dec_cmd[1][21]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bit 20: %b (read_mode)", tr[i].on_dec_cmd[1][20]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bits 19:18: %b (response_sel_que)", tr[i].on_dec_cmd[1][19:18]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bits 17:16: %b (meta_mode)", tr[i].on_dec_cmd[1][17:16]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bit 15: %b (deep_read_sel)", tr[i].on_dec_cmd[1][15]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bit 14: %b (write_pos_jdg)", tr[i].on_dec_cmd[1][14]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bit 13: %b (error_flag)", tr[i].on_dec_cmd[1][13]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bit 12: %b (plane_sel)", tr[i].on_dec_cmd[1][12]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bit 11: %b (dec_suc)", tr[i].on_dec_cmd[1][11]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bits 10:2: %b (decode_correct_bit_num)", tr[i].on_dec_cmd[1][10:2]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bit 1: %b (plane1_empty)", tr[i].on_dec_cmd[1][1]), UVM_MEDIUM);
+            `uvm_info(get_name(), $sformatf("      bit 0: %b (plane0_empty)", tr[i].on_dec_cmd[1][0]), UVM_MEDIUM);
+        }
+        
+        `uvm_info(get_name(), $sformatf("=== End of ondec2nsu_group_transaction ==="), UVM_MEDIUM);
+    endfunction
+
+    // Override do_print to support UVM print methods
+    virtual function void do_print(uvm_printer printer);
+        super.do_print(printer);
+        
+        printer.print_string("group_transaction", get_name());
+        
+        // Print common fields
+        printer.print_int("discard_read_data", tr[0].discard_read_data, 1);
+        printer.print_int("nand_index", tr[0].nand_index, 8);
+        printer.print_int("instruction_index", tr[0].instruction_index, 16);
+        
+        // Print individual transactions
+        for (int i = 0; i < 8; i++) {
+            printer.print_object($sformatf("transaction[%0d]", i), tr[i]);
+        }
+    endfunction
+
 endclass

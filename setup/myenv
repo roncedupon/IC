@@ -84,3 +84,7 @@ PATH=$PATH:$install_root/share/pkgconfig
 alias gotosoc='cd $SOC_HOME && source setup'
 alias rvgcc="riscv32-unknown-elf-gcc"
 PATH=$PATH:/mnt/disk_0/softwares/riscv/riscv_gcc/lowrisc_toolchain/lowrisc-toolchain-gcc-rv32imcb-20240923-1/bin
+
+
+#apikey
+export DASHSCOPE_API_KEY=sk-76ac9953ec60462984235ba2695a2409

@@ -264,8 +264,11 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
     int pp_base;
     logic group_need_deep_resp;
     logic group_need_offwbf;
-    
+    logic overall_need_deep_resp;
+    logic overall_need_offwbf;        
     forever begin
+        overall_need_deep_resp  =0 ;
+        overall_need_offwbf     =0 ;        
         // =========================================================
         // Step 1: Get ondec2nsu_group_transaction
         // =========================================================
@@ -278,6 +281,8 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
         // =========================================================
         // Step 2: Process by group (Group 0: PP[0:3], Group 1: PP[4:7])
         // =========================================================
+
+        
         for (int gid = 0; gid < 2; gid++) begin
             pp_base = gid * 4;  // Group 0: pp_base=0, Group 1: pp_base=4
             
@@ -294,6 +299,13 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
             for (int pp = 0; pp < 4; pp++) begin
                 if (!group_tr.tr[pp_base + pp].plane_sel) continue;  // Skip unselected plane_pair
                 
+                // Print detailed debug information with instruction_index
+                `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, dec_suc=%b, crc_pass=%b, data_out_en=%b, deep_read_sel=%b", 
+                    pp_base+pp, group_tr.tr[0].instruction_index, 
+                    group_tr.tr[pp_base + pp].dec_suc, 
+                    group_tr.tr[pp_base + pp].crc_pass, 
+                    group_tr.tr[pp_base + pp].data_out_en, 
+                    group_tr.tr[pp_base + pp].deep_read_sel), UVM_LOW)
 
                 //wbf failed
                 if (!group_tr.tr[pp_base + pp].dec_suc && group_tr.tr[pp_base + pp].crc_pass) begin
@@ -301,27 +313,40 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
                     if (!group_tr.tr[pp_base + pp].data_out_en) begin
                         // No data output → Need deep_resp report
                         group_need_deep_resp = 1'b1;
-                        `uvm_info(get_type_name(), $sformatf("    PP[%0d]: decode_fail+crc_success+no_data → Group%0d need DEEP_READ_RESP", 
-                            pp_base+pp, gid), UVM_LOW)
+                        `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, decode_fail+crc_success+no_data → Group%0d need DEEP_READ_RESP", 
+                            pp_base+pp, group_tr.tr[0].instruction_index, gid), UVM_LOW)
                     end else begin
                     //2. addr enough, Data output → Need offwbf call
                         group_need_offwbf = 1'b1;
                         group_tr.tr[pp_base + pp].offline_wbf_work_en = 1'b1;  // Set flag for offwbf-needed plane_pair
-                        `uvm_info(get_type_name(), $sformatf("    PP[%0d]: decode_fail+crc_success+data → Group%0d need OFFWBF_CMD", 
-                            pp_base+pp, gid), UVM_LOW)
+                        `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, decode_fail+crc_success+data → Group%0d need OFFWBF_CMD", 
+                            pp_base+pp, group_tr.tr[0].instruction_index, gid), UVM_LOW)
                     end
                 end
 
                 //crc failed
                 if(!group_tr.tr[pp_base + pp].crc_pass)begin
                     group_need_deep_resp = 1'b1;
+                    `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, crc_fail → Group%0d need DEEP_READ_RESP", 
+                        pp_base+pp, group_tr.tr[0].instruction_index, gid), UVM_LOW)
                 end
-
+                //dec_suc 
+                if(!group_tr.tr[pp_base + pp].dec_suc)begin
+                    group_need_deep_resp = 1'b1;
+                    `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, decode_fail → Group%0d need DEEP_READ_RESP", 
+                        pp_base+pp, group_tr.tr[0].instruction_index, gid), UVM_LOW)
+                end           
                 //deep_read_sel
                 if(group_tr.tr[pp_base + pp].deep_read_sel)begin
                     group_need_deep_resp = 1'b1;
+                    `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, deep_read_sel=1 → Group%0d need DEEP_READ_RESP", 
+                        pp_base+pp, group_tr.tr[0].instruction_index, gid), UVM_LOW)
                 end                
             end
+            
+            // Update overall need flags
+            overall_need_deep_resp |= group_need_deep_resp;
+            overall_need_offwbf |= group_need_offwbf;
             
             // Record judgment results
             if (group_need_deep_resp) begin
@@ -345,15 +370,15 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
         // Set independent flags for deep_resp and offwbf
         // Note: Both can be set simultaneously for the same instruction_index
         if (pending_deep_resp.exists(group_tr.tr[0].instruction_index)) begin
-            if (group_need_deep_resp) pending_deep_resp[group_tr.tr[0].instruction_index] = 1'b1;
+            if (overall_need_deep_resp) pending_deep_resp[group_tr.tr[0].instruction_index] = 1'b1;
         end else begin
-            pending_deep_resp[group_tr.tr[0].instruction_index] = group_need_deep_resp;
+            pending_deep_resp[group_tr.tr[0].instruction_index] = overall_need_deep_resp;
         end
         
         if (pending_offwbf.exists(group_tr.tr[0].instruction_index)) begin
-            if (group_need_offwbf) pending_offwbf[group_tr.tr[0].instruction_index] = 1'b1;
+            if (overall_need_offwbf) pending_offwbf[group_tr.tr[0].instruction_index] = 1'b1;
         end else begin
-            pending_offwbf[group_tr.tr[0].instruction_index] = group_need_offwbf;
+            pending_offwbf[group_tr.tr[0].instruction_index] = overall_need_offwbf;
         end
         
         `uvm_info(get_type_name(), $sformatf("Registered config for instr_idx=%0h (deep_resp=%0b, offwbf=%0b)", 
@@ -415,50 +440,42 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                 
                 // Check ost_id match (key for group independence)
                 if (cfg.tr[pp_base].nsu_ost_id == resp_ost_id) begin
-                    matched_gid = gid;//if group_ost_id not matched,error will be reported
+                    matched_gid = gid;//step1: compare group ost_id
                     
                     `uvm_info(get_type_name(), $sformatf("  Matched Group%0d (ost_id=%0h)", 
                         gid, cfg.tr[pp_base].nsu_ost_id), UVM_LOW)
                     
                     // Iterate 4 plane_pairs in group for checks
                     // Only check plane_pairs expected to report deep_resp 
-                        //crc failed
                     for (int pp = 0; pp < 4; pp++) begin
                         if (!cfg.tr[pp_base + pp].plane_sel) continue;  // Skip unselected plane_pair
                         
-                        if (!cfg.tr[pp_base + pp].crc_pass) begin //if crc failed,deep resp will be report
-                            pp_idx = gid * 4 + pp;  // Global plane_pair index
-                            
-                            // Check decode status (plane_pair_dec_result: 1=success, 0=fail)
-                            if (cfg.tr[pp_base + pp].dec_suc != resp.plane_pair_dec_result[pp_idx]) begin
-                                status = CHECK_FAIL_DECODE;
-                                fail_reason = $sformatf("Group%0d PP[%0d] decode mismatch: expected=%0b, got=%0b", 
-                                    gid, pp, cfg.tr[pp_base + pp].dec_suc, resp.plane_pair_dec_result[pp_idx]);
-                                break;
-                            end
-                            
-                            // Check CRC status (plane_pair_crc_result: 1=success, 0=fail)
-                            if (cfg.tr[pp_base + pp].crc_pass != resp.plane_pair_crc_result[pp_idx]) begin
-                                status = CHECK_FAIL_CRC;
-                                fail_reason = $sformatf("Group%0d PP[%0d] CRC mismatch: expected=%0b, got=%0b", 
-                                    gid, pp, cfg.tr[pp_base + pp].crc_pass, resp.plane_pair_crc_result[pp_idx]);
-                                break;
-                            end
-                            
-                            // Check LBA comparison result (plane_pair_lba_comp: 1=mismatch, 0=match)
-                            if (cfg.tr[pp_base + pp].error_flag && !resp.plane_pair_lba_comp[pp_idx]) begin
-                                status = CHECK_FAIL_LBA;
-                                fail_reason = $sformatf("Group%0d PP[%0d] LBA comp mismatch: expected mismatch but got match", 
-                                    gid, pp);
-                                break;
-                            end
-                            
-                            // Check ECC result (plane_pair_ecc_result: 1=correctable, 0=uncorrectable)
-                            if (!cfg.tr[pp_base + pp].dec_suc && resp.plane_pair_ecc_result[pp_idx]) begin
-                                `uvm_info(get_type_name(), $sformatf("  Group%0d PP[%0d]: ECC correction successful", 
-                                    gid, pp), UVM_LOW)
-                            end
-                        end
+
+                        pp_idx = gid * 4 + pp;  // Global plane_pair index      
+
+                        // Check decode status (plane_pair_dec_result: 1=success, 0=fail)
+                        if (cfg.tr[pp_base + pp].dec_suc != (!resp.plane_pair_dec_result[pp_idx])) begin
+                            status = CHECK_FAIL_DECODE;
+                            fail_reason = $sformatf("Group%0d PP[%0d] decode mismatch: expected=%0b, got=%0b", 
+                                gid, pp, cfg.tr[pp_base + pp].dec_suc, resp.plane_pair_dec_result[pp_idx]);
+                            break;
+                        end               
+
+                        // Check CRC status (plane_pair_crc_result: 1=success, 0=fail)
+                        if (cfg.tr[pp_base + pp].crc_pass != resp.plane_pair_crc_result[pp_idx]) begin
+                            status = CHECK_FAIL_CRC;
+                            fail_reason = $sformatf("Group%0d PP[%0d] CRC mismatch: expected=%0b, got=%0b", 
+                                gid, pp, cfg.tr[pp_base + pp].crc_pass, resp.plane_pair_crc_result[pp_idx]);
+                            break;
+                        end                
+
+                        // Check LBA comparison result (plane_pair_lba_comp: 1=mismatch, 0=match)
+                        if (cfg.tr[pp_base + pp].error_flag && !resp.plane_pair_lba_comp[pp_idx]) begin
+                            status = CHECK_FAIL_LBA;
+                            fail_reason = $sformatf("Group%0d PP[%0d] LBA comp mismatch: expected mismatch but got match", 
+                                gid, pp);
+                            break;
+                        end                        
                     end
                     
                     // Check deep_read_sel
@@ -475,13 +492,13 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                             gid, cfg.tr[pp_base].read_mode, resp.safe_fast_read);
                     end
                     
-                    // Check block_addr (consistent within group)
-                    if (cfg.tr[pp_base].plane_group_block_addr != resp.group0_block_addr && gid == 0) begin
+                    // Check block_addr (consistent within group),only use lower 8bits
+                    if (cfg.tr[pp_base].plane_group_block_addr[7:0] != resp.group0_block_addr && gid == 0) begin
                         status = CHECK_FAIL_DATA;
                         fail_reason = $sformatf("Group%0d block_addr mismatch: expected=%0h, got=%0h", 
                             gid, cfg.tr[pp_base].plane_group_block_addr, resp.group0_block_addr);
                     end
-                    if (cfg.tr[pp_base].plane_group_block_addr != resp.group1_block_addr && gid == 1) begin
+                    if (cfg.tr[pp_base].plane_group_block_addr[7:0] != resp.group1_block_addr && gid == 1) begin
                         status = CHECK_FAIL_DATA;
                         fail_reason = $sformatf("Group%0d block_addr mismatch: expected=%0h, got=%0h", 
                             gid, cfg.tr[pp_base].plane_group_block_addr, resp.group1_block_addr);
@@ -969,7 +986,7 @@ task `CLASS_NAME_DEFINE::pack_ondec_transactions();
         
         for (int i = 1; i < 8; i++) begin
             if (ondec_tr[i].instruction_index != ref_instr_idx) begin
-                `uvm_error(get_type_name(), $sformatf(
+                `uvm_fatal(get_type_name(), $sformatf(
                     "instruction_index mismatch: PP[0]=%0h, PP[%0d]=%0h", 
                     ref_instr_idx, i, ondec_tr[i].instruction_index))
                 all_valid = 1'b0;
@@ -977,7 +994,7 @@ task `CLASS_NAME_DEFINE::pack_ondec_transactions();
         end
         
         if (!all_valid) begin
-            `uvm_error(get_type_name(), "Discarding mismatched transactions")
+            `uvm_fatal(get_type_name(), "Discarding mismatched transactions")
             continue;  // Discard mismatched transactions, continue next round
         end
         

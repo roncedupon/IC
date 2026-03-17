@@ -12,6 +12,8 @@ class automatic_test;
     endtask
     task change_input_value1(input int data=123);
         data=456;
+        if(data==123)
+            data=789;
         $display("with input ,data is %0d",data);
     endtask    
 endclass
