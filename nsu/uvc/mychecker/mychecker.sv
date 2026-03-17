@@ -457,8 +457,8 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                         if (cfg.tr[pp_base + pp].dec_suc != (!resp.plane_pair_dec_result[pp_idx])) begin
                             status = CHECK_FAIL_DECODE;
                             fail_reason = $sformatf("Group%0d PP[%0d] decode mismatch: expected=%0b, got=%0b", 
-                                gid, pp, cfg.tr[pp_base + pp].dec_suc, resp.plane_pair_dec_result[pp_idx]);
-                            break;
+                                gid, pp, cfg.tr[pp_base + pp].dec_suc, (!resp.plane_pair_dec_result[pp_idx]));
+                            // break;
                         end               
 
                         // Check CRC status (plane_pair_crc_result: 1=success, 0=fail)
@@ -466,7 +466,7 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                             status = CHECK_FAIL_CRC;
                             fail_reason = $sformatf("Group%0d PP[%0d] CRC mismatch: expected=%0b, got=%0b", 
                                 gid, pp, cfg.tr[pp_base + pp].crc_pass, resp.plane_pair_crc_result[pp_idx]);
-                            break;
+                            // break;
                         end                
 
                         // Check LBA comparison result (plane_pair_lba_comp: 1=mismatch, 0=match)
