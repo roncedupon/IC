@@ -456,24 +456,24 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                         // Check decode status (plane_pair_dec_result: 1=success, 0=fail)
                         if (cfg.tr[pp_base + pp].dec_suc != (!resp.plane_pair_dec_result[pp_idx])) begin
                             status = CHECK_FAIL_DECODE;
-                            fail_reason = $sformatf("Group%0d PP[%0d] decode mismatch: expected=%0b, got=%0b", 
-                                gid, pp, cfg.tr[pp_base + pp].dec_suc, (!resp.plane_pair_dec_result[pp_idx]));
+                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d PP[%0d] decode mismatch: expected=%0b, got=%0b", 
+                                gid, resp.instruction_index, gid, pp, cfg.tr[pp_base + pp].dec_suc, (!resp.plane_pair_dec_result[pp_idx])));
                             // break;
                         end               
 
                         // Check CRC status (plane_pair_crc_result: 1=success, 0=fail)
                         if (cfg.tr[pp_base + pp].crc_pass != (!resp.plane_pair_crc_result[pp_idx])) begin
                             status = CHECK_FAIL_CRC;
-                            fail_reason = $sformatf("Group%0d PP[%0d] CRC mismatch: expected=%0b, got=%0b", 
-                                gid, pp, cfg.tr[pp_base + pp].crc_pass, (!resp.plane_pair_crc_result[pp_idx]));
+                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d PP[%0d] CRC mismatch: expected=%0b, got=%0b", 
+                                gid, resp.instruction_index, gid, pp, cfg.tr[pp_base + pp].crc_pass, (!resp.plane_pair_crc_result[pp_idx])));
                             // break;
                         end                
 
                         // Check LBA comparison result (plane_pair_lba_comp: 1=mismatch, 0=match)
                         if (cfg.tr[pp_base + pp].error_flag && !resp.plane_pair_lba_comp[pp_idx]) begin
                             status = CHECK_FAIL_LBA;
-                            fail_reason = $sformatf("Group%0d PP[%0d] LBA comp mismatch: expected mismatch but got match", 
-                                gid, pp);
+                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d PP[%0d] LBA comp mismatch: expected mismatch but got match", 
+                                gid, resp.instruction_index, gid, pp));
                             break;
                         end                        
                     end
@@ -481,54 +481,54 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                     // Check deep_read_sel
                     if (cfg.tr[pp_base].deep_read_sel != resp.deep_read_sel) begin
                         status = CHECK_FAIL_DATA;
-                        fail_reason = $sformatf("Group%0d deep_read_sel mismatch: expected=%0b, got=%0b", 
-                            gid, cfg.tr[pp_base].deep_read_sel, resp.deep_read_sel);
+                        `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d deep_read_sel mismatch: expected=%0b, got=%0b", 
+                            gid, resp.instruction_index, gid, cfg.tr[pp_base].deep_read_sel, resp.deep_read_sel));
                     end
                     
                     // Check read_mode (safe_fast_read corresponds to read_mode)
                     if (cfg.tr[pp_base].read_mode != resp.safe_fast_read) begin
                         status = CHECK_FAIL_DATA;
-                        fail_reason = $sformatf("Group%0d read_mode mismatch: expected=%0b, got=%0b", 
-                            gid, cfg.tr[pp_base].read_mode, resp.safe_fast_read);
+                        `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d read_mode mismatch: expected=%0b, got=%0b", 
+                            gid, resp.instruction_index, gid, cfg.tr[pp_base].read_mode, resp.safe_fast_read));
                     end
                     
                     // Check block_addr (consistent within group),only use lower 8bits
                     if (cfg.tr[pp_base].plane_group_block_addr[7:0] != resp.group0_block_addr && gid == 0) begin
                         status = CHECK_FAIL_DATA;
-                        fail_reason = $sformatf("Group%0d block_addr mismatch: expected=%0h, got=%0h", 
-                            gid, cfg.tr[pp_base].plane_group_block_addr, resp.group0_block_addr);
+                        `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d block_addr mismatch: expected=%0h, got=%0h", 
+                            gid, resp.instruction_index, gid, cfg.tr[pp_base].plane_group_block_addr, resp.group0_block_addr));
                     end
                     if (cfg.tr[pp_base].plane_group_block_addr[7:0] != resp.group1_block_addr && gid == 1) begin
                         status = CHECK_FAIL_DATA;
-                        fail_reason = $sformatf("Group%0d block_addr mismatch: expected=%0h, got=%0h", 
-                            gid, cfg.tr[pp_base].plane_group_block_addr, resp.group1_block_addr);
+                        `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d block_addr mismatch: expected=%0h, got=%0h", 
+                            gid, resp.instruction_index, gid, cfg.tr[pp_base].plane_group_block_addr, resp.group1_block_addr));
                     end
                     
                     // Check page_addr (consistent within group)
                     if (cfg.tr[pp_base].page_addr_plane_group != resp.group0_page_addr && gid == 0) begin
                         status = CHECK_FAIL_DATA;
-                        fail_reason = $sformatf("Group%0d page_addr mismatch: expected=%0h, got=%0h", 
-                            gid, cfg.tr[pp_base].page_addr_plane_group, resp.group0_page_addr);
+                        `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d page_addr mismatch: expected=%0h, got=%0h", 
+                            gid, resp.instruction_index, gid, cfg.tr[pp_base].page_addr_plane_group, resp.group0_page_addr));
                     end
                     if (cfg.tr[pp_base].page_addr_plane_group != resp.group1_page_addr && gid == 1) begin
                         status = CHECK_FAIL_DATA;
-                        fail_reason = $sformatf("Group%0d page_addr mismatch: expected=%0h, got=%0h", 
-                            gid, cfg.tr[pp_base].page_addr_plane_group, resp.group1_page_addr);
+                        `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d page_addr mismatch: expected=%0h, got=%0h", 
+                            gid, resp.instruction_index, gid, cfg.tr[pp_base].page_addr_plane_group, resp.group1_page_addr));
                     end
                     
                     // Check meta_index_LBA (consistent within group)
                     if (cfg.tr[pp_base].lba[22:0] != resp.group0_meta_index_LBA && gid == 0) begin
                         status = CHECK_FAIL_DATA;
-                        fail_reason = $sformatf("Group%0d meta_index_LBA mismatch: expected=%0h, got=%0h", 
-                            gid, cfg.tr[pp_base].lba[22:0], resp.group0_meta_index_LBA);
+                        `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d meta_index_LBA mismatch: expected=%0h, got=%0h", 
+                            gid, resp.instruction_index, gid, cfg.tr[pp_base].lba[22:0], resp.group0_meta_index_LBA));
                     end
                     if (cfg.tr[pp_base].lba[22:0] != resp.group1_meta_index_LBA && gid == 1) begin
                         status = CHECK_FAIL_DATA;
-                        fail_reason = $sformatf("Group%0d meta_index_LBA mismatch: expected=%0h, got=%0h", 
-                            gid, cfg.tr[pp_base].lba[22:0], resp.group1_meta_index_LBA);
+                        `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d meta_index_LBA mismatch: expected=%0h, got=%0h", 
+                            gid, resp.instruction_index, gid, cfg.tr[pp_base].lba[22:0], resp.group1_meta_index_LBA));
                     end
                     
-                    // Update statistics and report for this group
+                    // Update statistics for this group
                     if (status == CHECK_PASS) begin
                         pass_count++;
                         group_decode_success[gid]++;
@@ -537,8 +537,6 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                     end else begin
                         fail_count++;
                         group_decode_fail[gid]++;
-                        `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, status=%0b, reason=%s", 
-                            gid, resp.instruction_index, status, fail_reason))
                     end
                     
                     // Process next group (do not break, check both groups)
