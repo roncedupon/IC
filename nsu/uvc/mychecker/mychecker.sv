@@ -90,7 +90,6 @@ class `CLASS_NAME_DEFINE extends uvm_component;
     //-------------------------------------------------------------------------
     // Pending config tracking table (indexed by instruction_index)
     //-------------------------------------------------------------------------
-    logic pending_instr_exists [bit [15:0]];  // Associative array: Mark if instruction_index exists (deprecated, kept for compatibility)
     logic pending_deep_resp [bit [15:0]];     // Mark if deep read response is expected
     logic pending_offwbf [bit [15:0]];        // Mark if offwbf command is expected
     ondec2nsu_group_transaction pending_config [bit [15:0]];  // [instr_idx] --> Full group transaction
@@ -555,7 +554,6 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
             
             // Check if both deep_resp and offwbf are cleared, then clear config
             if (!pending_deep_resp[resp.instruction_index] && !pending_offwbf[resp.instruction_index]) begin
-                pending_instr_exists[resp.instruction_index] = 1'b0;
                 pending_config.delete(resp.instruction_index);
                 `uvm_info(get_type_name(), $sformatf("All responses processed for instr_idx=%0h, clearing config", 
                     resp.instruction_index), UVM_LOW)
@@ -925,7 +923,6 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
             
             // Check if both deep_resp and offwbf are cleared, then clear config
             if (!pending_deep_resp[matched_instr_idx] && !pending_offwbf[matched_instr_idx]) begin
-                pending_instr_exists[matched_instr_idx] = 1'b0;
                 pending_config.delete(matched_instr_idx);
                 `uvm_info(get_type_name(), $sformatf("All responses processed for instr_idx=%0h, clearing config", matched_instr_idx), UVM_LOW)
             end
