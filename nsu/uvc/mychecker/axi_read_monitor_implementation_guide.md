@@ -1,5 +1,65 @@
 # AXI Read Monitor 实现指南
 
+## 0. 概述
+
+### 0.1 组件定位
+
+`axi_read_monitor` 是一个 UVM 验证组件，用于 **监控 AXI 总线上的读取响应事务**，并将原始的 AXI 总线数据转换为高层次的业务事务（TRANSACTION），供其他验证组件使用。
+
+### 0.2 功能描述
+
+在 UVM 验证环境中，我们经常需要从 AXI 总线上捕获特定地址范围的读响应数据，并将其解析为有意义的业务事务。`axi_read_monitor` 正是为解决这一需求而设计的：
+
+- **数据采集**：从 AXI monitor 接收读响应事务
+- **地址过滤**：仅处理指定地址范围内的数据
+- **数据组装**：将分散的 32bit 数据组装成完整的事务
+- **字段解析**：调用业务层的字段解析方法，将原始数据转换为有意义的字段
+- **事务输出**：通过 TLM analysis port 将组装好的事务发送给消费者
+
+### 0.3 输入与输出
+
+```
+┌─────────────────────┐      ┌─────────────────────┐      ┌─────────────────────┐
+│   AXI Monitor       │      │  axi_read_monitor  │      │  其他验证组件       │
+│  (svt_axi_transaction) ──────▶ │  (数据过滤/组装)  │ ──────▶ │  (消费者)          │
+│                     │      │                    │      │                    │
+│ 输入:               │      │ 参数配置:           │      │ 输出:               │
+│ - address          │      │ - BASE_ADDR         │      │ - TRANSACTION      │
+│ - read_data        │      │ - END_ADDR          │      │   (业务事务)       │
+│ - resp             │      │ - ENTRY_SIZE        │      │                    │
+│ - ...              │      │ - TOTAL_ENTRIES     │      │                    │
+└─────────────────────┘      └─────────────────────┘      └─────────────────────┘
+```
+
+**输入**：
+- `svt_axi_transaction`：来自 AXI VIP monitor 的事务，包含地址、数据、响应等信息
+- 配置参数（通过构造函数或 build_phase 设置）
+
+**输出**：
+- `TRANSACTION`：参数化的业务事务对象（如 `nsu2cpu_deep_resp_transaction`、`nsu2cpu_resp_transaction` 等）
+
+### 0.4 典型应用场景
+
+1. **Deep Read Response 监控**：监控深读响应数据并组装成 `nsu2cpu_deep_resp_transaction`
+2. **普通读响应监控**：监控普通读响应并组装成 `nsu2cpu_resp_transaction`
+3. **配置寄存器读取**：监控配置寄存器的读取响应
+4. **状态信息采集**：从 AXI 总线上采集状态寄存器的数据
+
+### 0.5 使用流程
+
+```systemverilog
+// 1. 实例化 monitor
+deep_resp_monitor = deep_resp_monitor::type_id::create("deep_resp_monitor", this);
+
+// 2. 连接 AXI monitor 的输出到本组件的输入
+axi_monitor.ap.connect(deep_resp_monitor.axi_trans_imp);
+
+// 3. 连接本组件的输出到消费者
+deep_resp_monitor.ap.connect(my_checker.resp_export);
+```
+
+---
+
 ## 1. 需求分析
 
 ### 1.1 功能需求

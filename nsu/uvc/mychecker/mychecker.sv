@@ -93,7 +93,7 @@ class `CLASS_NAME_DEFINE extends uvm_component;
     logic pending_instr_exists [bit [15:0]];  // Associative array: Mark if instruction_index exists (deprecated, kept for compatibility)
     logic pending_deep_resp [bit [15:0]];     // Mark if deep read response is expected
     logic pending_offwbf [bit [15:0]];        // Mark if offwbf command is expected
-    ondec2nsu_group_transaction pending_config [bit [15:0]];  // [instr_idx] → Full group transaction
+    ondec2nsu_group_transaction pending_config [bit [15:0]];  // [instr_idx] --> Full group transaction
     
     //-------------------------------------------------------------------------
     // Statistics counters
@@ -255,9 +255,9 @@ endclass : ondec2nsu_checker
 // Judgment logic (independent per group):
 //   Iterate 4 plane_pairs in group:
 //   - If any plane_pair meets (dec_suc=0 && crc_pass=1 && data_out_en=0)
-//     → Group needs to report deep_resp
+//     --> Group needs to report deep_resp
 //   - If any plane_pair meets (dec_suc=0 && crc_pass=1 && data_out_en=1)
-//     → Group needs to call offwbf
+//     --> Group needs to call offwbf
 //-----------------------------------------------------------------------------
 task `CLASS_NAME_DEFINE::check_ondec_cmd();
     ondec2nsu_group_transaction group_tr;
@@ -311,15 +311,15 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
                 if (!group_tr.tr[pp_base + pp].dec_suc && group_tr.tr[pp_base + pp].crc_pass) begin
                     // 1.no enough addr,so data not outpu,and report deep_resp 
                     if (!group_tr.tr[pp_base + pp].data_out_en) begin
-                        // No data output → Need deep_resp report
+                        // No data output --> Need deep_resp report
                         group_need_deep_resp = 1'b1;
-                        `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, decode_fail+crc_success+no_data → Group%0d need DEEP_READ_RESP", 
+                        `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, decode_fail+crc_success+no_data --> Group%0d need DEEP_READ_RESP", 
                             pp_base+pp, group_tr.tr[0].instruction_index, gid), UVM_LOW)
                     end else begin
-                    //2. addr enough, Data output → Need offwbf call
+                    //2. addr enough, Data output --> Need offwbf call
                         group_need_offwbf = 1'b1;
                         group_tr.tr[pp_base + pp].offline_wbf_work_en = 1'b1;  // Set flag for offwbf-needed plane_pair
-                        `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, decode_fail+crc_success+data → Group%0d need OFFWBF_CMD", 
+                        `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, decode_fail+crc_success+data --> Group%0d need OFFWBF_CMD", 
                             pp_base+pp, group_tr.tr[0].instruction_index, gid), UVM_LOW)
                     end
                 end
@@ -327,19 +327,19 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
                 //crc failed
                 if(!group_tr.tr[pp_base + pp].crc_pass)begin
                     group_need_deep_resp = 1'b1;
-                    `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, crc_fail → Group%0d need DEEP_READ_RESP", 
+                    `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, crc_fail --> Group%0d need DEEP_READ_RESP", 
                         pp_base+pp, group_tr.tr[0].instruction_index, gid), UVM_LOW)
                 end
                 //dec_suc 
                 if(!group_tr.tr[pp_base + pp].dec_suc)begin
                     group_need_deep_resp = 1'b1;
-                    `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, decode_fail → Group%0d need DEEP_READ_RESP", 
+                    `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, decode_fail --> Group%0d need DEEP_READ_RESP", 
                         pp_base+pp, group_tr.tr[0].instruction_index, gid), UVM_LOW)
                 end           
                 //deep_read_sel
                 if(group_tr.tr[pp_base + pp].deep_read_sel)begin
                     group_need_deep_resp = 1'b1;
-                    `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, deep_read_sel=1 → Group%0d need DEEP_READ_RESP", 
+                    `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, deep_read_sel=1 --> Group%0d need DEEP_READ_RESP", 
                         pp_base+pp, group_tr.tr[0].instruction_index, gid), UVM_LOW)
                 end                
             end
