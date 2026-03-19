@@ -17,7 +17,6 @@
 //   - group0_ost_id: OST ID for Group 0
 //   - group1_ost_id: OST ID for Group 1
 //=============================================================================
-import uvm_pkg::*;
 
 typedef class offdec2nsu_transaction;  // Forward declaration (avoid circular dependency)
 typedef class ondec2nsu_group_transaction;  // Forward declaration for ondec2nsu_group_transaction
@@ -204,6 +203,8 @@ class `CLASS_NAME_DEFINE extends uvm_component;
     virtual function void final_phase(uvm_phase phase);
         int unsigned fifo_size;
         bit has_unprocessed;
+        int pending_deep_count = 0;
+        int pending_offwbf_count = 0;
 
         has_unprocessed = 1'b0;
 
@@ -241,10 +242,46 @@ class `CLASS_NAME_DEFINE extends uvm_component;
             has_unprocessed = 1'b1;
         end
 
+        // Check pending deep_resp expectations
+        foreach (pending_deep_resp[token_hash]) begin
+            if (pending_deep_resp[token_hash]) begin
+                `uvm_error(get_type_name(), $sformatf("FINAL_CHECK: Pending deep_resp expected for token_hash=%0x but not received", 
+                    token_hash))
+                has_unprocessed = 1'b1;
+                pending_deep_count++;
+            end
+        end
+
+        // Check pending offwbf expectations
+        foreach (pending_offwbf[token_hash]) begin
+            if (pending_offwbf[token_hash]) begin
+                `uvm_error(get_type_name(), $sformatf("FINAL_CHECK: Pending offwbf expected for token_hash=%0x but not received", 
+                    token_hash))
+                has_unprocessed = 1'b1;
+                pending_offwbf_count++;
+            end
+        end
+
+        // Check pending configs (should be cleared if all responses are processed)
+        // Only check configs that are still expecting responses
+        foreach (pending_config[token_hash]) begin
+            if (pending_deep_resp.exists(token_hash) && pending_deep_resp[token_hash]) begin
+                `uvm_error(get_type_name(), $sformatf("FINAL_CHECK: Config for token_hash=%0x still exists but deep_resp not received", 
+                    token_hash))
+                has_unprocessed = 1'b1;
+            end
+            if (pending_offwbf.exists(token_hash) && pending_offwbf[token_hash]) begin
+                `uvm_error(get_type_name(), $sformatf("FINAL_CHECK: Config for token_hash=%0x still exists but offwbf not received", 
+                    token_hash))
+                has_unprocessed = 1'b1;
+            end
+        end
+
         if (!has_unprocessed) begin
             `uvm_info(get_type_name(), "FINAL_CHECK: All FIFOs are empty, no unprocessed transactions", UVM_LOW)
         end else begin
-            `uvm_error(get_type_name(), "FINAL_CHECK FAILED: Some FIFOs contain unprocessed transactions!")
+            `uvm_error(get_type_name(), $sformatf("FINAL_CHECK FAILED: Some FIFOs contain unprocessed transactions! Pending deep_resp: %0x, Pending offwbf: %0d", 
+                pending_deep_count, pending_offwbf_count))
         end
     endfunction : final_phase
     
@@ -617,9 +654,6 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
     int matched_gid;
     int matched_pp;
     bit [15:0] matched_instr_idx;
-    bit [15:0] p_instr_idx;
-    int p_gid;
-    int p_pp;
     int pp;
     int i;
     ondec2nsu_group_transaction cfg;
@@ -1102,5 +1136,38 @@ function void `CLASS_NAME_DEFINE::test_offwbf_addr_manager();
     
     `uvm_info(get_type_name(), "OFFWBF address manager test completed", UVM_LOW)
 endfunction : test_offwbf_addr_manager
+
+
+// Token transaction for identifying ondec2nsu_group_transaction
+class token_transaction extends uvm_object;
+    `uvm_object_utils(token_transaction)
+    
+    bit [15:0] instruction_index;
+    bit [4:0] group0_ost_id;
+    bit [4:0] group1_ost_id;
+    
+    function new(string name = "token_transaction");
+        super.new(name);
+    endfunction
+    
+    // Compare method for associative array indexing
+    virtual function bit compare(token_transaction other);
+        if (other == null) return 0;
+        return (instruction_index == other.instruction_index &&
+                group0_ost_id == other.group0_ost_id &&
+                group1_ost_id == other.group1_ost_id);
+    endfunction
+    
+    // Hash method for associative array indexing
+    virtual function int unsigned hash();
+        return {8'b0, instruction_index, group0_ost_id, group1_ost_id};
+    endfunction
+    
+    // Convert to string for debugging
+    virtual function string convert2string();
+        return $sformatf("token_transaction(instr_idx=0x%0h, group0_ost_id=0x%0h, group1_ost_id=0x%0h)", 
+                        instruction_index, group0_ost_id, group1_ost_id);
+    endfunction
+endclass
 
 `endif
