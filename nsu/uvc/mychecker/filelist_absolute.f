@@ -1,0 +1,9 @@
++incdir+$VIP_HOME/vip2020/src/sverilog/vcs 
++incdir+$VIP_HOME/vip2020/include/sverilog 
+$VIP_HOME/vip2020/include/sverilog/svt_amba_common.uvm.pkg
+$VIP_HOME/vip2020/include/sverilog/svt_axi.uvm.pkg
+/mnt/disk_0/IC/nsu/uvc/mychecker/nsu_cpu_transactions.sv
+/mnt/disk_0/IC/nsu/uvc/mychecker/ondec2nsu_transaction.sv
+/mnt/disk_0/IC/nsu/uvc/mychecker/mychecker.sv
+/mnt/disk_0/IC/nsu/uvc/mychecker/offdec2nsu_transaction.sv
+/mnt/disk_0/IC/nsu/uvc/mychecker/axi_read_monitor.sv

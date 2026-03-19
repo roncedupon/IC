@@ -17,8 +17,16 @@
 //   - group0_ost_id: OST ID for Group 0
 //   - group1_ost_id: OST ID for Group 1
 //=============================================================================
+import uvm_pkg::*;
+
 typedef class offdec2nsu_transaction;  // Forward declaration (avoid circular dependency)
+typedef class ondec2nsu_group_transaction;  // Forward declaration for ondec2nsu_group_transaction
+typedef class token_transaction;  // Forward declaration for token_transaction
+
 package ondec2nsu_checker_pkg;
+    
+    // Forward declaration for token_transaction
+    // class token_transaction;
     
     //=========================================================================
     // Check status enumeration
@@ -66,6 +74,8 @@ endpackage
 //=============================================================================
 // ondec2nsu_checker class definition
 //=============================================================================
+import ondec2nsu_checker_pkg::*;
+
 class `CLASS_NAME_DEFINE extends uvm_component;
 
     `uvm_component_utils(`CLASS_NAME_DEFINE)
@@ -88,11 +98,11 @@ class `CLASS_NAME_DEFINE extends uvm_component;
     uvm_tlm_analysis_fifo #(offdec2nsu_transaction) offwbf_cmd_fifo;
     
     //-------------------------------------------------------------------------
-    // Pending config tracking table (indexed by instruction_index)
+    // Pending config tracking table (indexed by token hash)
     //-------------------------------------------------------------------------
-    logic pending_deep_resp [bit [15:0]];     // Mark if deep read response is expected
-    logic pending_offwbf [bit [15:0]];        // Mark if offwbf command is expected
-    ondec2nsu_group_transaction pending_config [bit [15:0]];  // [instr_idx] --> Full group transaction
+    logic pending_deep_resp [int];     // Mark if deep read response is expected
+    logic pending_offwbf [int];        // Mark if offwbf command is expected
+    ondec2nsu_group_transaction pending_config [int];  // [token hash] --> Full group transaction
     
     //-------------------------------------------------------------------------
     // Statistics counters
@@ -266,6 +276,8 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
     logic overall_need_deep_resp;
     logic overall_need_offwbf;        
     forever begin
+        token_transaction token;
+        int token_hash;
         overall_need_deep_resp  =0 ;
         overall_need_offwbf     =0 ;        
         // =========================================================
@@ -362,28 +374,31 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
             end
         end
         
-        // Record pending instruction index and save full group transaction
+        // Create token_transaction for identifying this group transaction
+        token = token_transaction::type_id::create("token");
+        token.instruction_index = group_tr.tr[0].instruction_index;
+        token.group0_ost_id = group_tr.tr[0].nsu_ost_id;  // Group 0 OST ID from first transaction
+        token.group1_ost_id = group_tr.tr[4].nsu_ost_id;  // Group 1 OST ID from fifth transaction
+        
+        // Record pending token and save full group transaction
         // Set flags based on what responses are expected
-        pending_config[group_tr.tr[0].instruction_index] = group_tr;
+        token_hash = token.hash();
+        pending_config[token_hash] = group_tr;
         
         // Set independent flags for deep_resp and offwbf
-        // Note: Both can be set simultaneously for the same instruction_index
-        if (pending_deep_resp.exists(group_tr.tr[0].instruction_index)) begin
-            if (overall_need_deep_resp) pending_deep_resp[group_tr.tr[0].instruction_index] = 1'b1;
+        // Note: Both can be set simultaneously for the same token
+        if (pending_deep_resp.exists(token_hash))begin
+            if (overall_need_deep_resp) pending_deep_resp[token_hash] = 1'b1;
         end else begin
-            pending_deep_resp[group_tr.tr[0].instruction_index] = overall_need_deep_resp;
+            pending_deep_resp[token_hash] = overall_need_deep_resp;
+        end
+        if (pending_offwbf.exists(token_hash))begin
+            if (overall_need_offwbf) pending_offwbf[token_hash] = 1'b1;
+        end else begin
+            pending_offwbf[token_hash] = overall_need_offwbf;
         end
         
-        if (pending_offwbf.exists(group_tr.tr[0].instruction_index)) begin
-            if (overall_need_offwbf) pending_offwbf[group_tr.tr[0].instruction_index] = 1'b1;
-        end else begin
-            pending_offwbf[group_tr.tr[0].instruction_index] = overall_need_offwbf;
-        end
-        
-        `uvm_info(get_type_name(), $sformatf("Registered config for instr_idx=%0h (deep_resp=%0b, offwbf=%0b)", 
-            group_tr.tr[0].instruction_index, 
-            pending_deep_resp[group_tr.tr[0].instruction_index],
-            pending_offwbf[group_tr.tr[0].instruction_index]), UVM_LOW)
+        `uvm_info(get_type_name(), $sformatf("Registered config for token=%s (deep_resp=%0b, offwbf=%0b)", token.convert2string(), pending_deep_resp[token_hash], pending_offwbf[token_hash]), UVM_LOW)
     end
 endtask : check_ondec_cmd
 
@@ -413,21 +428,30 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
     int pp_base;
     
     forever begin
+        token_transaction token;
+        int token_hash;
         deep_read_resp_fifo.get(resp);
         total_resp_count++;
         
-        `uvm_info(get_type_name(), $sformatf("Received DEEP_READ_RESP: instr_idx=%0h, pp_dec_result=%08b, pp_crc_result=%08b, pp_lba_comp=%08b", 
-            resp.instruction_index, resp.plane_pair_dec_result, resp.plane_pair_crc_result, resp.plane_pair_lba_comp), UVM_LOW)
+        `uvm_info(get_type_name(), $sformatf("Received DEEP_READ_RESP: instr_idx=%0h, group0_ost_id=%0h, group1_ost_id=%0h, pp_dec_result=%08b, pp_crc_result=%08b, pp_lba_comp=%08b", 
+            resp.instruction_index, resp.group0_ost_id, resp.group1_ost_id, resp.plane_pair_dec_result, resp.plane_pair_crc_result, resp.plane_pair_lba_comp), UVM_LOW)
         
-        // Check if deep read response is expected for this instruction_index
-        if (pending_deep_resp[resp.instruction_index]) begin
+        // Create token_transaction for identifying this response
+        token = token_transaction::type_id::create("token");
+        token.instruction_index = resp.instruction_index;
+        token.group0_ost_id = resp.group0_ost_id;
+        token.group1_ost_id = resp.group1_ost_id;
+        
+        // Check if deep read response is expected for this token
+        token_hash = token.hash();
+        if (pending_deep_resp.exists(token_hash))begin
             status = CHECK_PASS;
             fail_reason = "";
             matched_gid = -1;
             
             // Iterate 2 groups to find matching group (via ost_id)
             for (int gid = 0; gid < 2; gid++) begin
-                cfg = pending_config[resp.instruction_index];
+                cfg = pending_config[token_hash];
                 pp_base = gid * 4;  // Group 0: pp_base=0, Group 1: pp_base=4
                 
                 // Get corresponding ost_id from resp by group_id
@@ -550,17 +574,17 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
             // Each group is checked independently
             
             // Clear deep_resp flag (offwbf flag is managed independently by check_offwbf_cmd)
-            pending_deep_resp[resp.instruction_index] = 1'b0;
+            pending_deep_resp[token_hash] = 1'b0;
             
             // Check if both deep_resp and offwbf are cleared, then clear config
-            if (!pending_deep_resp[resp.instruction_index] && !pending_offwbf[resp.instruction_index]) begin
-                pending_config.delete(resp.instruction_index);
-                `uvm_info(get_type_name(), $sformatf("All responses processed for instr_idx=%0h, clearing config", 
-                    resp.instruction_index), UVM_LOW)
+            if (!pending_deep_resp[token_hash] && !pending_offwbf[token_hash])begin
+                pending_config.delete(token_hash);
+                `uvm_info(get_type_name(), $sformatf("All responses processed for token=%s, clearing config", 
+                    token.convert2string()), UVM_LOW)
             end
         end else begin
-            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP: No matching config for instr_idx=%0h", 
-                resp.instruction_index))
+            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP: No matching config for token=%s", 
+                token.convert2string()))
         end
     end
 endtask : check_deep_read_resp
@@ -609,6 +633,8 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
     int matched_cfg_idx [$];  // Store all matched config indices
     
     forever begin
+        int matched_tokens[$];
+        int matched_token;
         // =========================================================
         // Step 1: Get valid offwbf_cmd from test environment/interface
         // Ensure complete command info and required parameters
@@ -643,41 +669,42 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
         matched_pp_list.delete();
         matched_cfg_idx.delete();
         
-        // Iterate all pending instruction_index to collect descramble_seed matches
-        foreach (pending_config[p_instr_idx]) begin
-            cfg = pending_config[p_instr_idx];
+        // Iterate all pending tokens to collect descramble_seed matches
+        foreach (pending_config[token])begin
+            cfg = pending_config[token];
             
             // Iterate all 8 plane_pairs to find descramble_seed match
             for (pp = 0; pp < 8; pp++) begin
                 if (!cfg.tr[pp].plane_sel) begin
-                    `uvm_info(get_type_name(), $sformatf("  Skipping instr_idx=%0h, PP[%0d]: plane_sel=0 (not selected)", p_instr_idx, pp), UVM_LOW)
+                    `uvm_info(get_type_name(), $sformatf("  Skipping instr_idx=%0h, PP[%0d]: plane_sel=0 (not selected)", cfg.tr[0].instruction_index, pp), UVM_LOW)
                     continue;  // Skip unselected plane_pair
                 end
 
                 if (!cfg.tr[pp].offline_wbf_work_en) begin
-                    `uvm_info(get_type_name(), $sformatf("  Skipping instr_idx=%0h, PP[%0d]: offline_wbf_work_en=0 (no offwbf needed)", p_instr_idx, pp), UVM_LOW)
+                    `uvm_info(get_type_name(), $sformatf("  Skipping instr_idx=%0h, PP[%0d]: offline_wbf_work_en=0 (no offwbf needed)", cfg.tr[0].instruction_index, pp), UVM_LOW)
                     continue;  // Skip plane_pair not needing offwbf
                 end
 
                 // Check descramble_en (must be enabled for descramble_seed match)
                 if (!cfg.tr[pp].descramble_en) begin
-                    `uvm_info(get_type_name(), $sformatf("  Skipping instr_idx=%0h, PP[%0d]: descramble_en=0 (descramble disabled)", p_instr_idx, pp), UVM_LOW)
+                    `uvm_info(get_type_name(), $sformatf("  Skipping instr_idx=%0h, PP[%0d]: descramble_en=0 (descramble disabled)", cfg.tr[0].instruction_index, pp), UVM_LOW)
                     continue;
                 end
                 
                 // Exact descramble_seed match
                 if (descramble_seed == cfg.tr[pp].descramble_seed) begin
-                    `uvm_info(get_type_name(), $sformatf("  >>> MATCH FOUND: instr_idx=%0h, PP[%0d] (global_plane=%0d)\n      descramble_seed: %0h (matched)\n      plane_num:       %0d (offwbf) vs %0d (ondec)\n      src_addr:        %0h (offwbf) vs %0h (ondec)\n      dest_addr:       %0h (offwbf) vs %0h (ondec)", p_instr_idx, pp % 4, pp, descramble_seed, offwbf_tr.plane_num, pp, src_mem_addr_32bit, cfg.tr[pp].dec_fail_dest_addr, dest_mem_addr_32bit, cfg.tr[pp].dest_memory_addr), UVM_LOW)
+                    `uvm_info(get_type_name(), $sformatf("  >>> MATCH FOUND: instr_idx=%0h, PP[%0d] (global_plane=%0d)\n      descramble_seed: %0h (matched)\n      plane_num:       %0d (offwbf) vs %0d (ondec)\n      src_addr:        %0h (offwbf) vs %0h (ondec)\n      dest_addr:       %0h (offwbf) vs %0h (ondec)", cfg.tr[0].instruction_index, pp % 4, pp, descramble_seed, offwbf_tr.plane_num, pp, src_mem_addr_32bit, cfg.tr[pp].dec_fail_dest_addr, dest_mem_addr_32bit, cfg.tr[pp].dest_memory_addr), UVM_LOW)
                     
                     // Record matches
                     match_count++;
-                    matched_instr_indices.push_back(p_instr_idx);
+                    matched_instr_indices.push_back(cfg.tr[0].instruction_index);
                     matched_pp_list.push_back(pp);
                     matched_cfg_idx.push_back(pp);
+                    matched_tokens.push_back(token);
 
                     `uvm_info(get_type_name(), $sformatf("  Total matches so far: %0d", match_count), UVM_LOW)
                 end else begin
-                    `uvm_info(get_type_name(), $sformatf("  No match: instr_idx=%0h, PP[%0d], descramble_seed=%0h (expected %0h)", p_instr_idx, pp, cfg.tr[pp].descramble_seed, descramble_seed), UVM_LOW)
+                    `uvm_info(get_type_name(), $sformatf("  No match: instr_idx=%0h, PP[%0d], descramble_seed=%0h (expected %0h)", cfg.tr[0].instruction_index, pp, cfg.tr[pp].descramble_seed, descramble_seed), UVM_LOW)
                 end
             end
         end
@@ -705,12 +732,14 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
             matched_pp = matched_pp_list[0];
             matched_gid = matched_pp / 4;
             matched_pp = matched_pp % 4;
+            matched_token = matched_tokens[0];
         end else begin
             // Unique match
             matched_instr_idx = matched_instr_indices[0];
             matched_pp = matched_pp_list[0];
             matched_gid = matched_pp / 4;
             matched_pp = matched_pp % 4;
+            matched_token = matched_tokens[0];
             
             `uvm_info(get_type_name(), $sformatf("  Unique match found: instr_idx=%0h, Group%0d PP[%0d] (global_plane=%0d)", matched_instr_idx, matched_gid, matched_pp, matched_gid*4+matched_pp), UVM_LOW)
         end
@@ -720,7 +749,7 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
         // =========================================================
         if (match_count >= 1) begin
             int global_pp = matched_gid * 4 + matched_pp;
-            cfg = pending_config[matched_instr_idx];
+            cfg = pending_config[matched_token];
 
             `uvm_info(get_type_name(), $sformatf("\n  [Starting Comprehensive Check]\n  Matched Config(ondec):\n    instruction_index: %0h\n    Group: %0d, PP: %0d (Global PP: %0d)\n    OST ID: %0h\n    plane_sel: %0b\n    offline_wbf_work_en: %0b\n    descramble_en: %0b\n    descramble_seed: %0h\n    read_mode: %0b\n    dest_memory_addr: %0h\n    dec_fail_dest_addr: %0h", matched_instr_idx, matched_gid, matched_pp, global_pp, cfg.tr[global_pp].nsu_ost_id, cfg.tr[global_pp].plane_sel, cfg.tr[global_pp].offline_wbf_work_en, cfg.tr[global_pp].descramble_en, cfg.tr[global_pp].descramble_seed, cfg.tr[global_pp].read_mode, cfg.tr[global_pp].dest_memory_addr, cfg.tr[global_pp].dec_fail_dest_addr), UVM_LOW)
             
@@ -898,246 +927,180 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
         // =========================================================
         if (match_count >= 1 && matched_instr_idx != 16'hFFFF) begin
             int global_pp = matched_gid * 4 + matched_pp;
+            bit all_offwbf_completed = 1'b1;
             
             // Clear offline_wbf_work_en for corresponding plane_pair
-            pending_config[matched_instr_idx].tr[global_pp].offline_wbf_work_en = 1'b0;
-            `uvm_info(get_type_name(), $sformatf("  Cleared offline_wbf_work_en for Group%0d PP[%0d] (global PP%0d)", matched_gid, matched_pp, global_pp), UVM_LOW)
-            
-            // Check if any pending offwbf requests remain for this instruction_index
-            has_pending_offwbf = 1'b0;
-            for (pp = 0; pp < 8; pp++) begin
-                if (pending_config[matched_instr_idx].tr[pp].plane_sel && 
-                    pending_config[matched_instr_idx].tr[pp].offline_wbf_work_en) begin
-                    has_pending_offwbf = 1'b1;
+            pending_config[matched_token].tr[global_pp].offline_wbf_work_en = 1'b0;
+
+            // Check if all plane_pairs in group have offwbf completed
+            for (int pp = 0; pp < 8; pp++)begin
+                if (cfg.tr[pp].plane_sel && cfg.tr[pp].offline_wbf_work_en)begin
+                    all_offwbf_completed = 1'b0;
                     break;
                 end
             end
-            
-            // Clear offwbf flag if no pending offwbf requests
-            if (!has_pending_offwbf) begin
-                pending_offwbf[matched_instr_idx] = 1'b0;
-                `uvm_info(get_type_name(), $sformatf("  No more pending offwbf for instr_idx=%0h", matched_instr_idx), UVM_LOW)
-            end else begin
-                `uvm_info(get_type_name(), $sformatf("  Still has pending offwbf requests for instr_idx=%0h", matched_instr_idx), UVM_LOW)
+
+            // If all offwbf work is completed for this token, clear the offwbf flag
+            if (all_offwbf_completed)begin
+                pending_offwbf[matched_token] = 1'b0;
+                `uvm_info(get_type_name(), $sformatf("All OFFWBF work completed for instr_idx=%0h, clearing offwbf flag", cfg.tr[0].instruction_index), UVM_LOW)
             end
-            
+
             // Check if both deep_resp and offwbf are cleared, then clear config
-            if (!pending_deep_resp[matched_instr_idx] && !pending_offwbf[matched_instr_idx]) begin
-                pending_config.delete(matched_instr_idx);
-                `uvm_info(get_type_name(), $sformatf("All responses processed for instr_idx=%0h, clearing config", matched_instr_idx), UVM_LOW)
+            if (!pending_deep_resp[matched_token] && !pending_offwbf[matched_token])begin
+                pending_config.delete(matched_token);
+                `uvm_info(get_type_name(), $sformatf("All responses processed for instr_idx=%0h, clearing config", cfg.tr[0].instruction_index), UVM_LOW)
             end
         end
     end
 endtask : check_offwbf_cmd
 
-//=============================================================================
-// pack_ondec_transactions - Pack transactions from 8 plane_pair queues
+//-----------------------------------------------------------------------------
+// pack_ondec_transactions - Pack 8 plane_pair ondec2nsu_transaction into ondec2nsu_group_transaction
 // 
-// Function:
-//   1. Continuously monitor 8 ondec_fifo queues
-//   2. Pack 8 transactions with same instruction_index
-//   3. Send packed ondec2nsu_group_transaction to ondec_group_cmd_fifo
-//
-// Packing strategy:
-//   - Wait for transactions in all 8 queues
-//   - Check if instruction_index matches across 8 transactions
-//   - Pack into group_transaction and send if matched
-//   - Error and discard if mismatched
-//=============================================================================
+// This task reads 8 individual plane_pair transactions and packs them into a single
+// ondec2nsu_group_transaction, maintaining the group structure (Group 0: PP[0:3], Group 1: PP[4:7])
+//-----------------------------------------------------------------------------
 task `CLASS_NAME_DEFINE::pack_ondec_transactions();
-    ondec2nsu_transaction ondec_tr [7:0];
+    ondec2nsu_transaction trs[8];
     ondec2nsu_group_transaction group_tr;
-    logic [15:0] ref_instr_idx;
-    logic all_valid;
-    int timeout_cnt;
-    
-    `uvm_info(get_type_name(), "pack_ondec_transactions task started", UVM_LOW)
+    int pp;
     
     forever begin
-        // =========================================================
-        // Step 1: Wait for transactions in all 8 queues
-        // =========================================================
-        `uvm_info(get_type_name(), "Waiting for 8 plane_pair transactions...", UVM_LOW)
-        
-        // Get transactions from 8 queues in parallel
-        fork
-            begin ondec_fifo[0].get(ondec_tr[0]); end
-            begin ondec_fifo[1].get(ondec_tr[1]); end
-            begin ondec_fifo[2].get(ondec_tr[2]); end
-            begin ondec_fifo[3].get(ondec_tr[3]); end
-            begin ondec_fifo[4].get(ondec_tr[4]); end
-            begin ondec_fifo[5].get(ondec_tr[5]); end
-            begin ondec_fifo[6].get(ondec_tr[6]); end
-            begin ondec_fifo[7].get(ondec_tr[7]); end
-        join
-        
-        `uvm_info(get_type_name(), "Received 8 plane_pair transactions", UVM_LOW)
-        
-        // =========================================================
-        // Step 2: Check if instruction_index is consistent
-        // =========================================================
-        ref_instr_idx = ondec_tr[0].instruction_index;
-        all_valid = 1'b1;
-        
-        for (int i = 1; i < 8; i++) begin
-            if (ondec_tr[i].instruction_index != ref_instr_idx) begin
-                `uvm_fatal(get_type_name(), $sformatf(
-                    "instruction_index mismatch: PP[0]=%0h, PP[%0d]=%0h", 
-                    ref_instr_idx, i, ondec_tr[i].instruction_index))
-                all_valid = 1'b0;
-            end
+        // Read one transaction from each of the 8 plane_pair FIFOs
+        for (pp = 0; pp < 8; pp++)begin
+            ondec_fifo[pp].get(trs[pp]);
         end
         
-        if (!all_valid) begin
-            `uvm_fatal(get_type_name(), "Discarding mismatched transactions")
-            continue;  // Discard mismatched transactions, continue next round
+        // Create and populate group transaction
+        group_tr = ondec2nsu_group_transaction::type_id::create("group_tr");
+        for (pp = 0; pp < 8; pp++)begin
+            group_tr.tr[pp] = trs[pp];
         end
         
-        `uvm_info(get_type_name(), $sformatf(
-            "All 8 plane_pairs have matching instruction_index=%0h", 
-            ref_instr_idx), UVM_LOW)
+        // Write group transaction to output FIFO
+        ondec_group_cmd_fifo.put(group_tr);
         
-        // =========================================================
-        // Step 3: Pack into ondec2nsu_group_transaction
-        // =========================================================
-        group_tr = ondec2nsu_group_transaction::type_id::create(
-            $sformatf("group_tr_%0h", ref_instr_idx));
-        
-        for (int i = 0; i < 8; i++) begin
-            group_tr.tr[i] = ondec_tr[i];
-        end
-        
-        `uvm_info(get_type_name(), $sformatf(
-            "Packed 8 transactions into group (instr_idx=%0h)", 
-            ref_instr_idx), UVM_LOW)
-        
-        // =========================================================
-        // Step 4: Send to ondec_group_cmd_fifo
-        // =========================================================
-        ondec_group_cmd_fifo.write(group_tr);
-        
-        `uvm_info(get_type_name(), $sformatf(
-            "Sent group transaction to ondec_group_cmd_fifo (instr_idx=%0h)", 
-            ref_instr_idx), UVM_LOW)
+        `uvm_info(get_type_name(), $sformatf("Packed 8 plane_pair transactions into group transaction: instr_idx=%0h", 
+            group_tr.tr[0].instruction_index), UVM_LOW)
     end
 endtask : pack_ondec_transactions
 
-//-----------------------------------------------------------------------------  
-// OFFWBF Address Management Functions
-//-----------------------------------------------------------------------------  
-
+//-----------------------------------------------------------------------------
+// init_offwbf_addr_manager - Initialize OFFWBF address management
+//-----------------------------------------------------------------------------
 function void `CLASS_NAME_DEFINE::init_offwbf_addr_manager();
-    // Initialize address status (all free)
-    offwbf_addr_status = 16'b0;
-    // Clear address mapping
-    offwbf_ost_id_to_addr.delete();
-    // Set base address (TODO: make configurable)
-    offwbf_base_addr = 32'hA00;
-    `uvm_info(get_type_name(), $sformatf("Initialized OFFWBF address manager: base_addr=%0h, all 16 addresses free", offwbf_base_addr), UVM_LOW)
-endfunction
+    offwbf_addr_status = 16'b0;  // All addresses free
+    offwbf_base_addr = 32'hA000;  // Example base address
+    `uvm_info(get_type_name(), $sformatf("OFFWBF address manager initialized: base_addr=%0h", offwbf_base_addr), UVM_LOW)
+    print_offwbf_addr_status();
+endfunction : init_offwbf_addr_manager
 
+//-----------------------------------------------------------------------------
+// allocate_offwbf_addr - Allocate OFFWBF address for OST ID (simulates DUT's priority encoder)
+//-----------------------------------------------------------------------------
 function bit [3:0] `CLASS_NAME_DEFINE::allocate_offwbf_addr(bit [4:0] ost_id);
     bit [3:0] addr;
     
-    // Check if address is already allocated for this ost_id
+    // Check if address already allocated for this ost_id
     if (offwbf_ost_id_to_addr.exists(ost_id)) begin
         addr = offwbf_ost_id_to_addr[ost_id];
-        `uvm_info(get_type_name(), $sformatf("Address %0d already allocated for ost_id=%0d, reusing", addr, ost_id), UVM_LOW)
+        `uvm_info(get_type_name(), $sformatf("OFFWBF address already allocated for ost_id=%0h: addr=%0d", ost_id, addr), UVM_LOW)
         return addr;
     end
     
     // Find first free address (priority encoder behavior)
-    for (int i = 0; i < 16; i++) begin
-        if (offwbf_addr_status[i] == 1'b0) begin
-            addr = i;
-            // Mark address as occupied
+    for (addr = 0; addr < 16; addr++)begin
+        if (!is_offwbf_addr_occupied(addr))begin
+            // Allocate address
             offwbf_addr_status[addr] = 1'b1;
-            // Record mapping
             offwbf_ost_id_to_addr[ost_id] = addr;
-            `uvm_info(get_type_name(), $sformatf("Allocated OFFWBF address %0d for ost_id=%0d (status=0b%016b)", 
-                addr, ost_id, offwbf_addr_status), UVM_LOW)
+            `uvm_info(get_type_name(), $sformatf("Allocated OFFWBF address %0d for ost_id=%0h", addr, ost_id), UVM_LOW)
+            print_offwbf_addr_status();
             return addr;
         end
     end
     
-    // No free address available
-    `uvm_error(get_type_name(), $sformatf("No free OFFWBF addresses available for ost_id=%0d", ost_id))
-    return 4'hF; // Return invalid address
-endfunction
+    // No free address found
+    `uvm_error(get_type_name(), $sformatf("No free OFFWBF address available for ost_id=%0h", ost_id))
+    return 4'hF;  // Invalid address
+endfunction : allocate_offwbf_addr
 
+//-----------------------------------------------------------------------------
+// free_offwbf_addr - Free OFFWBF address for OST ID
+//-----------------------------------------------------------------------------
 function void `CLASS_NAME_DEFINE::free_offwbf_addr(bit [4:0] ost_id);
+    bit [3:0] addr;
+    
     if (offwbf_ost_id_to_addr.exists(ost_id)) begin
-        bit [3:0] addr = offwbf_ost_id_to_addr[ost_id];
-        // Mark address as free
+        addr = offwbf_ost_id_to_addr[ost_id];
         offwbf_addr_status[addr] = 1'b0;
-        // Remove mapping
         offwbf_ost_id_to_addr.delete(ost_id);
-        `uvm_info(get_type_name(), $sformatf("Freed OFFWBF address %0d for ost_id=%0d (status=0b%016b)", 
-            addr, ost_id, offwbf_addr_status), UVM_LOW)
+        `uvm_info(get_type_name(), $sformatf("Freed OFFWBF address %0d for ost_id=%0h", addr, ost_id), UVM_LOW)
+        print_offwbf_addr_status();
     end else begin
-        `uvm_warning(get_type_name(), $sformatf("No OFFWBF address allocated for ost_id=%0d", ost_id))
+        `uvm_warning(get_type_name(), $sformatf("No OFFWBF address allocated for ost_id=%0h", ost_id))
     end
-endfunction
+endfunction : free_offwbf_addr
 
+//-----------------------------------------------------------------------------
+// get_allocated_offwbf_addr - Get allocated OFFWBF address for OST ID
+//-----------------------------------------------------------------------------
 function bit [3:0] `CLASS_NAME_DEFINE::get_allocated_offwbf_addr(bit [4:0] ost_id);
     if (offwbf_ost_id_to_addr.exists(ost_id)) begin
         return offwbf_ost_id_to_addr[ost_id];
+    end else begin
+        `uvm_warning(get_type_name(), $sformatf("No OFFWBF address allocated for ost_id=%0h", ost_id))
+        return 4'hF;  // Invalid address
     end
-    `uvm_warning(get_type_name(), $sformatf("No OFFWBF address allocated for ost_id=%0d", ost_id))
-    return 4'hF; // Return invalid address
-endfunction
+endfunction : get_allocated_offwbf_addr
 
+//-----------------------------------------------------------------------------
+// is_offwbf_addr_occupied - Check if OFFWBF address is occupied
+//-----------------------------------------------------------------------------
 function bit `CLASS_NAME_DEFINE::is_offwbf_addr_occupied(bit [3:0] addr);
     if (addr < 16) begin
         return offwbf_addr_status[addr];
+    end else begin
+        `uvm_error(get_type_name(), $sformatf("Invalid OFFWBF address: %0d", addr))
+        return 1'b1;  // Treat invalid address as occupied
     end
-    return 1'b1; // Invalid address considered occupied
-endfunction
+endfunction : is_offwbf_addr_occupied
 
+//-----------------------------------------------------------------------------
+// print_offwbf_addr_status - Print OFFWBF address status
+//-----------------------------------------------------------------------------
 function void `CLASS_NAME_DEFINE::print_offwbf_addr_status();
-    string status_str;
-    for (int i = 0; i < 16; i++) begin
-        status_str = {status_str, (offwbf_addr_status[i] ? "1" : "0")};
-        if ((i + 1) % 4 == 0 && i < 15) begin
-            status_str = {status_str, " " };
-        end
-    end
-    `uvm_info(get_type_name(), $sformatf("OFFWBF address status: 0b%s", status_str), UVM_LOW)
-endfunction
+    `uvm_info(get_type_name(), $sformatf("OFFWBF address status: %016b", offwbf_addr_status), UVM_LOW)
+    `uvm_info(get_type_name(), $sformatf("Allocated addresses: %0d/16", $countones(offwbf_addr_status)), UVM_LOW)
+endfunction : print_offwbf_addr_status
 
-// Test function for address allocation logic (can be called during simulation)
+//-----------------------------------------------------------------------------
+// test_offwbf_addr_manager - Test OFFWBF address manager functionality
+//-----------------------------------------------------------------------------
 function void `CLASS_NAME_DEFINE::test_offwbf_addr_manager();
-    bit [3:0] addr;
+    bit [3:0] addr1, addr2, addr3;
     
-    `uvm_info(get_type_name(), "=== Testing OFFWBF Address Manager ===", UVM_LOW)
+    `uvm_info(get_type_name(), "Testing OFFWBF address manager...", UVM_LOW)
     
-    // Test 1: Allocate addresses in order
-    `uvm_info(get_type_name(), "Test 1: Allocating addresses in order", UVM_LOW)
-    addr = allocate_offwbf_addr(5'd0); // Should get 0
-    addr = allocate_offwbf_addr(5'd1); // Should get 1
-    addr = allocate_offwbf_addr(5'd2); // Should get 2
-    print_offwbf_addr_status();
+    // Test allocation
+    addr1 = allocate_offwbf_addr(5'b00001);
+    addr2 = allocate_offwbf_addr(5'b00010);
+    addr3 = allocate_offwbf_addr(5'b00011);
     
-    // Test 2: Reuse address after release
-    `uvm_info(get_type_name(), "Test 2: Reusing address after release", UVM_LOW)
-    free_offwbf_addr(5'd0); // Free address 0
-    print_offwbf_addr_status();
-    addr = allocate_offwbf_addr(5'd3); // Should get 0 (reuse)
-    print_offwbf_addr_status();
+    // Test duplicate allocation
+    allocate_offwbf_addr(5'b00001);
     
-    // Test 3: Multiple allocations for same ost_id
-    `uvm_info(get_type_name(), "Test 3: Multiple allocations for same ost_id", UVM_LOW)
-    addr = allocate_offwbf_addr(5'd1); // Should reuse existing address 1
-    print_offwbf_addr_status();
+    // Test free
+    free_offwbf_addr(5'b00001);
     
-    // Test 4: Free all addresses
-    `uvm_info(get_type_name(), "Test 4: Freeing all addresses", UVM_LOW)
-    free_offwbf_addr(5'd1);
-    free_offwbf_addr(5'd2);
-    free_offwbf_addr(5'd3);
-    print_offwbf_addr_status();
+    // Test re-allocation
+    addr1 = allocate_offwbf_addr(5'b00100);
     
-    `uvm_info(get_type_name(), "=== OFFWBF Address Manager Test Complete ===", UVM_LOW)
-endfunction
+    // Test get allocated address
+    addr1 = get_allocated_offwbf_addr(5'b00010);
+    
+    `uvm_info(get_type_name(), "OFFWBF address manager test completed", UVM_LOW)
+endfunction : test_offwbf_addr_manager
 
 `endif

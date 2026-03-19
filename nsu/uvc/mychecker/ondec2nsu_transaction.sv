@@ -487,7 +487,7 @@ class ondec2nsu_group_transaction extends uvm_sequence_item;
         `uvm_info(get_name(), $sformatf("  write_pos_jdg: %b (bit 14)", tr[0].write_pos_jdg), UVM_MEDIUM);
         
         // Print individual transaction fields with bit field information
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 8; i++) begin
             `uvm_info(get_name(), $sformatf("\nTransaction[%0d]:", i), UVM_MEDIUM);
             `uvm_info(get_name(), $sformatf("  nsu_ost_id: %d (bits 28:24)", tr[i].nsu_ost_id), UVM_MEDIUM);
             `uvm_info(get_name(), $sformatf("  plane_sel: %b (bit 12)", tr[i].plane_sel), UVM_MEDIUM);
@@ -535,7 +535,7 @@ class ondec2nsu_group_transaction extends uvm_sequence_item;
             `uvm_info(get_name(), $sformatf("      bits 10:2: %b (decode_correct_bit_num)", tr[i].on_dec_cmd[1][10:2]), UVM_MEDIUM);
             `uvm_info(get_name(), $sformatf("      bit 1: %b (plane1_empty)", tr[i].on_dec_cmd[1][1]), UVM_MEDIUM);
             `uvm_info(get_name(), $sformatf("      bit 0: %b (plane0_empty)", tr[i].on_dec_cmd[1][0]), UVM_MEDIUM);
-        }
+        end
         
         `uvm_info(get_name(), $sformatf("=== End of ondec2nsu_group_transaction ==="), UVM_MEDIUM);
     endfunction
@@ -552,9 +552,11 @@ class ondec2nsu_group_transaction extends uvm_sequence_item;
         printer.print_int("instruction_index", tr[0].instruction_index, 16);
         
         // Print individual transactions
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 8; i++) begin
             printer.print_object($sformatf("transaction[%0d]", i), tr[i]);
-        }
+        end
     endfunction
 
 endclass
+
+
