@@ -666,8 +666,8 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
     int matched_cfg_idx [$];  // Store all matched config indices
     
     forever begin
-        int matched_tokens[$];
-        int matched_token;
+        token_hash_t matched_tokens[$];
+        token_hash_t matched_token;
         // =========================================================
         // Step 1: Get valid offwbf_cmd from test environment/interface
         // Ensure complete command info and required parameters
@@ -774,15 +774,64 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
             matched_pp = matched_pp % 4;
             matched_token = matched_tokens[0];
             
-            `uvm_info(get_type_name(), $sformatf("  Unique match found: instr_idx=%0h, Group%0d PP[%0d] (global_plane=%0d)", matched_instr_idx, matched_gid, matched_pp, matched_gid*4+matched_pp), UVM_LOW)
+            `uvm_info(get_type_name(), $sformatf("  Unique match found: instr_idx=%0h, Group%0d PP[%0d] (global_plane=%0d)\n  Matched token: %0x\n  offwbf plane_num: %0d, ost_id_nsu2offline: %0h\n  descramble_seed: %0h, write_pos_jdg: %0b", 
+                                                  matched_instr_idx, matched_gid, matched_pp, matched_gid*4+matched_pp, 
+                                                  matched_token, 
+                                                  offwbf_tr.plane_num, offwbf_tr.ost_id_nsu2offline, 
+                                                  descramble_seed, offwbf_tr.dest_sel), UVM_LOW)
         end
         
         // =========================================================
         // Step 4: Comprehensive check on matched offwbf_cmd
         // =========================================================
-        if (match_count >= 1) begin//match_count==0 will be error; match_count>1 will be error too.
+        // Handle match_count cases
+        if (match_count == 1) begin//match_count==0 will be error; match_count>1 will be error too.
             int global_pp = matched_gid * 4 + matched_pp;
-            cfg = pending_config[matched_token];
+            // Add debug information
+            `uvm_info(get_type_name(), $sformatf("Attempting to access pending_config with matched_token=%0x", matched_token), UVM_LOW)
+            `uvm_info(get_type_name(), $sformatf("pending_config size: %0d", pending_config.size()), UVM_LOW)
+            
+            // Check if pending_config contains the token
+            if (pending_config.exists(matched_token)) begin
+                cfg = pending_config[matched_token];
+                `uvm_info(get_type_name(), $sformatf("Successfully retrieved cfg for matched_token=%0x", matched_token), UVM_LOW)
+            end else begin
+                `uvm_error(get_type_name(), $sformatf("pending_config does not contain matched_token=%0x", matched_token))
+                status = CHECK_INVALID_RESP;
+                fail_reason = "Config not found in pending_config";
+                // Print all existing tokens for debugging
+                `uvm_info(get_type_name(), "Current tokens in pending_config:", UVM_LOW)
+                foreach (pending_config[token]) begin
+                    `uvm_info(get_type_name(), $sformatf("  token: %0x", token), UVM_LOW)
+                end
+            end
+        end else begin
+            // Handle match_count != 1 cases
+            if (match_count == 0) begin
+                `uvm_error(get_type_name(), $sformatf("No matching config found for offwbf_cmd:\n  plane_num: %0d\n  ost_id_nsu2offline: %0h\n  descramble_seed: %0h\n  dest_sel: %0b", 
+                                                    offwbf_tr.plane_num, offwbf_tr.ost_id_nsu2offline, 
+                                                    descramble_seed, offwbf_tr.dest_sel))
+                status = CHECK_INVALID_RESP;
+                fail_reason = "No matching config found";
+            end else begin
+                `uvm_error(get_type_name(), $sformatf("Multiple matching configs found (%0d matches) for offwbf_cmd:\n  plane_num: %0d\n  ost_id_nsu2offline: %0h\n  descramble_seed: %0h\n  dest_sel: %0b", 
+                                                    match_count, offwbf_tr.plane_num, offwbf_tr.ost_id_nsu2offline, 
+                                                    descramble_seed, offwbf_tr.dest_sel))
+                status = CHECK_INVALID_RESP;
+                fail_reason = "Multiple matching configs found";
+                // Print all matched tokens for debugging
+                `uvm_info(get_type_name(), "Matched tokens:", UVM_LOW)
+                foreach (matched_tokens[i]) begin
+                    `uvm_info(get_type_name(), $sformatf("  token[%0d]: %0x", i, matched_tokens[i]), UVM_LOW)
+                end
+            end
+        end
+
+        // =========================================================
+        // Step 4: Comprehensive check on matched offwbf_cmd
+        // =========================================================
+        if (status == CHECK_PASS && match_count == 1) begin
+            int global_pp = matched_gid * 4 + matched_pp;
 
             // Check if cfg is valid before accessing its members
             if (cfg == null) begin

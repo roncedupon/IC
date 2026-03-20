@@ -11,7 +11,7 @@ module width_demo;
     str=$sformatf({"----\n",
         "aaa=%x \n",
         "bbb=%x \n",
-    "-----"},123,456);
+    "-----"},123,456);//这里不加大括号会乱码
     $display("%s",str);
 
     $finish;
