@@ -21,7 +21,9 @@
 typedef class offdec2nsu_transaction;  // Forward declaration (avoid circular dependency)
 typedef class ondec2nsu_group_transaction;  // Forward declaration for ondec2nsu_group_transaction
 typedef class token_transaction;  // Forward declaration for token_transaction
-
+// Token transaction for identifying ondec2nsu_group_transaction
+// Define hash type for flexibility
+typedef bit [96:0] token_hash_t;//exp: token_hash_t hash={instruction_index, group0_ost_id, group1_ost_id,nsu_addr};
 package ondec2nsu_checker_pkg;
     
     // Forward declaration for token_transaction
@@ -99,9 +101,9 @@ class `CLASS_NAME_DEFINE extends uvm_component;
     //-------------------------------------------------------------------------
     // Pending config tracking table (indexed by token hash)
     //-------------------------------------------------------------------------
-    logic pending_deep_resp [int];     // Mark if deep read response is expected
-    logic pending_offwbf [int];        // Mark if offwbf command is expected
-    ondec2nsu_group_transaction pending_config [int];  // [token hash] --> Full group transaction
+    logic pending_deep_resp [token_hash_t];     // Mark if deep read response is expected
+    logic pending_offwbf [token_hash_t];        // Mark if offwbf command is expected
+    ondec2nsu_group_transaction pending_config [token_hash_t];  // [token hash] --> Full group transaction
     
     //-------------------------------------------------------------------------
     // Statistics counters
@@ -314,7 +316,7 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
     logic overall_need_offwbf;        
     forever begin
         token_transaction token;
-        int token_hash;
+        token_hash_t token_hash;
         overall_need_deep_resp  =0 ;
         overall_need_offwbf     =0 ;        
         // =========================================================
@@ -418,6 +420,8 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
             token.instruction_index = group_tr.tr[0].instruction_index;
             token.group0_ost_id = group_tr.tr[0].nsu_ost_id;  // Group 0 OST ID from first transaction
             token.group1_ost_id = group_tr.tr[4].nsu_ost_id;  // Group 1 OST ID from fifth transaction
+            token.group0_lba = group_tr.tr[0].meta_buffer_id;  // Group 0 nsu_addr from first transaction
+            token.group1_lba = group_tr.tr[4].meta_buffer_id;  // Group 1 nsu_addr from fifth transaction
             
             // Record pending token and save full group transaction
             // Set flags based on what responses are expected
@@ -463,7 +467,7 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
     
     forever begin
         token_transaction token;
-        int token_hash;
+        token_hash_t token_hash;
         deep_read_resp_fifo.get(resp);
         total_resp_count++;
         
@@ -651,8 +655,6 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
     int matched_gid;
     int matched_pp;
     bit [15:0] matched_instr_idx;
-    int pp;
-    int i;
     ondec2nsu_group_transaction cfg;
     logic [31:0] src_mem_addr_32bit;
     logic [31:0] dest_mem_addr_32bit;
@@ -705,7 +707,7 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
             cfg = pending_config[token];
             
             // Iterate all 8 plane_pairs to find descramble_seed match
-            for (pp = 0; pp < 8; pp++) begin
+            for (int pp = 0; pp < 8; pp++) begin
                 if (!cfg.tr[pp].plane_sel) begin
                     `uvm_info(get_type_name(), $sformatf("  Skipping instr_idx=%0h, PP[%0d]: plane_sel=0 (not selected)", cfg.tr[0].instruction_index, pp), UVM_LOW)
                     continue;  // Skip unselected plane_pair
@@ -752,8 +754,8 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
             `uvm_warning(get_type_name(), $sformatf("\n========== MULTIPLE MATCH WARNING ==========\n  Multiple offwbf_cmd objects match the same descramble_seed!\n  descramble_seed: %0h\n  Match count: %0d\n  Matched instructions:", descramble_seed, match_count))
             
             // Record all matched instruction info
-            for (i = 0; i < match_count; i++) begin
-                `uvm_warning(get_type_name(), $sformatf("    Match #%0d: instr_idx=%0h, PP[%0d] (global_plane=%0d)", i+1, matched_instr_indices[i], matched_pp_list[i] % 4, matched_pp_list[i]))
+            for (int i = 0; i < match_count; i++) begin
+                `uvm_error(get_type_name(), $sformatf("    Match #%0d: instr_idx=%0h, PP[%0d] (global_plane=%0d)", i+1, matched_instr_indices[i], matched_pp_list[i] % 4, matched_pp_list[i]))
             end
 
             `uvm_warning(get_type_name(), $sformatf("  Current system does NOT support multiple matching offwbf_cmd cases.\n  Will process ONLY the FIRST match (instr_idx=%0h, PP[%0d]).\n=========================================\n", matched_instr_indices[0], matched_pp_list[0] % 4))
@@ -778,11 +780,31 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
         // =========================================================
         // Step 4: Comprehensive check on matched offwbf_cmd
         // =========================================================
-        if (match_count >= 1) begin
+        if (match_count >= 1) begin//match_count==0 will be error; match_count>1 will be error too.
             int global_pp = matched_gid * 4 + matched_pp;
             cfg = pending_config[matched_token];
 
-            `uvm_info(get_type_name(), $sformatf("\n  [Starting Comprehensive Check]\n  Matched Config(ondec):\n    instruction_index: %0h\n    Group: %0d, PP: %0d (Global PP: %0d)\n    OST ID: %0h\n    plane_sel: %0b\n    offline_wbf_work_en: %0b\n    descramble_en: %0b\n    descramble_seed: %0h\n    read_mode: %0b\n    dest_memory_addr: %0h\n    dec_fail_dest_addr: %0h", matched_instr_idx, matched_gid, matched_pp, global_pp, cfg.tr[global_pp].nsu_ost_id, cfg.tr[global_pp].plane_sel, cfg.tr[global_pp].offline_wbf_work_en, cfg.tr[global_pp].descramble_en, cfg.tr[global_pp].descramble_seed, cfg.tr[global_pp].read_mode, cfg.tr[global_pp].dest_memory_addr, cfg.tr[global_pp].dec_fail_dest_addr), UVM_LOW)
+            `uvm_info(get_type_name(), $sformatf({"\n  [Starting Comprehensive Check]\n",
+                                                  "  Matched Config(ondec):\n",
+                                                  "    instruction_index: %0h\n",
+                                                  "    Group: %0d, PP: %0d (Global PP: %0d)\n",
+                                                  "    OST ID: %0h\n",
+                                                  "    plane_sel: %0b\n",
+                                                  "    offline_wbf_work_en: %0b\n",
+                                                  "    descramble_en: %0b\n",
+                                                  "    descramble_seed: %0h\n",
+                                                  "    read_mode: %0b\n",
+                                                  "    dest_memory_addr: %0h\n",
+                                                  "    dec_fail_dest_addr: %0h"}, 
+                                                  matched_instr_idx, matched_gid, matched_pp, global_pp, 
+                                                  cfg.tr[global_pp].nsu_ost_id, 
+                                                  cfg.tr[global_pp].plane_sel, 
+                                                  cfg.tr[global_pp].offline_wbf_work_en, 
+                                                  cfg.tr[global_pp].descramble_en, 
+                                                  cfg.tr[global_pp].descramble_seed, 
+                                                  cfg.tr[global_pp].read_mode, 
+                                                  cfg.tr[global_pp].dest_memory_addr, 
+                                                  cfg.tr[global_pp].dec_fail_dest_addr), UVM_LOW)
             
             // 4.1 Check offline_wbf_out_flag
             if (!offwbf_tr.offline_wbf_out_flag) begin
@@ -915,7 +937,7 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
                             matched_gid, matched_pp, exp_io_addr,
                             offwbf_base_addr, allocated_addr,
                             dest_mem_addr_32bit);
-                        `uvm_warning(get_type_name(), fail_reason)
+                        `uvm_warning(get_type_name(), fail_reason)//TODO addr allocate method 
                     end
                 end
             end
@@ -1135,13 +1157,16 @@ function void `CLASS_NAME_DEFINE::test_offwbf_addr_manager();
 endfunction : test_offwbf_addr_manager
 
 
-// Token transaction for identifying ondec2nsu_group_transaction
+
+
 class token_transaction extends uvm_object;
     `uvm_object_utils(token_transaction)
     
     bit [15:0] instruction_index;
     bit [4:0] group0_ost_id;
     bit [4:0] group1_ost_id;
+    bit [22:0] group0_lba;
+    bit [22:0] group1_lba;
     
     function new(string name = "token_transaction");
         super.new(name);
@@ -1152,12 +1177,19 @@ class token_transaction extends uvm_object;
         if (other == null) return 0;
         return (instruction_index == other.instruction_index &&
                 group0_ost_id == other.group0_ost_id &&
-                group1_ost_id == other.group1_ost_id);
+                group1_ost_id == other.group1_ost_id &&
+                group0_lba    == other.group0_lba && 
+                group1_lba    == other.group1_lba 
+                );
     endfunction
     
     // Hash method for associative array indexing
-    virtual function int unsigned hash();
-        return {8'b0, instruction_index, group0_ost_id, group1_ost_id};
+    virtual function token_hash_t hash();
+        token_hash_t hash_val;
+        // Combine all fields into a single hash value
+        // This allows for easy expansion when adding new fields
+        hash_val = {instruction_index, group0_ost_id, group1_ost_id,group0_lba,group1_lba};
+        return hash_val;
     endfunction
     
     // Convert to string for debugging
