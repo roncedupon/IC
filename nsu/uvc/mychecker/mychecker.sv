@@ -433,7 +433,7 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
             pending_deep_resp[token_hash] |= overall_need_deep_resp;
             pending_offwbf[token_hash] |= overall_need_offwbf;
             
-            `uvm_info(get_type_name(), $sformatf("Registered config for token=%s (deep_resp=%0b, offwbf=%0b)", token.convert2string(), pending_deep_resp[token_hash], pending_offwbf[token_hash]), UVM_LOW)
+            `uvm_info(get_type_name(), $sformatf("Registered config for token=%0x (deep_resp=%0b, offwbf=%0b)", token_hash, pending_deep_resp[token_hash], pending_offwbf[token_hash]), UVM_LOW)
         end else begin
             `uvm_info(get_type_name(), $sformatf("No response expected for instr_idx=%0h, skipping config registration", group_tr.tr[0].instruction_index), UVM_LOW)
         end
@@ -479,6 +479,8 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
         token.instruction_index = resp.instruction_index;
         token.group0_ost_id = resp.group0_ost_id;
         token.group1_ost_id = resp.group1_ost_id;
+        token.group0_lba = resp.group0_meta_index_LBA;  // Group 0 nsu_addr from first transaction
+        token.group1_lba = resp.group1_meta_index_LBA;  // Group 1 nsu_addr from fifth transaction        
         
         // Check if deep read response is expected for this token
         token_hash = token.hash();
@@ -617,12 +619,12 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
             // Check if both deep_resp and offwbf are cleared, then clear config
             if (!pending_deep_resp[token_hash] && !pending_offwbf[token_hash])begin
                 pending_config.delete(token_hash);
-                `uvm_info(get_type_name(), $sformatf("All responses processed for token=%s, clearing config", 
-                    token.convert2string()), UVM_LOW)
+                `uvm_info(get_type_name(), $sformatf("All responses processed for token=%0x, clearing config", 
+                    token_hash), UVM_LOW)
             end
         end else begin
-            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP: No matching config for token=%s", 
-                token.convert2string()))
+            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP: No matching config for token=%0x", 
+                token_hash))
         end
     end
 endtask : check_deep_read_resp
