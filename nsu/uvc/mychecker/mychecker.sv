@@ -378,12 +378,12 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
                     `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, crc_fail --> Group%0d need DEEP_READ_RESP", 
                         pp_base+pp, group_tr.tr[0].instruction_index, gid), UVM_LOW)
                 end
-                //dec_suc 
-                if(!group_tr.tr[pp_base + pp].dec_suc)begin
-                    group_need_deep_resp = 1'b1;
-                    `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, decode_fail --> Group%0d need DEEP_READ_RESP", 
-                        pp_base+pp, group_tr.tr[0].instruction_index, gid), UVM_LOW)
-                end           
+                // //dec_suc 
+                // if(!group_tr.tr[pp_base + pp].dec_suc)begin
+                //     group_need_deep_resp = 1'b1;
+                //     `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, decode_fail --> Group%0d need DEEP_READ_RESP", 
+                //         pp_base+pp, group_tr.tr[0].instruction_index, gid), UVM_LOW)
+                // end           
                 //deep_read_sel
                 if(group_tr.tr[pp_base + pp].deep_read_sel)begin
                     group_need_deep_resp = 1'b1;
@@ -393,8 +393,8 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
             end
             
             // Update overall need flags
-            overall_need_deep_resp |= group_need_deep_resp;
-            overall_need_offwbf |= group_need_offwbf;
+            overall_need_deep_resp |= group_need_deep_resp; //check any group  that needs deep_resp
+            overall_need_offwbf |= group_need_offwbf;       //check any group  that needs offwbf
             
             // Record judgment results
             if (group_need_deep_resp) begin
@@ -406,36 +406,33 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
                     gid, group_tr.tr[pp_base].nsu_ost_id), UVM_LOW)
             end
             if (!group_need_deep_resp && !group_need_offwbf) begin
-                `uvm_info(get_type_name(), $sformatf("  Group%0d: No action needed (all decode success or crc_fail)", 
+                `uvm_info(get_type_name(), $sformatf("  Group%0d: No action needed (all decode success or wbf_failed with enough addr)", 
                     gid), UVM_LOW)
             end
         end
         
-        // Create token_transaction for identifying this group transaction
-        token = token_transaction::type_id::create("token");
-        token.instruction_index = group_tr.tr[0].instruction_index;
-        token.group0_ost_id = group_tr.tr[0].nsu_ost_id;  // Group 0 OST ID from first transaction
-        token.group1_ost_id = group_tr.tr[4].nsu_ost_id;  // Group 1 OST ID from fifth transaction
-        
-        // Record pending token and save full group transaction
-        // Set flags based on what responses are expected
-        token_hash = token.hash();
-        pending_config[token_hash] = group_tr;
-        
-        // Set independent flags for deep_resp and offwbf
-        // Note: Both can be set simultaneously for the same token
-        if (pending_deep_resp.exists(token_hash))begin
-            if (overall_need_deep_resp) pending_deep_resp[token_hash] = 1'b1;
+        // Only record config if we expect either deep_resp or offwbf
+        if (overall_need_deep_resp || overall_need_offwbf) begin
+            // Create token_transaction for identifying this group transaction
+            token = token_transaction::type_id::create("token");
+            token.instruction_index = group_tr.tr[0].instruction_index;
+            token.group0_ost_id = group_tr.tr[0].nsu_ost_id;  // Group 0 OST ID from first transaction
+            token.group1_ost_id = group_tr.tr[4].nsu_ost_id;  // Group 1 OST ID from fifth transaction
+            
+            // Record pending token and save full group transaction
+            // Set flags based on what responses are expected
+            token_hash = token.hash();
+            pending_config[token_hash] = group_tr;
+            
+            // Set independent flags for deep_resp and offwbf
+            // Note: Both can be set simultaneously for the same token
+            pending_deep_resp[token_hash] |= overall_need_deep_resp;
+            pending_offwbf[token_hash] |= overall_need_offwbf;
+            
+            `uvm_info(get_type_name(), $sformatf("Registered config for token=%s (deep_resp=%0b, offwbf=%0b)", token.convert2string(), pending_deep_resp[token_hash], pending_offwbf[token_hash]), UVM_LOW)
         end else begin
-            pending_deep_resp[token_hash] = overall_need_deep_resp;
+            `uvm_info(get_type_name(), $sformatf("No response expected for instr_idx=%0h, skipping config registration", group_tr.tr[0].instruction_index), UVM_LOW)
         end
-        if (pending_offwbf.exists(token_hash))begin
-            if (overall_need_offwbf) pending_offwbf[token_hash] = 1'b1;
-        end else begin
-            pending_offwbf[token_hash] = overall_need_offwbf;
-        end
-        
-        `uvm_info(get_type_name(), $sformatf("Registered config for token=%s (deep_resp=%0b, offwbf=%0b)", token.convert2string(), pending_deep_resp[token_hash], pending_offwbf[token_hash]), UVM_LOW)
     end
 endtask : check_ondec_cmd
 
