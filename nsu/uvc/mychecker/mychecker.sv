@@ -784,27 +784,40 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
             int global_pp = matched_gid * 4 + matched_pp;
             cfg = pending_config[matched_token];
 
-            `uvm_info(get_type_name(), $sformatf({"\n  [Starting Comprehensive Check]\n",
-                                                  "  Matched Config(ondec):\n",
-                                                  "    instruction_index: %0h\n",
-                                                  "    Group: %0d, PP: %0d (Global PP: %0d)\n",
-                                                  "    OST ID: %0h\n",
-                                                  "    plane_sel: %0b\n",
-                                                  "    offline_wbf_work_en: %0b\n",
-                                                  "    descramble_en: %0b\n",
-                                                  "    descramble_seed: %0h\n",
-                                                  "    read_mode: %0b\n",
-                                                  "    dest_memory_addr: %0h\n",
-                                                  "    dec_fail_dest_addr: %0h"}, 
-                                                  matched_instr_idx, matched_gid, matched_pp, global_pp, 
-                                                  cfg.tr[global_pp].nsu_ost_id, 
-                                                  cfg.tr[global_pp].plane_sel, 
-                                                  cfg.tr[global_pp].offline_wbf_work_en, 
-                                                  cfg.tr[global_pp].descramble_en, 
-                                                  cfg.tr[global_pp].descramble_seed, 
-                                                  cfg.tr[global_pp].read_mode, 
-                                                  cfg.tr[global_pp].dest_memory_addr, 
-                                                  cfg.tr[global_pp].dec_fail_dest_addr), UVM_LOW)
+            // Check if cfg is valid before accessing its members
+            if (cfg == null) begin
+                `uvm_error(get_type_name(), $sformatf("cfg is null for matched_token=%0x", matched_token))
+                status = CHECK_INVALID_RESP;
+                fail_reason = "Null config object";
+            end else if (global_pp < 0 || global_pp >= 8) begin
+                `uvm_error(get_type_name(), $sformatf("global_pp out of range: %0d (expected 0-7)", global_pp))
+                status = CHECK_INVALID_RESP;
+                fail_reason = "Invalid global_pp value";
+            end else begin
+                string info_str;
+                info_str = $sformatf({"\n  [Starting Comprehensive Check]\n",
+                                      "  Matched Config(ondec):\n",
+                                      "    instruction_index: %0h\n",
+                                      "    Group: %0d, PP: %0d (Global PP: %0d)\n",
+                                      "    OST ID: %0h\n",
+                                      "    plane_sel: %0b\n",
+                                      "    offline_wbf_work_en: %0b\n",
+                                      "    descramble_en: %0b\n",
+                                      "    descramble_seed: %0h\n",
+                                      "    read_mode: %0b\n",
+                                      "    dest_memory_addr: %0h\n",
+                                      "    dec_fail_dest_addr: %0h"}, 
+                                      matched_instr_idx, matched_gid, matched_pp, global_pp, 
+                                      cfg.tr[global_pp].nsu_ost_id, 
+                                      cfg.tr[global_pp].plane_sel, 
+                                      cfg.tr[global_pp].offline_wbf_work_en, 
+                                      cfg.tr[global_pp].descramble_en, 
+                                      cfg.tr[global_pp].descramble_seed, 
+                                      cfg.tr[global_pp].read_mode, 
+                                      cfg.tr[global_pp].dest_memory_addr, 
+                                      cfg.tr[global_pp].dec_fail_dest_addr);
+                `uvm_info(get_type_name(), info_str, UVM_LOW)
+            end
             
             // 4.1 Check offline_wbf_out_flag
             if (!offwbf_tr.offline_wbf_out_flag) begin
