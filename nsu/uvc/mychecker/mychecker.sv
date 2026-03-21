@@ -446,7 +446,7 @@ endtask : check_ondec_cmd
 // Check items (independent per group):
 // 1. instruction_index match
 // 2. group0_ost_id / group1_ost_id match (group-specific)
-// 3. plane_pair_dec_result[7:0] (compare with dec_suc)
+// 3. plane_pair_dec_result[7:0] (compare with dec_suc)  //todo
 // 4. plane_pair_crc_result[7:0] (compare with crc_pass)
 // 5. plane_pair_lba_comp[7:0] (LBA comparison)
 // 6. plane_pair_ecc_result[7:0] (compare with ecc result)
@@ -471,9 +471,6 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
         deep_read_resp_fifo.get(resp);
         total_resp_count++;
         
-        `uvm_info(get_type_name(), $sformatf("Received DEEP_READ_RESP: instr_idx=%0h, group0_ost_id=%0h, group1_ost_id=%0h, pp_dec_result=%08b, pp_crc_result=%08b, pp_lba_comp=%08b", 
-            resp.instruction_index, resp.group0_ost_id, resp.group1_ost_id, resp.plane_pair_dec_result, resp.plane_pair_crc_result, resp.plane_pair_lba_comp), UVM_LOW)
-        
         // Create token_transaction for identifying this response
         token = token_transaction::type_id::create("token");
         token.instruction_index = resp.instruction_index;
@@ -484,10 +481,20 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
         
         // Check if deep read response is expected for this token
         token_hash = token.hash();
+        
+        `uvm_info(get_type_name(), $sformatf("Received DEEP_READ_RESP: token_hash=%0h, instr_idx=%0h, group0_ost_id=%0h, group1_ost_id=%0h, group0_lba=%0h, group1_lba=%0h", 
+            token_hash, token.instruction_index, token.group0_ost_id, token.group1_ost_id, token.group0_lba, token.group1_lba), UVM_LOW)
         if (pending_deep_resp.exists(token_hash))begin
             status = CHECK_PASS;
             fail_reason = "";
             matched_gid = -1;
+            
+            // Check if config exists for this token
+            if (!pending_config.exists(token_hash)) begin
+                `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP: No config found for token=%0h, instr_idx=%0h", 
+                    token_hash, resp.instruction_index))
+                continue;  // Skip this response and process next one
+            end
             
             // Iterate 2 groups to find matching group (via ost_id)
             for (int gid = 0; gid < 2; gid++) begin
@@ -511,32 +518,31 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                     // Iterate 4 plane_pairs in group for checks
                     // Only check plane_pairs expected to report deep_resp 
                     for (int pp = 0; pp < 4; pp++) begin
-                        if (!cfg.tr[pp_base + pp].plane_sel) continue;  // Skip unselected plane_pair
+                        pp_idx = gid * 4 + pp;  // Global plane_pair index
                         
+                        if (!cfg.tr[pp_idx].plane_sel) continue;  // Skip unselected plane_pair
 
-                        pp_idx = gid * 4 + pp;  // Global plane_pair index      
-
-                        // Check decode status (plane_pair_dec_result: 1=success, 0=fail)
-                        if (cfg.tr[pp_base + pp].dec_suc != (!resp.plane_pair_dec_result[pp_idx])) begin
+                        // Check decode status (plane_pair_ecc_result: 1=success, 0=fail)
+                        if (cfg.tr[pp_idx].dec_suc != (!resp.plane_pair_ecc_result[pp_idx])) begin
                             status = CHECK_FAIL_DECODE;
-                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d PP[%0d] decode mismatch: expected=%0b, got=%0b", 
-                                gid, resp.instruction_index, gid, pp, cfg.tr[pp_base + pp].dec_suc, (!resp.plane_pair_dec_result[pp_idx])));
+                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] decode mismatch: expected=%0b, got=%0b", 
+                                gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].dec_suc, (!resp.plane_pair_ecc_result[pp_idx])));
                             // break;
                         end               
 
                         // Check CRC status (plane_pair_crc_result: 1=success, 0=fail)
-                        if (cfg.tr[pp_base + pp].crc_pass != (!resp.plane_pair_crc_result[pp_idx])) begin
+                        if (cfg.tr[pp_idx].crc_pass != (!resp.plane_pair_crc_result[pp_idx])) begin
                             status = CHECK_FAIL_CRC;
-                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d PP[%0d] CRC mismatch: expected=%0b, got=%0b", 
-                                gid, resp.instruction_index, gid, pp, cfg.tr[pp_base + pp].crc_pass, (!resp.plane_pair_crc_result[pp_idx])));
+                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] CRC mismatch: expected=%0b, got=%0b", 
+                                gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].crc_pass, (!resp.plane_pair_crc_result[pp_idx])));
                             // break;
                         end                
 
                         // Check LBA comparison result (plane_pair_lba_comp: 1=mismatch, 0=match)
-                        if (cfg.tr[pp_base + pp].error_flag && !resp.plane_pair_lba_comp[pp_idx]) begin
+                        if (cfg.tr[pp_idx].error_flag && !resp.plane_pair_lba_comp[pp_idx]) begin
                             status = CHECK_FAIL_LBA;
-                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d PP[%0d] LBA comp mismatch: expected mismatch but got match", 
-                                gid, resp.instruction_index, gid, pp));
+                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] LBA comp mismatch: expected mismatch but got match", 
+                                gid, resp.instruction_index, token_hash, gid, pp));
                             break;
                         end                        
                     end

@@ -1,0 +1,20 @@
+{
+    "tests": [
+        {
+            "tc_list": "testlist/tc_basic_read",
+            "pre_setup": "source /etc/profile",
+            "extra_cmd": "-sim \"+UVM_VERBOSITY=UVM_NONE\""
+        },
+        {
+            "tc_list": "testlist/tc_basic_write",
+            "pre_setup": "source /etc/profile"
+        },
+        {
+            "tc_list": "testlist/tc_burst_transfer"
+        },
+        {
+            "tc_list": "testlist/tc_error_handling",
+            "pre_setup": "cd /path/to/error_test && source env.csh && export DEBUG=1"
+        }
+    ]
+}
