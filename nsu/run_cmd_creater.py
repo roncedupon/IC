@@ -30,7 +30,6 @@ def generate_run_cmd(test_config, template_params):
     """
     # Extract template parameters with defaults
     bsub_cmd = template_params.get('bsub_cmd', 'bsub -q to2 -Is ')
-    wave_dump = template_params.get('wave_dump', 'on')
     job_num = template_params.get('job_num', 1)
     extra_cmd = template_params.get('extra_cmd', '')
     Date = template_params.get('Date', datetime.now().strftime('%Y%m%d'))
@@ -46,24 +45,57 @@ def generate_run_cmd(test_config, template_params):
         simdir = os.path.basename(tc_list) if tc_list else 'default_sim'
     pre_setup = test_config.get('pre_setup', '')
     test_extra_cmd = test_config.get('extra_cmd', '')
+    subcmd = test_config.get('subcmd', [])
     
     # Use test-specific extra_cmd if provided, otherwise use template extra_cmd
     final_extra_cmd = test_extra_cmd if test_extra_cmd else extra_cmd
     
-    # Generate run command using template
-    run_cmd = (
+    # Generate commands
+    commands = []
+    
+    # Generate main command
+    main_cmd = (
         f"{bsub_cmd} run -l {tc_list} \t "
-        f"-sim \"+wave_dump={wave_dump} -cm line+cond+fsm+tgl+branch+assert \" "
+        f"-sim \"-cm line+cond+fsm+tgl+branch+assert \" "
         f"-simdir regression/regression_{Date}/{simdir} "
         f"-g  -p {job_num}  -seed_offset {Date} {final_extra_cmd} "
         f"-b \"{bsub_cmd} timeout 2400m \"&"
     )
     
-    # Add pre_setup before run command if specified
+    # Add pre_setup before main command if specified
     if pre_setup:
-        run_cmd = f"{pre_setup} && {run_cmd}"
+        main_cmd = f"{pre_setup} && {main_cmd}"
     
-    return run_cmd
+    commands.append(main_cmd)
+    
+    # Generate subcommands if specified
+    if subcmd:
+        for sc in subcmd:
+            # Determine subcommand parameters
+            if isinstance(sc, dict):
+                # Subcommand with custom parameters
+                sub_cmd_str = sc.get('cmd', '')
+                sub_pre_setup = sc.get('pre_setup', pre_setup)
+                sub_extra_cmd = sc.get('extra_cmd', test_extra_cmd)
+                sub_final_extra_cmd = sub_extra_cmd if sub_extra_cmd else extra_cmd
+            else:
+                # Simple subcommand string
+                sub_cmd_str = sc
+                sub_pre_setup = pre_setup
+                sub_final_extra_cmd = final_extra_cmd
+            
+            sub_cmd = (
+                f"{bsub_cmd} run -l {tc_list} \t "
+                f"-sim \"-cm line+cond+fsm+tgl+branch+assert \" "
+                f"-simdir regression/regression_{Date}/{simdir} "
+                f"-g  -p {job_num}  -seed_offset {Date} {sub_final_extra_cmd} {sub_cmd_str} "
+                f"-b \"{bsub_cmd} timeout 2400m \"&"
+            )
+            if sub_pre_setup:
+                sub_cmd = f"{sub_pre_setup} && {sub_cmd}"
+            commands.append(sub_cmd)
+    
+    return '\n'.join(commands)
 
 
 def main():
@@ -85,15 +117,11 @@ def main():
         default='bsub -q to2 -Is ',
         help='BSUB command (default: bsub -q to2)'
     )
-    parser.add_argument(
-        '--wave-dump',
-        default='on',
-        help='Wave dump setting (default: on)'
-    )
+
     parser.add_argument(
         '--job-num',
         type=int,
-        default=10,
+        default=15,
         help='Number of parallel jobs (default: 10)'
     )
     parser.add_argument(
@@ -128,7 +156,6 @@ def main():
     # Prepare template parameters
     template_params = {
         'bsub_cmd': args.bsub_cmd,
-        'wave_dump': args.wave_dump,
         'job_num': args.job_num,
         'extra_cmd': args.extra_cmd,
         'Date': args.date

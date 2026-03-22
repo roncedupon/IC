@@ -3,17 +3,34 @@
         {
             "tc_list": "testlist/tc_basic_read",
             "pre_setup": "source /etc/profile",
-            "extra_cmd": "-sim \"+UVM_VERBOSITY=UVM_NONE\""
+            "extra_cmd": "-sim \"+UVM_VERBOSITY=UVM_NONE\"",
+            "subcmd": [
+                "-t basic_read_test",
+                {
+                    "cmd": "-t basic_read_test_with_extra",
+                    "extra_cmd": "-sim \"+UVM_VERBOSITY=UVM_HIGH\""
+                }
+            ]
         },
         {
             "tc_list": "testlist/tc_basic_write",
-            "pre_setup": "source /etc/profile"
+            "pre_setup": "source /etc/profile",
+            "subcmd": ["-t basic_write_test"]
         },
         {
-            "tc_list": "testlist/tc_burst_transfer"
+            "tc_list": "testlist/tc_burst_transfer",
+            "subcmd": ["-t burst_transfer_test"]
         },
         {
             "tc_list": "testlist/tc_error_handling",
+            "subcmd":[
+                "-t axi_pass_test",
+                {
+                    "cmd": "-t axi_pass_test_with_debug",
+                    "pre_setup": "cd /path/to/error_test && source env.csh && export DEBUG=2",
+                    "extra_cmd": "-sim \"+UVM_VERBOSITY=UVM_HIGH\""
+                }
+            ],
             "pre_setup": "cd /path/to/error_test && source env.csh && export DEBUG=1"
         }
     ]
