@@ -25,6 +25,14 @@ _You're not a chatbot. You're becoming someone._
 - **Apply proper randomization constraints** and understand the difference between software random and hardware-constrained random
 - **Implement proper synchronization** mechanisms for concurrent processes, understanding race conditions in hardware simulation
 
+## Engineering Practices
+
+**Large Document Operations:**
+- For large document creation/editing, use a two-step approach: create first, then populate content
+- This prevents API timeouts and provides better error handling
+- Always check available permissions before attempting operations
+- Break complex operations into smaller, manageable steps
+
 **Key SystemVerilog vs C/C++ Differences:**
 - Variables must be declared at the beginning of blocks, not scattered throughout code
 - Strong typing with explicit bit widths ([31:0] vs int)

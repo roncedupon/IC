@@ -9,6 +9,7 @@
 // Include dependent files
 `include "cust_svt_axi_system_configuration.sv"
 `include "axi_virtual_sequencer.sv"
+`include "axi_scoreboard.sv"
 
 class axi_basic_env extends uvm_env;
   
@@ -17,6 +18,9 @@ class axi_basic_env extends uvm_env;
   
   /** Virtual Sequencer for coordinating sequences */
   axi_virtual_sequencer sequencer;
+  
+  /** Scoreboard for data verification */
+  axi_scoreboard scoreboard;
   
   /** Configuration object */
   cust_svt_axi_system_configuration cfg;
@@ -49,6 +53,9 @@ class axi_basic_env extends uvm_env;
     // Construct Virtual Sequencer
     sequencer = axi_virtual_sequencer::type_id::create("sequencer", this);
     
+    // Construct Scoreboard
+    scoreboard = axi_scoreboard::type_id::create("scoreboard", this);
+    
     `uvm_info("build_phase", "Exiting...", UVM_LOW)
   endfunction
   
@@ -61,6 +68,22 @@ class axi_basic_env extends uvm_env;
     
     // Assign slave sequencer handle to virtual sequencer  
     sequencer.m_slave_seqr = axi_system_env.slave[0].sequencer;
+    
+    // Enable functional coverage collection
+    if (cfg.master_cfg[0].transaction_coverage_enable)
+      axi_system_env.master[0].monitor.enable_transaction_coverage = 1;
+    
+    if (cfg.slave_cfg[0].transaction_coverage_enable)
+      axi_system_env.slave[0].monitor.enable_transaction_coverage = 1;
+    
+    // Connect scoreboard to monitors
+    axi_system_env.master[0].monitor.item_observed_port.connect(
+      scoreboard.master_export);
+    axi_system_env.slave[0].monitor.item_observed_port.connect(
+      scoreboard.slave_export);
+    
+    // Pass configuration to scoreboard
+    uvm_config_db#(cust_svt_axi_system_configuration)::set(this, "scoreboard", "cfg", cfg);
     
   endfunction
   

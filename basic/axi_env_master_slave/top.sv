@@ -12,6 +12,8 @@
 // Include environment files
 `include "env/cust_svt_axi_system_configuration.sv"
 `include "env/axi_virtual_sequencer.sv"
+`include "env/axi_scoreboard.sv"
+`include "env/axi_coverage.sv"
 `include "env/axi_master_write_read_sequence.sv"
 `include "env/axi_slave_response_sequence.sv"
 `include "env/axi_virtual_sequence.sv"
@@ -20,6 +22,7 @@
 // Include test files
 `include "tests/axi_base_test.sv"
 `include "tests/axi_write_read_test.sv"
+`include "tests/axi_advanced_test.sv"
 
 // Include DUT wrapper
 `include "hdl_interconnect/axi_dut_wrapper.sv"
@@ -85,8 +88,8 @@ module test_top;
     // Set sequence length
     uvm_config_db#(int unsigned)::set(null, "uvm_test_top.env", "sequence_length", 20);
     
-    // Run test
-    run_test("axi_write_read_test");
+    // Run test (test name can be overridden from command line)
+    run_test();
   end
   
   // Simulation timeout

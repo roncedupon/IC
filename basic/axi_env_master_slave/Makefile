@@ -27,6 +27,9 @@ COMPILE_OPTS += -kdb -lca
 SV_SOURCES = $(HDL_DIR)/axi_dut.v
 SV_SOURCES += top.sv
 
+# Default test name
+TESTNAME ?= axi_write_read_test
+
 # Default target
 all: compile run
 
@@ -34,6 +37,7 @@ all: compile run
 compile:
 	@echo "=========================================="
 	@echo "Compiling AXI Master-Slave Environment..."
+	@echo "Test: $(TESTNAME)"
 	@echo "=========================================="
 	$(VCS) $(COMPILE_OPTS) $(SV_SOURCES) -o simv_axi_tb
 
@@ -41,24 +45,32 @@ compile:
 run:
 	@echo "=========================================="
 	@echo "Running Simulation..."
+	@echo "Test: $(TESTNAME)"
 	@echo "=========================================="
-	./simv_axi_tb +UVM_VERBOSITY=UVM_LOW -l sim.log
+	./simv_axi_tb +UVM_TESTNAME=$(TESTNAME) +UVM_VERBOSITY=UVM_LOW -l sim.log
 
 # Debug run with Verdi
 debug:
 	@echo "=========================================="
 	@echo "Running Debug Simulation with Verdi..."
+	@echo "Test: $(TESTNAME)"
 	@echo "=========================================="
 	$(VCS) $(COMPILE_OPTS) -debug_all $(SV_SOURCES) -o simv_axi_tb
-	./simv_axi_tb +UVM_VERBOSITY=UVM_HIGH -gui -l sim_debug.log
+	./simv_axi_tb +UVM_TESTNAME=$(TESTNAME) +UVM_VERBOSITY=UVM_HIGH -gui -l sim_debug.log
 
 # Waveform dump
 wave:
 	@echo "=========================================="
 	@echo "Running Simulation with Waveforms..."
+	@echo "Test: $(TESTNAME)"
 	@echo "=========================================="
 	$(VCS) $(COMPILE_OPTS) +define+WAVES_VCD $(SV_SOURCES) -o simv_axi_tb_wave
-	./simv_axi_tb_wave +UVM_VERBOSITY=UVM_LOW -l sim_wave.log
+	./simv_axi_tb_wave +UVM_TESTNAME=$(TESTNAME) +UVM_VERBOSITY=UVM_LOW -l sim_wave.log
+
+# Advanced test
+advanced:
+	$(MAKE) compile TESTNAME=axi_advanced_test
+	$(MAKE) run TESTNAME=axi_advanced_test
 
 # Verdi waveform viewer
 verdi:
@@ -76,8 +88,13 @@ help:
 	@echo "  make run      - Run the simulation"
 	@echo "  make debug    - Run with GUI debug"
 	@echo "  make wave     - Run with waveform dump"
+	@echo "  make advanced - Run advanced test"
 	@echo "  make verdi    - Open Verdi waveform viewer"
 	@echo "  make clean    - Clean generated files"
 	@echo "  make all      - Compile and run"
+	@echo ""
+	@echo "Usage examples:"
+	@echo "  make run TESTNAME=axi_write_read_test"
+	@echo "  make run TESTNAME=axi_advanced_test"
 
 .PHONY: all compile run debug wave verdi clean help

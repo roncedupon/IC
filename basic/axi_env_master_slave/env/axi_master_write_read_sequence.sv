@@ -84,6 +84,9 @@ class axi_master_write_read_sequence extends svt_axi_master_base_sequence;
             `uvm_error("DATA_MISMATCH", 
               $sformatf("Read data mismatch: expected 0x%08h, got 0x%08h at beat %0d", 
                         (32'hDEAD_BEEF + i + j), rsp.data[j], j))
+          end else begin
+            `uvm_info("DATA_MATCH", 
+              $sformatf("Data verified: 0x%08h at beat %0d", rsp.data[j], j), UVM_HIGH)
           end
         end
       end
