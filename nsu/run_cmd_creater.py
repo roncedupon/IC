@@ -181,8 +181,11 @@ def main():
             f.write(f'# Test {i}: {test_name}\n')
             f.write(f'{cmd}\n\n')
     
-    print(f"\nGenerated {len(commands)} commands to: {args.output}")
-    print(f"Make the script executable: chmod +x {args.output}")
+    # Get absolute path of output file
+    import os
+    output_abs_path = os.path.abspath(args.output)
+    print(f"\nGenerated {len(commands)} commands to: {output_abs_path}")
+    print(f"Make the script executable: chmod +x {output_abs_path}")
 
 
 if __name__ == '__main__':

@@ -24,12 +24,7 @@
         {
             "tc_list": "testlist/tc_error_handling",
             "subcmd":[
-                "-t axi_pass_test",
-                {
-                    "cmd": "-t axi_pass_test_with_debug",
-                    "pre_setup": "cd /path/to/error_test && source env.csh && export DEBUG=2",
-                    "extra_cmd": "-sim \"+UVM_VERBOSITY=UVM_HIGH\""
-                }
+                "-t axi_pass_test"
             ],
             "pre_setup": "cd /path/to/error_test && source env.csh && export DEBUG=1"
         }

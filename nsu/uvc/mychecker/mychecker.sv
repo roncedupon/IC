@@ -522,13 +522,45 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                         
                         if (!cfg.tr[pp_idx].plane_sel) continue;  // Skip unselected plane_pair
 
-                        // Check decode status (plane_pair_ecc_result: 1=success, 0=fail)
+                        // Check decode status (plane_pair_ecc_result: 0=success, 1=fail)
                         if (cfg.tr[pp_idx].dec_suc != (!resp.plane_pair_ecc_result[pp_idx])) begin
                             status = CHECK_FAIL_DECODE;
                             `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] decode mismatch: expected=%0b, got=%0b", 
                                 gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].dec_suc, (!resp.plane_pair_ecc_result[pp_idx])));
                             // break;
-                        end               
+                        end
+                        
+                        // Check data_out_en for planes that need deep_resp
+                        // If plane_pair_ecc_result=1 (decode failed) , data_out_en should be 0 for deep_resp cases
+                        if (resp.plane_pair_ecc_result[pp_idx]) begin//dec failed,data cannot be output
+                            // Detailed debug information
+                            `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, decode status=FAILED (ecc_result=1), data_out_en=%b, plane_sel=%b", 
+                                pp_idx, resp.instruction_index, cfg.tr[pp_idx].data_out_en, cfg.tr[pp_idx].plane_sel), UVM_LOW);
+                            
+                            if (cfg.tr[pp_idx].data_out_en != 0) begin
+                                status = CHECK_FAIL_DATA;
+                                `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] data_out_en should be 0 for deep_resp case (decode failed), got=%0b", 
+                                    gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].data_out_en));
+                            end else begin
+                                `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, data_out_en=0 (correct for deep_resp case - decode failed)", 
+                                    pp_idx, resp.instruction_index), UVM_LOW);
+                            end
+                        end 
+                        else begin//wbf&crc pass，data should be output
+                            // Detailed debug information
+                            `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, decode status=SUCCESS (ecc_result=0), data_out_en=%b, plane_sel=%b", 
+                                pp_idx, resp.instruction_index, cfg.tr[pp_idx].data_out_en, cfg.tr[pp_idx].plane_sel), UVM_LOW);
+                            
+                            if (cfg.tr[pp_idx].data_out_en != 1) begin
+                                status = CHECK_FAIL_DATA;
+                                `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] data_out_en should be 1 for deep_resp case (decode success), got=%0b", 
+                                    gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].data_out_en));
+                            end else begin
+                                `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, data_out_en=1 (correct for deep_resp case - decode success)", 
+                                    pp_idx, resp.instruction_index), UVM_LOW);
+                            end                            
+                        end              
+
 
                         // Check CRC status (plane_pair_crc_result: 1=success, 0=fail)
                         if (cfg.tr[pp_idx].crc_pass != (!resp.plane_pair_crc_result[pp_idx])) begin

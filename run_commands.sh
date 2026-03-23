@@ -19,5 +19,4 @@ bsub -q to2 -Is  run -l testlist/tc_burst_transfer 	 -sim "-cm line+cond+fsm+tgl
 # Test 4: testlist/tc_error_handling
 cd /path/to/error_test && source env.csh && export DEBUG=1 && bsub -q to2 -Is  run -l testlist/tc_error_handling 	 -sim "-cm line+cond+fsm+tgl+branch+assert " -simdir regression/regression_20260322/tc_error_handling -g  -p 15  -seed_offset 20260322  -b "bsub -q to2 -Is  timeout 2400m "&
 cd /path/to/error_test && source env.csh && export DEBUG=1 && bsub -q to2 -Is  run -l testlist/tc_error_handling 	 -sim "-cm line+cond+fsm+tgl+branch+assert " -simdir regression/regression_20260322/tc_error_handling -g  -p 15  -seed_offset 20260322  -t axi_pass_test -b "bsub -q to2 -Is  timeout 2400m "&
-cd /path/to/error_test && source env.csh && export DEBUG=2 && bsub -q to2 -Is  run -l testlist/tc_error_handling 	 -sim "-cm line+cond+fsm+tgl+branch+assert " -simdir regression/regression_20260322/tc_error_handling -g  -p 15  -seed_offset 20260322 -sim "+UVM_VERBOSITY=UVM_HIGH" -t axi_pass_test_with_debug -b "bsub -q to2 -Is  timeout 2400m "&
 
