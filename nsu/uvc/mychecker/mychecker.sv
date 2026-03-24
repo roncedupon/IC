@@ -400,7 +400,7 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
                     gid, group_tr.tr[pp_base].nsu_ost_id), UVM_LOW)
             end
             if (!group_need_deep_resp && !group_need_offwbf) begin
-                `uvm_info(get_type_name(), $sformatf("  Group%0d: No action needed (all decode success or wbf_failed with enough addr)", 
+                `uvm_info(get_type_name(), $sformatf("  Group%0d: No action needed (current plane*8 don't need deep_resp)", 
                     gid), UVM_LOW)
             end
         end
@@ -516,10 +516,24 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
 
                         // Check decode status (plane_pair_ecc_result: 0=success, 1=fail)
                         if (cfg.tr[pp_idx].dec_suc != (!resp.plane_pair_ecc_result[pp_idx])) begin
-                            status = CHECK_FAIL_DECODE;
-                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] decode mismatch: expected=%0b, got=%0b", 
-                                gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].dec_suc, (!resp.plane_pair_ecc_result[pp_idx])));
-                            // break;
+                            offdec2nsu_transaction offwbf_tr;
+                            //dec_suc(crc_pass & wbf_pass) of deep_resp != dec_suc of ondec_cmd-->check offwbf 
+                            deep_resp_offwbf_map_lock.get();
+                            offwbf_tr = deep_resp_offwbf_map[cfg.tr[pp_idx].descramble_seed];
+                            deep_resp_offwbf_map_lock.put();     
+                            if(offwbf_tr.dec_suc)begin
+                                `uvm_info(get_type_name(), $sformatf("  Plane %0d WBF failed, offwbf called and succeeded: descramble_seed=%0h, plane_num=%0d, offwbf dec_suc=%b", 
+                                    pp_idx, cfg.tr[pp_idx].descramble_seed, offwbf_tr.plane_num, offwbf_tr.dec_suc), UVM_LOW);
+                                deep_resp_offwbf_map_lock.get();
+                                deep_resp_offwbf_map.delete(cfg.tr[pp_idx].descramble_seed);
+                                deep_resp_offwbf_map_lock.put();                                    
+                            end
+                            else begin
+                                status = CHECK_FAIL_DECODE;
+                                `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] decode mismatch: expected=%0b, got=%0b", 
+                                    gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].dec_suc, (!resp.plane_pair_ecc_result[pp_idx])));
+                                // break;                                
+                            end
                         end
                         
                         // Check data_out_en for planes that need deep_resp
@@ -1323,7 +1337,7 @@ task `CLASS_NAME_DEFINE::check_offwbf_deep_resp();
     forever begin
         offwbf2nsu_cmd_fifo.get(offwbf_tr);
         descramble_seed = descramble_seed_que[offwbf_cmd_count];
-        if(!offwbf_tr.offline_wbf_out_flag && !offwbf_tr.dec_suc)begin //for deep_resp used
+        if(!offwbf_tr.offline_wbf_out_flag && !offwbf_tr.dec_suc)begin //for deep_resp used--dec failed and data not output
             // Acquire lock for thread-safe access to deep_resp_offwbf_map
             deep_resp_offwbf_map_lock.get();
             `uvm_info(get_type_name(), $sformatf("[%0d] Recording  offwbf command that needs deep_resp: descramble_seed=%0h, plane_num=%0d, dec_suc=%b, offline_wbf_out_flag=%b", offwbf_cmd_count,
