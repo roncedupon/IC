@@ -43,31 +43,7 @@ package ondec2nsu_checker_pkg;
         CHECK_INVALID_RESP   = 3'b111
     } check_status_e;
     
-    //=========================================================================
-    // Group check configuration (independent per group)
-    // Group 0: plane_pair[0:3], Group 1: plane_pair[4:7]
-    //=========================================================================
-    typedef struct  {
-        logic        valid;
-        logic [15:0] instruction_index;
-        logic [4:0]  nsu_ost_id;               // Group-specific OST ID
-        logic [3:0]  plane_sel;                // 4 plane_pair selection
-        logic [3:0]  dec_suc;                  // 4 plane_pair decode success
-        logic [3:0]  crc_pass;                 // 4 plane_pair CRC pass
-        logic [3:0]  data_out_en;              // 4 plane_pair data output enable
-        logic [3:0]  offline_wbf_work_en;      // 4 plane_pair offwbf enable
-        logic [3:0]  flip_threshold_sel;       // 4 plane_pair flip threshold select
-        logic [3:0]  syn_weight_over_threshold; // 4 plane_pair sync weight over threshold
-        logic [3:0]  descramble_en;            // 4 plane_pair descramble enable
-        logic [15:0] descramble_seed [4];      // 4 plane_pair descramble seed
-        logic [3:0]  write_pos_jdg;            // 4 plane_pair write position judgment
-        logic        deep_read_sel;            // Deep read select (consistent in group)
-        logic        read_mode;                // Read mode (consistent in group)
-        logic [31:0] dest_memory_addr;         // Target memory address (group_0_dest_memory_addr)
-        logic [31:0] dec_fail_dest_addr;       // Decode fail target address (dec_fail_dest_addr_0)
-        logic [15:0] plane_group_block_addr;   // Block address (group0_block_addr)
-        logic [11:0] page_addr_plane_group;    // Page address (page_address_plane_group_0)
-    } group_check_config_t;
+
 
 endpackage
 `define CLASS_NAME_DEFINE ondec2nsu_checker
@@ -97,6 +73,10 @@ class `CLASS_NAME_DEFINE extends uvm_component;
     
     // offwbf_cmd FIFO - Input: Command from NSU to OFFWBF
     uvm_tlm_analysis_fifo #(offdec2nsu_transaction) offwbf_cmd_fifo;
+    bit[15:0] descramble_seed_que[$];//used to store descramble_seed
+
+    // offwbf_cmd FIFO - Input: Command from OFFWBF to NSU,used to check d
+    uvm_tlm_analysis_fifo #(offdec2nsu_transaction) offwbf2nsu_cmd_fifo;
     
     //-------------------------------------------------------------------------
     // Pending config tracking table (indexed by token hash)
@@ -138,6 +118,12 @@ class `CLASS_NAME_DEFINE extends uvm_component;
     extern function bit is_offwbf_addr_occupied(bit [3:0] addr);
     extern function void print_offwbf_addr_status();
     
+    //-------------------------------------------------------------------------    
+    // Deep resp offwbf mapping
+    //-------------------------------------------------------------------------    
+    offdec2nsu_transaction deep_resp_offwbf_map [logic [15:0]];  // Map descramble_seed to offdec2nsu_transaction
+    semaphore deep_resp_offwbf_map_lock;  // Semaphore for thread-safe access to deep_resp_offwbf_map
+    
     //-------------------------------------------------------------------------
     // Task declarations (inside class)
     //-------------------------------------------------------------------------
@@ -145,6 +131,7 @@ class `CLASS_NAME_DEFINE extends uvm_component;
     extern virtual task check_ondec_cmd();      // Step 1: Get ondec_cmd, judge by group
     extern virtual task check_deep_read_resp(); // Step 2: Check deep read response
     extern virtual task check_offwbf_cmd();     // Step 3: Check offwbf command
+    extern virtual task check_offwbf_deep_resp();//step 4: Check offwbf2nsu cmd that needs deep_resp
     
     //-------------------------------------------------------------------------
     // Constructor
@@ -167,9 +154,13 @@ class `CLASS_NAME_DEFINE extends uvm_component;
         ondec_group_cmd_fifo = new("ondec_group_cmd_fifo", this);
         deep_read_resp_fifo = new("deep_read_resp_fifo", this);
         offwbf_cmd_fifo = new("offwbf_cmd_fifo", this);
+        offwbf2nsu_cmd_fifo = new("offwbf2nsu_cmd_fifo",this);        
         
         // Initialize OFFWBF address manager
         init_offwbf_addr_manager();
+        
+        // Initialize semaphore for deep_resp_offwbf_map
+        deep_resp_offwbf_map_lock = new(1);
     endfunction : build_phase
     
     //-------------------------------------------------------------------------
@@ -182,7 +173,8 @@ class `CLASS_NAME_DEFINE extends uvm_component;
             pack_ondec_transactions();  // New: Pack transactions from 8 queues
             check_ondec_cmd();      // Step 1: Get ondec_cmd, judge by group
             check_deep_read_resp(); // Step 2: Check deep read response
-            check_offwbf_cmd();     // Step 3: Check offwbf command
+            check_offwbf_cmd();     // Step 3: Check offwbf command(ondec_cmd-->offwbf_cmd)
+            check_offwbf_deep_resp();//Step 4: offwbf2deep resp check(offwbf_cmd-->deep_resp)
         join
     endtask : run_phase
     
@@ -538,9 +530,72 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                                 pp_idx, resp.instruction_index, cfg.tr[pp_idx].data_out_en, cfg.tr[pp_idx].plane_sel), UVM_LOW);
                             
                             if (cfg.tr[pp_idx].data_out_en != 0) begin
+                                /*(ecc=0 ;data_out_en=1) means offwbf is going to be invoked,
+                                and this is a deep_resp from offwbf, continuely check offwbf_cmd*/
                                 status = CHECK_FAIL_DATA;
-                                `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] data_out_en should be 0 for deep_resp case (decode failed), got=%0b", 
-                                    gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].data_out_en));
+                                
+                                if(deep_resp_offwbf_map.exists(cfg.tr[pp_idx].descramble_seed))begin
+                                    offdec2nsu_transaction offwbf_tr;
+                                    // Acquire lock for thread-safe access to deep_resp_offwbf_map
+                                    deep_resp_offwbf_map_lock.get();
+                                    offwbf_tr = deep_resp_offwbf_map[cfg.tr[pp_idx].descramble_seed];
+                                    // Release lock
+                                    deep_resp_offwbf_map_lock.put();
+                                    
+                                    // Check if offwbf_tr is valid
+                                    if (offwbf_tr != null) begin
+                                        `uvm_info(get_type_name(), $sformatf("  Found matching offwbf command in deep_resp_offwbf_map: descramble_seed=%0h, plane_num=%0d, offline_wbf_out_flag=%b", 
+                                            cfg.tr[pp_idx].descramble_seed, offwbf_tr.plane_num, offwbf_tr.offline_wbf_out_flag), UVM_LOW);
+                                        
+                                        // Check if plane_num matches
+                                        if (offwbf_tr.plane_num != pp_idx) begin
+                                            status = CHECK_FAIL_DATA;
+                                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] plane_num mismatch between deep_resp and offwbf: expected=%0d, got=%0d", 
+                                                gid, resp.instruction_index, token_hash, gid, pp, pp_idx, offwbf_tr.plane_num));
+                                        end
+                                        
+                                        // Check if offline_wbf_out_flag is 0 (data not output)
+                                        if (offwbf_tr.offline_wbf_out_flag != 0) begin
+                                            status = CHECK_FAIL_DATA;
+                                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] offline_wbf_out_flag should be 0 for deep_resp case, got=%0b", 
+                                                gid, resp.instruction_index, token_hash, gid, pp, offwbf_tr.offline_wbf_out_flag));
+                                        end
+                                        
+                                        // Check if dest_sel matches (corresponds to ondec.write_pos_jdg)
+                                        if (offwbf_tr.dest_sel != cfg.tr[pp_idx].write_pos_jdg) begin
+                                            status = CHECK_FAIL_DATA;
+                                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] dest_sel mismatch: expected=%0b, got=%0b", 
+                                                gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].write_pos_jdg, offwbf_tr.dest_sel));
+                                        end
+                                        
+                                        // Check if flip_threshold_sel matches
+                                        if (offwbf_tr.flip_threshold_sel != cfg.tr[pp_idx].flip_threshold_sel) begin
+                                            status = CHECK_FAIL_DATA;
+                                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] flip_threshold_sel mismatch: expected=%0b, got=%0b", 
+                                                gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].flip_threshold_sel, offwbf_tr.flip_threshold_sel));
+                                        end
+                                        
+                                        // Check if over_threshold matches (corresponds to ondec.syn_weight_over_threshold)
+                                        if (offwbf_tr.over_threshold != cfg.tr[pp_idx].syn_weight_over_threshold) begin
+                                            status = CHECK_FAIL_DATA;
+                                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] over_threshold mismatch: expected=%0b, got=%0b", 
+                                                gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].syn_weight_over_threshold, offwbf_tr.over_threshold));
+                                        end
+                                        
+                                        // After successful check, remove the entry from deep_resp_offwbf_map to avoid memory leak
+                                        deep_resp_offwbf_map_lock.get();
+                                        deep_resp_offwbf_map.delete(cfg.tr[pp_idx].descramble_seed);
+                                        deep_resp_offwbf_map_lock.put();
+                                        `uvm_info(get_type_name(), $sformatf("  Removed offwbf command from deep_resp_offwbf_map: descramble_seed=%0h", cfg.tr[pp_idx].descramble_seed), UVM_LOW);
+                                    end else begin
+                                        `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] offwbf_tr is null in deep_resp_offwbf_map", 
+                                            gid, resp.instruction_index, token_hash, gid, pp));
+                                    end
+                                end
+                                else begin
+                                    `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] data_out_en should be 0 for deep_resp case (decode failed), got=%0b", 
+                                        gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].data_out_en));
+                                end
                             end else begin
                                 `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, data_out_en=0 (correct for deep_resp case - decode failed)", 
                                     pp_idx, resp.instruction_index), UVM_LOW);
@@ -723,7 +778,7 @@ task `CLASS_NAME_DEFINE::check_offwbf_cmd();
         
         // Combine 16-bit descramble_seed
         descramble_seed = {offwbf_tr.descramble_seed_1, offwbf_tr.descramble_seed_0};
-        
+        descramble_seed_que.push_back(descramble_seed);
         `uvm_info(get_type_name(), $sformatf( "\n========== Received OFFWBF_CMD #%0d ==========\n plane_num: %0d\n ost_id_nsu2offline: %0h\n src_mem_addr (32bit): %0h\n dest_mem_addr (32bit): %0h\n descramble_seed: %0h\n offline_wbf_out_flag: %0b\n=============================================\n", total_offwbf_count, offwbf_tr.plane_num, offwbf_tr.ost_id_nsu2offline, src_mem_addr_32bit, dest_mem_addr_32bit, descramble_seed, offwbf_tr.offline_wbf_out_flag), UVM_LOW)
         
         // =========================================================
@@ -1258,7 +1313,28 @@ function void `CLASS_NAME_DEFINE::test_offwbf_addr_manager();
     `uvm_info(get_type_name(), "OFFWBF address manager test completed", UVM_LOW)
 endfunction : test_offwbf_addr_manager
 
-
+//-----------------------------------------------------------------------------
+// check_offwbf_deep_resp - Check offwbf2nsu cmd that needs deep_resp
+//-----------------------------------------------------------------------------
+task `CLASS_NAME_DEFINE::check_offwbf_deep_resp();
+    int offwbf_cmd_count=0;
+    logic [15:0]descramble_seed;    
+    offdec2nsu_transaction offwbf_tr;    
+    forever begin
+        offwbf2nsu_cmd_fifo.get(offwbf_tr);
+        descramble_seed = descramble_seed_que[offwbf_cmd_count];
+        if(!offwbf_tr.offline_wbf_out_flag && !offwbf_tr.dec_suc)begin //for deep_resp used
+            // Acquire lock for thread-safe access to deep_resp_offwbf_map
+            deep_resp_offwbf_map_lock.get();
+            `uvm_info(get_type_name(), $sformatf("[%0d] Recording  offwbf command that needs deep_resp: descramble_seed=%0h, plane_num=%0d, dec_suc=%b, offline_wbf_out_flag=%b", offwbf_cmd_count,
+                descramble_seed, offwbf_tr.plane_num, offwbf_tr.dec_suc, offwbf_tr.offline_wbf_out_flag), UVM_LOW);
+            deep_resp_offwbf_map[descramble_seed] = offwbf_tr;
+            // Release lock
+            deep_resp_offwbf_map_lock.put();
+        end
+        offwbf_cmd_count+=1;
+    end
+endtask : check_offwbf_deep_resp
 
 
 class token_transaction extends uvm_object;
