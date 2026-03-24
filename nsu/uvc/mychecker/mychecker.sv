@@ -65,17 +65,17 @@ class `CLASS_NAME_DEFINE extends uvm_component;
     // Input queue for 8 plane_pair ondec2nsu_transaction
     uvm_tlm_analysis_fifo #(ondec2nsu_transaction) ondec_fifo [8];
     
-    // ondec_cmd FIFO - Output: Packed ondec2nsu_group_transaction (8 plane_pairs = 2 groups)
+    // ondec_cmd FIFO - Packed ondec2nsu_group_transaction (8 plane_pairs = 2 groups)
     uvm_tlm_analysis_fifo #(ondec2nsu_group_transaction) ondec_group_cmd_fifo;
     
-    // deep_read_resp FIFO - Input: Deep read response from NSU to CPU
+    // deep_read_resp FIFO - Deep read response from NSU to CPU
     uvm_tlm_analysis_fifo #(nsu2cpu_deep_resp_transaction) deep_read_resp_fifo;
     
-    // offwbf_cmd FIFO - Input: Command from NSU to OFFWBF
+    // offwbf_cmd FIFO -  Command from NSU to OFFWBF
     uvm_tlm_analysis_fifo #(offdec2nsu_transaction) offwbf_cmd_fifo;
     bit[15:0] descramble_seed_que[$];//used to store descramble_seed
 
-    // offwbf_cmd FIFO - Input: Command from OFFWBF to NSU,used to check d
+    // offwbf_cmd FIFO - Command from OFFWBF to NSU,used to check d
     uvm_tlm_analysis_fifo #(offdec2nsu_transaction) offwbf2nsu_cmd_fifo;
     
     //-------------------------------------------------------------------------
