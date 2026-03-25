@@ -400,7 +400,7 @@ task `CLASS_NAME_DEFINE::check_ondec_cmd();
                     gid, group_tr.tr[pp_base].nsu_ost_id), UVM_LOW)
             end
             if (!group_need_deep_resp && !group_need_offwbf) begin
-                `uvm_info(get_type_name(), $sformatf("  Group%0d: No action needed (current plane*8 don't need deep_resp)", 
+                `uvm_info(get_type_name(), $sformatf("  Group%0d: No action needed (current group(4 planes) don't need deep_resp)", 
                     gid), UVM_LOW)
             end
         end
@@ -474,8 +474,8 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
         // Check if deep read response is expected for this token
         token_hash = token.hash();
         
-        `uvm_info(get_type_name(), $sformatf("Received DEEP_READ_RESP: token_hash=%0h, instr_idx=%0h, group0_ost_id=%0h, group1_ost_id=%0h, group0_lba=%0h, group1_lba=%0h", 
-            token_hash, token.instruction_index, token.group0_ost_id, token.group1_ost_id, token.group0_lba, token.group1_lba), UVM_LOW)
+        `uvm_info(get_type_name(), $sformatf("#%0d Received DEEP_READ_RESP: token_hash=%0h, instr_idx=%0h, group0_ost_id=%0h, group1_ost_id=%0h, group0_lba=%0h, group1_lba=%0h", 
+            total_resp_count, token_hash, token.instruction_index, token.group0_ost_id, token.group1_ost_id, token.group0_lba, token.group1_lba), UVM_LOW)
         if (pending_deep_resp.exists(token_hash))begin
             status = CHECK_PASS;
             fail_reason = "";
@@ -504,8 +504,8 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                 if (cfg.tr[pp_base].nsu_ost_id == resp_ost_id) begin
                     matched_gid = gid;//step1: compare group ost_id
                     
-                    `uvm_info(get_type_name(), $sformatf("  Matched Group%0d (ost_id=%0h)", 
-                        gid, cfg.tr[pp_base].nsu_ost_id), UVM_LOW)
+                    `uvm_info(get_type_name(), $sformatf("#%0d  Matched Group%0d (ost_id=%0h)", 
+                        total_resp_count, gid, cfg.tr[pp_base].nsu_ost_id), UVM_LOW)
                     
                     // Iterate 4 plane_pairs in group for checks
                     // Only check plane_pairs expected to report deep_resp 
@@ -522,16 +522,16 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                             offwbf_tr = deep_resp_offwbf_map[cfg.tr[pp_idx].descramble_seed];
                             deep_resp_offwbf_map_lock.put();     
                             if(offwbf_tr.dec_suc)begin
-                                `uvm_info(get_type_name(), $sformatf("  Plane %0d WBF failed, offwbf called and succeeded: descramble_seed=%0h, plane_num=%0d, offwbf dec_suc=%b", 
-                                    pp_idx, cfg.tr[pp_idx].descramble_seed, offwbf_tr.plane_num, offwbf_tr.dec_suc), UVM_LOW);
+                                `uvm_info(get_type_name(), $sformatf("#%0d  Plane %0d WBF failed, offwbf called and succeeded: descramble_seed=%0h, plane_num=%0d, offwbf dec_suc=%b", 
+                                    total_resp_count, pp_idx, cfg.tr[pp_idx].descramble_seed, offwbf_tr.plane_num, offwbf_tr.dec_suc), UVM_LOW);
                                 deep_resp_offwbf_map_lock.get();
                                 deep_resp_offwbf_map.delete(cfg.tr[pp_idx].descramble_seed);
                                 deep_resp_offwbf_map_lock.put();                                    
                             end
                             else begin
                                 status = CHECK_FAIL_DECODE;
-                                `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] decode mismatch: expected=%0b, got=%0b", 
-                                    gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].dec_suc, (!resp.plane_pair_ecc_result[pp_idx])));
+                                `uvm_error(get_type_name(), $sformatf("#%0d DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] decode mismatch: expected=%0b, got=%0b", 
+                                    total_resp_count, gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].dec_suc, (!resp.plane_pair_ecc_result[pp_idx])));
                                 // break;                                
                             end
                         end
@@ -540,8 +540,8 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                         // If plane_pair_ecc_result=1 (decode failed) , data_out_en should be 0 for deep_resp cases
                         if (resp.plane_pair_ecc_result[pp_idx]) begin//dec failed,data cannot be output
                             // Detailed debug information
-                            `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, decode status=FAILED (ecc_result=1), data_out_en=%b, plane_sel=%b", 
-                                pp_idx, resp.instruction_index, cfg.tr[pp_idx].data_out_en, cfg.tr[pp_idx].plane_sel), UVM_LOW);
+                            `uvm_info(get_type_name(), $sformatf("#%0d    PP[%0d]: instr_idx=%0h, decode status=FAILED (ecc_result=1), data_out_en=%b, plane_sel=%b", 
+                                total_resp_count, pp_idx, resp.instruction_index, cfg.tr[pp_idx].data_out_en, cfg.tr[pp_idx].plane_sel), UVM_LOW);
                             
                             if (cfg.tr[pp_idx].data_out_en != 0) begin
                                 /*(ecc=0 ;data_out_en=1) means offwbf is going to be invoked,
@@ -558,75 +558,75 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                                     
                                     // Check if offwbf_tr is valid
                                     if (offwbf_tr != null) begin
-                                        `uvm_info(get_type_name(), $sformatf("  Found matching offwbf command in deep_resp_offwbf_map: descramble_seed=%0h, plane_num=%0d, offline_wbf_out_flag=%b", 
-                                            cfg.tr[pp_idx].descramble_seed, offwbf_tr.plane_num, offwbf_tr.offline_wbf_out_flag), UVM_LOW);
+                                        `uvm_info(get_type_name(), $sformatf("#%0d  Found matching offwbf command in deep_resp_offwbf_map: descramble_seed=%0h, plane_num=%0d, offline_wbf_out_flag=%b", 
+                                            total_resp_count, cfg.tr[pp_idx].descramble_seed, offwbf_tr.plane_num, offwbf_tr.offline_wbf_out_flag), UVM_LOW);
                                         
                                         // Check if plane_num matches
                                         if (offwbf_tr.plane_num != pp_idx) begin
                                             status = CHECK_FAIL_DATA;
-                                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] plane_num mismatch between deep_resp and offwbf: expected=%0d, got=%0d", 
-                                                gid, resp.instruction_index, token_hash, gid, pp, pp_idx, offwbf_tr.plane_num));
+                                            `uvm_error(get_type_name(), $sformatf("#%0d DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] plane_num mismatch between deep_resp and offwbf: expected=%0d, got=%0d", 
+                                                total_resp_count, gid, resp.instruction_index, token_hash, gid, pp, pp_idx, offwbf_tr.plane_num));
                                         end
                                         
                                         // Check if offline_wbf_out_flag is 0 (data not output)
                                         if (offwbf_tr.offline_wbf_out_flag != 0) begin
                                             status = CHECK_FAIL_DATA;
-                                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] offline_wbf_out_flag should be 0 for deep_resp case, got=%0b", 
-                                                gid, resp.instruction_index, token_hash, gid, pp, offwbf_tr.offline_wbf_out_flag));
+                                            `uvm_error(get_type_name(), $sformatf("#%0d DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] offline_wbf_out_flag should be 0 for deep_resp case, got=%0b", 
+                                                total_resp_count, gid, resp.instruction_index, token_hash, gid, pp, offwbf_tr.offline_wbf_out_flag));
                                         end
                                         
                                         // Check if dest_sel matches (corresponds to ondec.write_pos_jdg)
                                         if (offwbf_tr.dest_sel != cfg.tr[pp_idx].write_pos_jdg) begin
                                             status = CHECK_FAIL_DATA;
-                                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] dest_sel mismatch: expected=%0b, got=%0b", 
-                                                gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].write_pos_jdg, offwbf_tr.dest_sel));
+                                            `uvm_error(get_type_name(), $sformatf("#%0d DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] dest_sel mismatch: expected=%0b, got=%0b", 
+                                                total_resp_count, gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].write_pos_jdg, offwbf_tr.dest_sel));
                                         end
                                         
                                         // Check if flip_threshold_sel matches
                                         if (offwbf_tr.flip_threshold_sel != cfg.tr[pp_idx].flip_threshold_sel) begin
                                             status = CHECK_FAIL_DATA;
-                                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] flip_threshold_sel mismatch: expected=%0b, got=%0b", 
-                                                gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].flip_threshold_sel, offwbf_tr.flip_threshold_sel));
+                                            `uvm_error(get_type_name(), $sformatf("#%0d DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] flip_threshold_sel mismatch: expected=%0b, got=%0b", 
+                                                total_resp_count, gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].flip_threshold_sel, offwbf_tr.flip_threshold_sel));
                                         end
                                         
                                         // Check if over_threshold matches (corresponds to ondec.syn_weight_over_threshold)
                                         if (offwbf_tr.over_threshold != cfg.tr[pp_idx].syn_weight_over_threshold) begin
                                             status = CHECK_FAIL_DATA;
-                                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] over_threshold mismatch: expected=%0b, got=%0b", 
-                                                gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].syn_weight_over_threshold, offwbf_tr.over_threshold));
+                                            `uvm_error(get_type_name(), $sformatf("#%0d DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] over_threshold mismatch: expected=%0b, got=%0b", 
+                                                total_resp_count, gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].syn_weight_over_threshold, offwbf_tr.over_threshold));
                                         end
                                         
                                         // After successful check, remove the entry from deep_resp_offwbf_map to avoid memory leak
                                         deep_resp_offwbf_map_lock.get();
                                         deep_resp_offwbf_map.delete(cfg.tr[pp_idx].descramble_seed);
                                         deep_resp_offwbf_map_lock.put();
-                                        `uvm_info(get_type_name(), $sformatf("  Removed offwbf command from deep_resp_offwbf_map: descramble_seed=%0h", cfg.tr[pp_idx].descramble_seed), UVM_LOW);
+                                        `uvm_info(get_type_name(), $sformatf("#%0d  Removed offwbf command from deep_resp_offwbf_map: descramble_seed=%0h", total_resp_count, cfg.tr[pp_idx].descramble_seed), UVM_LOW);
                                     end else begin
-                                        `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] offwbf_tr is null in deep_resp_offwbf_map", 
-                                            gid, resp.instruction_index, token_hash, gid, pp));
+                                        `uvm_error(get_type_name(), $sformatf("#%0d DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] offwbf_tr is null in deep_resp_offwbf_map", 
+                                            total_resp_count, gid, resp.instruction_index, token_hash, gid, pp));
                                     end
                                 end
                                 else begin
-                                    `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] data_out_en should be 0 for deep_resp case (decode failed), got=%0b", 
-                                        gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].data_out_en));
+                                    `uvm_error(get_type_name(), $sformatf("#%0d DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] data_out_en should be 0 for deep_resp case (decode failed), got=%0b", 
+                                        total_resp_count, gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].data_out_en));
                                 end
                             end else begin
-                                `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, data_out_en=0 (correct for deep_resp case - decode failed)", 
-                                    pp_idx, resp.instruction_index), UVM_LOW);
+                                `uvm_info(get_type_name(), $sformatf("#%0d    PP[%0d]: instr_idx=%0h, data_out_en=0 (correct for deep_resp case - decode failed)", 
+                                    total_resp_count, pp_idx, resp.instruction_index), UVM_LOW);
                             end
                         end 
                         else begin//wbf&crc pass，data should be output
                             // Detailed debug information
-                            `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, decode status=SUCCESS (ecc_result=0), data_out_en=%b, plane_sel=%b", 
-                                pp_idx, resp.instruction_index, cfg.tr[pp_idx].data_out_en, cfg.tr[pp_idx].plane_sel), UVM_LOW);
+                            `uvm_info(get_type_name(), $sformatf("#%0d    PP[%0d]: instr_idx=%0h, decode status=SUCCESS (ecc_result=0), data_out_en=%b, plane_sel=%b", 
+                                total_resp_count, pp_idx, resp.instruction_index, cfg.tr[pp_idx].data_out_en, cfg.tr[pp_idx].plane_sel), UVM_LOW);
                             
                             if (cfg.tr[pp_idx].data_out_en != 1) begin
                                 status = CHECK_FAIL_DATA;
-                                `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] data_out_en should be 1 for deep_resp case (decode success), got=%0b", 
-                                    gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].data_out_en));
+                                `uvm_error(get_type_name(), $sformatf("#%0d DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] data_out_en should be 1 for deep_resp case (decode success), got=%0b", 
+                                    total_resp_count, gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].data_out_en));
                             end else begin
-                                `uvm_info(get_type_name(), $sformatf("    PP[%0d]: instr_idx=%0h, data_out_en=1 (correct for deep_resp case - decode success)", 
-                                    pp_idx, resp.instruction_index), UVM_LOW);
+                                `uvm_info(get_type_name(), $sformatf("#%0d    PP[%0d]: instr_idx=%0h, data_out_en=1 (correct for deep_resp case - decode success)", 
+                                    total_resp_count, pp_idx, resp.instruction_index), UVM_LOW);
                             end                            
                         end              
 
@@ -634,16 +634,16 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                         // Check CRC status (plane_pair_crc_result: 1=success, 0=fail)
                         if (cfg.tr[pp_idx].crc_pass != (!resp.plane_pair_crc_result[pp_idx])) begin
                             status = CHECK_FAIL_CRC;
-                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] CRC mismatch: expected=%0b, got=%0b", 
-                                gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].crc_pass, (!resp.plane_pair_crc_result[pp_idx])));
+                            `uvm_error(get_type_name(), $sformatf("#%0d DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] CRC mismatch: expected=%0b, got=%0b", 
+                                total_resp_count, gid, resp.instruction_index, token_hash, gid, pp, cfg.tr[pp_idx].crc_pass, (!resp.plane_pair_crc_result[pp_idx])));
                             // break;
                         end                
 
                         // Check LBA comparison result (plane_pair_lba_comp: 1=mismatch, 0=match)
                         if (cfg.tr[pp_idx].error_flag && !resp.plane_pair_lba_comp[pp_idx]) begin
                             status = CHECK_FAIL_LBA;
-                            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] LBA comp mismatch: expected mismatch but got match", 
-                                gid, resp.instruction_index, token_hash, gid, pp));
+                            `uvm_error(get_type_name(), $sformatf("#%0d DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, token=%0h, reason=Group%0d PP[%0d] LBA comp mismatch: expected mismatch but got match", 
+                                total_resp_count, gid, resp.instruction_index, token_hash, gid, pp));
                             break;
                         end                        
                     end
@@ -651,59 +651,59 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                     // Check deep_read_sel
                     if (cfg.tr[pp_base].deep_read_sel != resp.deep_read_sel) begin
                         status = CHECK_FAIL_DATA;
-                        `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d deep_read_sel mismatch: expected=%0b, got=%0b", 
-                            gid, resp.instruction_index, gid, cfg.tr[pp_base].deep_read_sel, resp.deep_read_sel));
+                        `uvm_error(get_type_name(), $sformatf("#%0d DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d deep_read_sel mismatch: expected=%0b, got=%0b", 
+                            total_resp_count, gid, resp.instruction_index, gid, cfg.tr[pp_base].deep_read_sel, resp.deep_read_sel));
                     end
                     
                     // Check read_mode (safe_fast_read corresponds to read_mode)
                     if (cfg.tr[pp_base].read_mode != resp.safe_fast_read) begin
                         status = CHECK_FAIL_DATA;
-                        `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d read_mode mismatch: expected=%0b, got=%0b", 
-                            gid, resp.instruction_index, gid, cfg.tr[pp_base].read_mode, resp.safe_fast_read));
+                        `uvm_error(get_type_name(), $sformatf("#%0d DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d read_mode mismatch: expected=%0b, got=%0b", 
+                            total_resp_count, gid, resp.instruction_index, gid, cfg.tr[pp_base].read_mode, resp.safe_fast_read));
                     end
                     
                     // Check block_addr (consistent within group),only use lower 8bits
                     if (cfg.tr[pp_base].plane_group_block_addr[7:0] != resp.group0_block_addr && gid == 0) begin
                         status = CHECK_FAIL_DATA;
-                        `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d block_addr mismatch: expected=%0h, got=%0h", 
-                            gid, resp.instruction_index, gid, cfg.tr[pp_base].plane_group_block_addr, resp.group0_block_addr));
+                        `uvm_error(get_type_name(), $sformatf("#%0d DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d block_addr mismatch: expected=%0h, got=%0h", 
+                            total_resp_count, gid, resp.instruction_index, gid, cfg.tr[pp_base].plane_group_block_addr, resp.group0_block_addr));
                     end
                     if (cfg.tr[pp_base].plane_group_block_addr[7:0] != resp.group1_block_addr && gid == 1) begin
                         status = CHECK_FAIL_DATA;
-                        `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d block_addr mismatch: expected=%0h, got=%0h", 
-                            gid, resp.instruction_index, gid, cfg.tr[pp_base].plane_group_block_addr, resp.group1_block_addr));
+                        `uvm_error(get_type_name(), $sformatf("#%0d DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d block_addr mismatch: expected=%0h, got=%0h", 
+                            total_resp_count, gid, resp.instruction_index, gid, cfg.tr[pp_base].plane_group_block_addr, resp.group1_block_addr));
                     end
                     
                     // Check page_addr (consistent within group)
                     if (cfg.tr[pp_base].page_addr_plane_group != resp.group0_page_addr && gid == 0) begin
                         status = CHECK_FAIL_DATA;
-                        `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d page_addr mismatch: expected=%0h, got=%0h", 
-                            gid, resp.instruction_index, gid, cfg.tr[pp_base].page_addr_plane_group, resp.group0_page_addr));
+                        `uvm_error(get_type_name(), $sformatf("#%0d DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d page_addr mismatch: expected=%0h, got=%0h", 
+                            total_resp_count, gid, resp.instruction_index, gid, cfg.tr[pp_base].page_addr_plane_group, resp.group0_page_addr));
                     end
                     if (cfg.tr[pp_base].page_addr_plane_group != resp.group1_page_addr && gid == 1) begin
                         status = CHECK_FAIL_DATA;
-                        `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d page_addr mismatch: expected=%0h, got=%0h", 
-                            gid, resp.instruction_index, gid, cfg.tr[pp_base].page_addr_plane_group, resp.group1_page_addr));
+                        `uvm_error(get_type_name(), $sformatf("#%0d DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d page_addr mismatch: expected=%0h, got=%0h", 
+                            total_resp_count, gid, resp.instruction_index, gid, cfg.tr[pp_base].page_addr_plane_group, resp.group1_page_addr));
                     end
                     
                     // Check meta_index_LBA (consistent within group)
                     if (cfg.tr[pp_base].lba[22:0] != resp.group0_meta_index_LBA && gid == 0) begin
                         status = CHECK_FAIL_DATA;
-                        `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d meta_index_LBA mismatch: expected=%0h, got=%0h", 
-                            gid, resp.instruction_index, gid, cfg.tr[pp_base].lba[22:0], resp.group0_meta_index_LBA));
+                        `uvm_error(get_type_name(), $sformatf("#%0d DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d meta_index_LBA mismatch: expected=%0h, got=%0h", 
+                            total_resp_count, gid, resp.instruction_index, gid, cfg.tr[pp_base].lba[22:0], resp.group0_meta_index_LBA));
                     end
                     if (cfg.tr[pp_base].lba[22:0] != resp.group1_meta_index_LBA && gid == 1) begin
                         status = CHECK_FAIL_DATA;
-                        `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d meta_index_LBA mismatch: expected=%0h, got=%0h", 
-                            gid, resp.instruction_index, gid, cfg.tr[pp_base].lba[22:0], resp.group1_meta_index_LBA));
+                        `uvm_error(get_type_name(), $sformatf("#%0d DEEP_READ_RESP Group%0d CHECK FAIL: instr_idx=%0h, reason=Group%0d meta_index_LBA mismatch: expected=%0h, got=%0h", 
+                            total_resp_count, gid, resp.instruction_index, gid, cfg.tr[pp_base].lba[22:0], resp.group1_meta_index_LBA));
                     end
                     
                     // Update statistics for this group
                     if (status == CHECK_PASS) begin
                         pass_count++;
                         group_decode_success[gid]++;
-                        `uvm_info(get_type_name(), $sformatf("DEEP_READ_RESP Group%0d CHECK PASS: instr_idx=%0h (ost_id=%0h)", 
-                            gid, resp.instruction_index, resp_ost_id), UVM_LOW)
+                        `uvm_info(get_type_name(), $sformatf("#%0d DEEP_READ_RESP Group%0d CHECK PASS: instr_idx=%0h (ost_id=%0h)", 
+                            total_resp_count, gid, resp.instruction_index, resp_ost_id), UVM_LOW)
                     end else begin
                         fail_count++;
                         group_decode_fail[gid]++;
@@ -712,8 +712,8 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
                     // Process next group (do not break, check both groups)
                 end else begin
                     // OST ID not matched for this group
-                    `uvm_info(get_type_name(), $sformatf("  Group%0d OST ID not matched: expected=%0h, got=%0h", 
-                        gid, cfg.tr[pp_base].nsu_ost_id, resp_ost_id), UVM_LOW)
+                    `uvm_info(get_type_name(), $sformatf("#%0d  Group%0d OST ID not matched: expected=%0h, got=%0h", 
+                        total_resp_count, gid, cfg.tr[pp_base].nsu_ost_id, resp_ost_id), UVM_LOW)
                 end
             end
             
@@ -726,12 +726,12 @@ task `CLASS_NAME_DEFINE::check_deep_read_resp();
             // Check if both deep_resp and offwbf are cleared, then clear config
             if (!pending_deep_resp[token_hash] && !pending_offwbf[token_hash])begin
                 pending_config.delete(token_hash);
-                `uvm_info(get_type_name(), $sformatf("All responses processed for token=%0x, clearing config", 
-                    token_hash), UVM_LOW)
+                `uvm_info(get_type_name(), $sformatf("#%0d All responses processed for token=%0x, clearing config", 
+                    total_resp_count, token_hash), UVM_LOW)
             end
         end else begin
-            `uvm_error(get_type_name(), $sformatf("DEEP_READ_RESP: No matching config for token=%0x", 
-                token_hash))
+            `uvm_error(get_type_name(), $sformatf("#%0d DEEP_READ_RESP: No matching config for token=%0x", 
+                total_resp_count, token_hash))
         end
     end
 endtask : check_deep_read_resp
@@ -1191,6 +1191,7 @@ task `CLASS_NAME_DEFINE::pack_ondec_transactions();
     int pp;
     
     forever begin
+        bit all_plane_not_selected = 1;
         // Read one transaction from each of the 8 plane_pair FIFOs
         for (pp = 0; pp < 8; pp++)begin
             ondec_fifo[pp].get(trs[pp]);
@@ -1202,12 +1203,25 @@ task `CLASS_NAME_DEFINE::pack_ondec_transactions();
             group_tr.tr[pp] = trs[pp];
         end
         
+        // Check if all 8 planes are not selected
+        for (pp = 0; pp < 8; pp++)begin
+            if (group_tr.tr[pp].plane_sel != 0) begin
+                all_plane_not_selected = 0;
+                break;
+            end
+        end
+        if (all_plane_not_selected) begin
+            `uvm_error(get_type_name(), $sformatf("All 8 are not selected, this is an error: instr_idx=%0h", 
+                group_tr.tr[0].instruction_index));
+        end
+        
         // Write group transaction to output FIFO
         ondec_group_cmd_fifo.put(group_tr);
         
         `uvm_info(get_type_name(), $sformatf("Packed 8 plane_pair transactions into group transaction: instr_idx=%0h", 
             group_tr.tr[0].instruction_index), UVM_LOW)
     end
+    
 endtask : pack_ondec_transactions
 
 //-----------------------------------------------------------------------------
@@ -1337,15 +1351,24 @@ task `CLASS_NAME_DEFINE::check_offwbf_deep_resp();
     forever begin
         offwbf2nsu_cmd_fifo.get(offwbf_tr);
         descramble_seed = descramble_seed_que[offwbf_cmd_count];
-        if(!offwbf_tr.offline_wbf_out_flag && !offwbf_tr.dec_suc)begin //for deep_resp used--dec failed and data not output
-            // Acquire lock for thread-safe access to deep_resp_offwbf_map
-            deep_resp_offwbf_map_lock.get();
-            `uvm_info(get_type_name(), $sformatf("[%0d] Recording  offwbf command that needs deep_resp: descramble_seed=%0h, plane_num=%0d, dec_suc=%b, offline_wbf_out_flag=%b", offwbf_cmd_count,
-                descramble_seed, offwbf_tr.plane_num, offwbf_tr.dec_suc, offwbf_tr.offline_wbf_out_flag), UVM_LOW);
-            deep_resp_offwbf_map[descramble_seed] = offwbf_tr;
-            // Release lock
-            deep_resp_offwbf_map_lock.put();
-        end
+        // if(!offwbf_tr.offline_wbf_out_flag && !offwbf_tr.dec_suc)begin //for deep_resp used--dec failed and data not output
+        //     // Acquire lock for thread-safe access to deep_resp_offwbf_map
+        //     deep_resp_offwbf_map_lock.get();
+        //     `uvm_info(get_type_name(), $sformatf("[%0d] Recording  offwbf command that needs deep_resp: descramble_seed=%0h, plane_num=%0d, dec_suc=%b, offline_wbf_out_flag=%b", offwbf_cmd_count,
+        //         descramble_seed, offwbf_tr.plane_num, offwbf_tr.dec_suc, offwbf_tr.offline_wbf_out_flag), UVM_LOW);
+        //     deep_resp_offwbf_map[descramble_seed] = offwbf_tr;
+        //     // Release lock
+        //     deep_resp_offwbf_map_lock.put();
+        // end
+
+
+        // Acquire lock for thread-safe access to deep_resp_offwbf_map
+        deep_resp_offwbf_map_lock.get();
+        `uvm_info(get_type_name(), $sformatf("[%0d] Recording  offwbf command that needs deep_resp: descramble_seed=%0h, plane_num=%0d, dec_suc=%b, offline_wbf_out_flag=%b", offwbf_cmd_count,
+            descramble_seed, offwbf_tr.plane_num, offwbf_tr.dec_suc, offwbf_tr.offline_wbf_out_flag), UVM_LOW);
+        deep_resp_offwbf_map[descramble_seed] = offwbf_tr;
+        // Release lock
+        deep_resp_offwbf_map_lock.put();
         offwbf_cmd_count+=1;
     end
 endtask : check_offwbf_deep_resp
