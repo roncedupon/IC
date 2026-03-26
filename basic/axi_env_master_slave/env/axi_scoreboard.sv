@@ -12,8 +12,8 @@ class axi_scoreboard extends uvm_scoreboard;
   bit [63:0] memory_model [bit [31:0]];
   
   /** Analysis imports for monitoring */
-  uvm_analysis_imp_master #(svt_axi_master_transaction, axi_scoreboard) master_export;
-  uvm_analysis_imp_slave  #(svt_axi_slave_transaction,  axi_scoreboard) slave_export;
+  uvm_analysis_imp_master#(svt_axi_master_transaction, axi_scoreboard) master_export;
+  uvm_analysis_imp_slave #(svt_axi_slave_transaction,  axi_scoreboard) slave_export;
   
   /** Configuration handle */
   cust_svt_axi_system_configuration cfg;

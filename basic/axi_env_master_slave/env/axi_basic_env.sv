@@ -9,7 +9,7 @@
 // Include dependent files
 `include "cust_svt_axi_system_configuration.sv"
 `include "axi_virtual_sequencer.sv"
-`include "axi_scoreboard.sv"
+// `include "axi_scoreboard.sv"
 
 class axi_basic_env extends uvm_env;
   
@@ -20,7 +20,7 @@ class axi_basic_env extends uvm_env;
   axi_virtual_sequencer sequencer;
   
   /** Scoreboard for data verification */
-  axi_scoreboard scoreboard;
+  // axi_scoreboard scoreboard;
   
   /** Configuration object */
   cust_svt_axi_system_configuration cfg;
@@ -54,7 +54,7 @@ class axi_basic_env extends uvm_env;
     sequencer = axi_virtual_sequencer::type_id::create("sequencer", this);
     
     // Construct Scoreboard
-    scoreboard = axi_scoreboard::type_id::create("scoreboard", this);
+    // scoreboard = axi_scoreboard::type_id::create("scoreboard", this);
     
     `uvm_info("build_phase", "Exiting...", UVM_LOW)
   endfunction

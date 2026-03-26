@@ -165,7 +165,8 @@ class vrun(toolbox):
         make_extra_opt+=f"COMPILE_HOME={COMPILE_HOME} "
         UVM_FLAG        =1 if self.args.uvm else 0
         make_extra_opt+=f"UVM_FLAG={UVM_FLAG} "
-        make_extra_opt+=f"VCS_COMPILE_OPTIONS=\"{self.VCS_COMPILE_OPTIONS} {self.args.comp_opts}\""
+        make_extra_opt+=f"VCS_COMPILE_OPTIONS=\"{self.VCS_COMPILE_OPTIONS.strip()}\ \n {self.args.comp_opts}\"" #这个地方中间还得加一个\n，不然VCS_COMPILE_OPTIONS有问题
+
         
         print(make_extra_opt)
         # exit()

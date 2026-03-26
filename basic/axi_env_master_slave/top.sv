@@ -8,11 +8,14 @@
 `include "uvm_pkg.sv"
 `include "svt_axi_if.svi"
 `include "svt_axi.uvm.pkg"
-
+// UVM imports
+import uvm_pkg::*;
+import svt_uvm_pkg::*;
+import svt_axi_uvm_pkg::*;
 // Include environment files
 `include "env/cust_svt_axi_system_configuration.sv"
 `include "env/axi_virtual_sequencer.sv"
-`include "env/axi_scoreboard.sv"
+// `include "env/axi_scoreboard.sv"
 `include "env/axi_coverage.sv"
 `include "env/axi_master_write_read_sequence.sv"
 `include "env/axi_slave_response_sequence.sv"
@@ -36,11 +39,7 @@ module test_top;
   logic aclk;
   logic aresetn;
   
-  // UVM imports
-  import uvm_pkg::*;
-  import svt_uvm_pkg::*;
-  import svt_axi_uvm_pkg::*;
-  
+
   // AXI interface instance
   svt_axi_if axi_if();
   
