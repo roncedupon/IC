@@ -1,6 +1,6 @@
 +incdir+$CUR_PROJ_HOME \
-+incdir+$VIP_HOME/src/sverilog/vcs \
-+incdir+$VIP_HOME/include/sverilog \
++incdir+$VIP_HOME/vip2020/src/sverilog/vcs \
++incdir+$VIP_HOME/vip2020/include/sverilog \
 +incdir+$CUR_PROJ_HOME/src/sverilog/vcs \
 +incdir+$CUR_PROJ_HOME/hdl_interconnect/ \
 +incdir+$CUR_PROJ_HOME/env/ +incdir+$CUR_PROJ_HOME/tests/ \

@@ -165,11 +165,11 @@ class vrun(toolbox):
         make_extra_opt+=f"COMPILE_HOME={COMPILE_HOME} "
         UVM_FLAG        =1 if self.args.uvm else 0
         make_extra_opt+=f"UVM_FLAG={UVM_FLAG} "
-        make_extra_opt+=f"VCS_COMPILE_OPTIONS=\"{self.VCS_COMPILE_OPTIONS.strip()}\ \n {self.args.comp_opts}\"" #这个地方中间还得加一个\n，不然VCS_COMPILE_OPTIONS有问题
+        make_extra_opt+=f"VCS_COMPILE_OPTIONS=\"{self.VCS_COMPILE_OPTIONS.strip()} {self.args.comp_opts}\"" #这个地方中间还得加一个\n，不然VCS_COMPILE_OPTIONS有问题
 
         
         print(make_extra_opt)
-        # exit()
+
         make_cmd=f"make -f {self.MAKEFILE_PATH} compile "+make_extra_opt
 
 
@@ -348,6 +348,8 @@ class vrun(toolbox):
             if not os.path.exists("build"):
                 os.system("ln -s ../build ./")
             os.system("ln -s ../build/simv.daidir ./")
+            print(f"./build/simv -l simulation.log {extra_sim_opt}")
+            print(os.getcwd())
             os.system(f"./build/simv -l simulation.log {extra_sim_opt}")     
             os.chdir("../")
 
