@@ -67,7 +67,7 @@ endif
 
 
 #VCS编译命令
-VCS_CMD=vcs -sverilog -full64 $(UVM_CMD) \
+VCS_CMD=vcs  $(FILE_NAME) -sverilog -full64 $(UVM_CMD) \
 -kdb \
 -CFLAGS -DVCS \
 -timescale=1ns/1ns \
@@ -82,7 +82,7 @@ $(FILE_LISTS_OPTIONS)\
 $(DUMP_ARRAY_CMD)\
 +lint=TFIPC-L \
 +sdfverbose -diag=sdf:verbose -diag=sdf \
-${COVERAGE_CMD} -file $(FILE_NAME) 
+${COVERAGE_CMD} 
 
 
 # -LDFLAGS -Wl,--no-as-needed--是为了解决libvcsnew.so: undefined reference的问题

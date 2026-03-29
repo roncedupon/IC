@@ -37,12 +37,6 @@ class vrun(toolbox):
         
 
         parser.add_argument("-sim_opts",metavar="",help="extra simopts",default=False)
-        
-        # Icarus Verilog 选项
-        parser.add_argument("-iverilog",action="store_true",help="use Icarus Verilog instead of VCS",default=False)
-        parser.add_argument("-iverilog_opts",metavar="",type=str,default="",help="extra iverilog compile options (e.g. -g2012)")
-        parser.add_argument("-vcd",action="store_true",help="dump VCD waveform for iverilog",default=False)
-        
         args=parser.parse_args()
         # if len(args.t)==1:
         #     args.t=args.t[0]
@@ -72,19 +66,9 @@ class vrun(toolbox):
         self.MAKEFILE_PATH              =os.path.dirname(__file__)+"/makefile"
         self.VCS_COMPILE_OPTIONS        =f" +incdir+{self.CUR_PROJ_HOME} "
         self.VCS_SIM_OPTIONS            =""
-        
-        # Icarus Verilog 编译选项
-        self.IVERILOG_COMPILE_OPTIONS   =f" -I {self.CUR_PROJ_HOME} "
-        self.IVERILOG_SIM_OPTIONS       =""
-        self.IVERILOG_OUTPUT            ="simv_iverilog"  # iverilog 编译输出文件名
-        
         if self.args.cov:
             self.VCS_COMPILE_OPTIONS    += " -cm line+cond+fsm+tgl+branch+assert  "
             self.VCS_SIM_OPTIONS        +=" -cm line+cond+fsm+tgl+branch+assert  -cm_dir ./simv.vdb "
-        
-        # iverilog 默认使用 SystemVerilog 2012 标准
-        if self.args.iverilog and not self.args.iverilog_opts:
-            self.IVERILOG_COMPILE_OPTIONS += " -g2012 "
     def launch_verdi_old(self):
         font_cfg='-font "Courier 18"'
         VERDI_HOME=self.simdir+"/verdi"
@@ -165,11 +149,10 @@ class vrun(toolbox):
         make_extra_opt+=f"COMPILE_HOME={COMPILE_HOME} "
         UVM_FLAG        =1 if self.args.uvm else 0
         make_extra_opt+=f"UVM_FLAG={UVM_FLAG} "
-        make_extra_opt+=f"VCS_COMPILE_OPTIONS=\"{self.VCS_COMPILE_OPTIONS.strip()} {self.args.comp_opts}\"" #这个地方中间还得加一个\n，不然VCS_COMPILE_OPTIONS有问题
-
+        make_extra_opt+=f"VCS_COMPILE_OPTIONS=\"{self.VCS_COMPILE_OPTIONS} {self.args.comp_opts}\""
         
         print(make_extra_opt)
-
+        # exit()
         make_cmd=f"make -f {self.MAKEFILE_PATH} compile "+make_extra_opt
 
 
@@ -187,99 +170,6 @@ class vrun(toolbox):
         # analyzer.parse_vcs_command()
         # analyzer.parse_compile_log()
         # analyzer.generate_excel_report()#现在先不生成这玩意
-
-#-------------------------------------------------------------------------------
-    # Icarus Verilog 编译方法
-    def compile_iverilog(self):
-        """
-        使用 Icarus Verilog 进行编译
-        支持与 VCS 相同的参数接口
-        """
-        print(self.colored("="*60, "cyan", style="bold"))
-        print(self.colored("  Icarus Verilog Compile Mode", "green", style="bold"))
-        print(self.colored("="*60, "cyan", style="bold"))
-        
-        os.chdir(self.simdir)
-        self.mkdir("build")
-        
-        # 构建 iverilog 编译命令
-        iverilog_cmd = "iverilog"
-        
-        # 添加标准选项
-        iverilog_cmd += f" {self.IVERILOG_COMPILE_OPTIONS}"
-        
-        # 添加用户自定义选项
-        if self.args.iverilog_opts:
-            iverilog_cmd += f" {self.args.iverilog_opts}"
-        
-        # 添加编译选项
-        if self.args.comp_opts:
-            iverilog_cmd += f" {self.args.comp_opts}"
-        
-        # 处理顶层模块
-        top_module_name = None
-        top_file = None
-        if self.args.top:
-            top_file = self.args.top
-            if not os.path.isabs(top_file):
-                top_file = os.path.join(self.CUR_PROJ_HOME, top_file)
-            # 如果没有文件列表，则直接添加 top 文件
-            # 如果有文件列表，则 top 文件应该在文件列表中，不需要单独添加
-            if not self.args.f:
-                iverilog_cmd += f" {top_file}"
-            # 尝试从文件内容提取顶层模块名
-            top_module_name = self._extract_top_module(top_file)
-        
-        # 处理文件列表
-        if self.args.f:
-            filelist_path = self.args.f
-            if not os.path.isabs(filelist_path):
-                filelist_path = os.path.join(self.CUR_PROJ_HOME, filelist_path)
-            iverilog_cmd += f" -f {filelist_path}"
-        
-        # 设置输出文件
-        output_file = f"build/{self.IVERILOG_OUTPUT}"
-        iverilog_cmd += f" -o {output_file}"
-        
-        # 如果指定了顶层模块，添加 -s 选项（前提是用户没有在 comp_opts 中指定）
-        if top_module_name and "-s " not in str(self.args.comp_opts):
-            iverilog_cmd += f" -s {top_module_name}"
-        
-        # 如果需要生成 VCD 波形
-        if self.args.vcd:
-            vcd_defines = ' -D DUMP_VCD'
-            iverilog_cmd += vcd_defines
-        
-        print(self.colored(f"[Compile CMD]", "yellow", style="bold"))
-        print(f"  {iverilog_cmd}")
-        print()
-        
-        # 执行编译
-        ret = os.system(iverilog_cmd)
-        
-        if ret == 0:
-            print(self.colored("[Compile SUCCESS]", "green", style="bold"))
-        else:
-            print(self.colored("[Compile FAILED]", "red", style="bold"))
-            sys.exit(1)
-        
-        return ret == 0
-    
-    def _extract_top_module(self, file_path):
-        """
-        从 SystemVerilog 文件中提取顶层模块名
-        优先查找第一个 module 定义
-        """
-        try:
-            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                content = f.read()
-                # 匹配 module 定义，支持 module name 和 module name( 参数
-                match = re.search(r'\bmodule\s+(\w+)\s*[;(#]', content)
-                if match:
-                    return match.group(1)
-        except Exception as e:
-            print(f"Warning: Could not extract module name from {file_path}: {e}")
-        return None
 
 #-------------------------------------------------------------------------------
     def mkdir(self,path):
@@ -348,70 +238,8 @@ class vrun(toolbox):
             if not os.path.exists("build"):
                 os.system("ln -s ../build ./")
             os.system("ln -s ../build/simv.daidir ./")
-            print(f"./build/simv -l simulation.log {extra_sim_opt}")
-            print(os.getcwd())
             os.system(f"./build/simv -l simulation.log {extra_sim_opt}")     
             os.chdir("../")
-
-    # Icarus Verilog 运行方法
-    def single_run_iverilog(self, **args):
-        """
-        使用 Icarus Verilog (vvp) 进行仿真运行
-        支持与 VCS 相同的参数接口
-        """
-        print(self.colored("="*60, "cyan", style="bold"))
-        print(self.colored("  Icarus Verilog Simulation Mode", "green", style="bold"))
-        print(self.colored("="*60, "cyan", style="bold"))
-        
-        os.chdir(self.simdir)
-        
-        # 构建仿真选项
-        extra_sim_opt = ""
-        if self.args.sim_opts:
-            extra_sim_opt = f" {self.args.sim_opts}"
-        
-        # 确定仿真目录和日志文件名
-        if self.args.t:
-            case_dir = self.args.t
-            log_name = f"{case_dir}.log"
-        elif self.args.top:
-            case_dir = os.path.splitext(os.path.basename(self.args.top))[0]
-            log_name = f"{case_dir}.log"
-        else:
-            case_dir = "sim"
-            log_name = "simulation.log"
-        
-        self.mkdir(case_dir)
-        os.chdir(case_dir)
-        
-        # 创建 build 目录链接（如果不存在）
-        if not os.path.exists("build"):
-            os.system("ln -s ../build ./")
-        
-        # 构建运行命令
-        sim_file = f"./build/{self.IVERILOG_OUTPUT}"
-        vvp_cmd = f"vvp {sim_file} -l {log_name}{extra_sim_opt}"
-        
-        print(self.colored(f"[Simulate CMD]", "yellow", style="bold"))
-        print(f"  {vvp_cmd}")
-        print()
-        
-        print(self.colored("="*60, "cyan", style="bold"))
-        print(self.colored("  Simulation Output", "green", style="bold"))
-        print(self.colored("="*60, "cyan", style="bold"))
-        
-        # 执行仿真
-        ret = os.system(vvp_cmd)
-        
-        os.chdir("../")
-        
-        if ret == 0:
-            print(self.colored("\n[Simulation SUCCESS]", "green", style="bold"))
-            print(f"  Log file: {self.simdir}/{case_dir}/{log_name}")
-        else:
-            print(self.colored("\n[Simulation FAILED]", "red", style="bold"))
-        
-        return ret == 0
 
     def print_json(self,json_dict=None):
         if json_dict is None:
@@ -485,17 +313,9 @@ class vrun(toolbox):
             sys.exit()
 
         if not self.args.only_run:
-            # 根据 -iverilog 选项选择编译器
-            if self.args.iverilog:
-                self.compile_iverilog()
-            else:
-                self.compile()
+            self.compile()
         if not self.args.only_compile:
-            # 根据 -iverilog 选项选择仿真器
-            if self.args.iverilog:
-                self.single_run_iverilog()
-            else:
-                self.single_run()
+            self.single_run()
 
     def creat_test_from_seq(self):
         #用指定的sequence批量创建test

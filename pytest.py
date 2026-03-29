@@ -34,3 +34,20 @@ print(result_odd)
 #%% 
 aa="123"
 print(int(aa)-100)
+
+
+#%%
+bit="0111001110010110"
+# bit="011100000001"
+bit=bit[::-1]
+index=0
+for i in range(len(bit)):
+    if bit[i]=="1":
+        print(hex(index),hex(index+1),hex(index+2),hex(index+3))
+    index+=4
+        
+# %%
+
+0x8 0x9 
+
+
